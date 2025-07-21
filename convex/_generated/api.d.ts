@@ -13,6 +13,8 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as auth from "../auth.js";
+import type * as http from "../http.js";
 import type * as runTaxQuery from "../runTaxQuery.js";
 import type * as seedTaxYear from "../seedTaxYear.js";
 import type * as tasks from "../tasks.js";
@@ -26,6 +28,8 @@ import type * as tasks from "../tasks.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
+  http: typeof http;
   runTaxQuery: typeof runTaxQuery;
   seedTaxYear: typeof seedTaxYear;
   tasks: typeof tasks;

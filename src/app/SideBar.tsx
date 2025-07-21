@@ -1,4 +1,7 @@
-import { Calendar, Home, Search, Settings, MonitorCheck } from "lucide-react"
+"use client";
+
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon } from "lucide-react"
+import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 
 import {
   Sidebar,
@@ -19,47 +22,70 @@ const items = [
     icon: Home,
   },
   {
-    title: "Retirement Income Calculator",
-    url: "/retirement-income-calculator",
+    title: "Cashflow Forecast",
+    url: "/cashflow-calculator",
+    icon: FlameKindling,
+  },
+  {
+    title: "Accumulation Forecast",
+    url: "/goal-tracker",
+    icon: MoveUpRightIcon,
+  },
+  {
+    title: "One off Cashflow",
+    url: "/one-off-cashflow",
+    icon: DollarSign,
+  },
+  {
+    title: "Goal Tracker",
+    url: "/goal-tracker",
     icon: MonitorCheck,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
+  }
 ]
+
+import favicon from "../app/favicon.ico";
+import Image from "next/image";
+import { SignIn, SignOut } from "@/components/SignIn";
+import Link from "next/link";
 
 export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Drawdown Desk</SidebarGroupLabel>
+        <SidebarGroup className="gap-4">
+          <SidebarGroupLabel>
+            <h2 className="flex items-center gap-2 text-xl font-bold">
+              <span>
+                <Image src={favicon} alt="Drawdown Desk" width={24} height={24} />
+              </span>
+              Drawdown Desk
+            </h2>
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup className="gap-4">
+          <Authenticated>
+            <SignOut />
+          </Authenticated>
+          <Unauthenticated>
+            <SignIn />
+          </Unauthenticated>
+          <AuthLoading>
+            <p>Loading...</p>
+          </AuthLoading>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>

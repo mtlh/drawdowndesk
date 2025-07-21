@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -42,11 +42,15 @@ export default function RetirementIncomeCalculator() {
   const [growthRate, setGrowthRate] = useState(0.05); // 5% annual growth
   const [withdrawRate, setWithdrawRate] = useState(0.03); // 3% annual withdrawal
   const [inflationRate, setInflationRate] = useState(0.03); // 3% annual inflation
+
+  const [pensionGrowth] = useState(0); // value of yearly pension growth
+
   const endAge = 100; // Ending age for the retirement years
   const retirementYears = Array.from({ length: endAge - startAge + 1 }, (_, i) => startAge + i);
 
  const incomeChartData = useChartData(
     pensionValue,
+    pensionGrowth,
     growthRate,
     withdrawRate,
     retirementYears,
@@ -54,12 +58,22 @@ export default function RetirementIncomeCalculator() {
     taxBandInformation
   );
 
-  const [activeChart, setActiveChart] =
-    React.useState<keyof typeof chartConfig>("takeHomePay")
-  const total = React.useMemo(
+  const [incomeActiveChart, setIncomeActiveChart] =
+    React.useState<keyof typeof incomeConfig>("takeHomePay")
+  const incometotal = React.useMemo(
     () => ({
       takeHomePay: incomeChartData.reduce((acc, curr) => acc + curr.takeHomePay, 0),
       nationalInsurance: incomeChartData.reduce((acc, curr) => acc + curr.nationalInsurance, 0),
+    }),
+    [incomeChartData]
+  )
+
+   const [pensionActiveChart, setPensionActiveChart] =
+    React.useState<keyof typeof pensionValueConfig>("pensionValue")
+  const pensiontotal = React.useMemo(
+    () => ({
+      pensionValue: incomeChartData.reduce((acc, curr) => acc + curr.pensionValue, 0),
+      pensionGrowth: incomeChartData.reduce((acc, curr) => acc + curr.pensionGrowth, 0),
     }),
     [incomeChartData]
   )
@@ -72,7 +86,7 @@ export default function RetirementIncomeCalculator() {
     );
   }
 
-  const chartConfig = {
+  const incomeConfig = {
     takeHomePay: {
       label: "Take Home",
       color: "var(--chart-1)",
@@ -87,10 +101,21 @@ export default function RetirementIncomeCalculator() {
     },
   } satisfies ChartConfig;
 
+  const pensionValueConfig = {
+    pensionValue: {
+      label: "Value",
+      color: "var(--chart-4)",
+    },
+    pensionGrowth: {
+      label: "Yearly Growth",
+      color: "var(--chart-5)",
+    },
+  } satisfies ChartConfig;
+
   return (
-    <div className="font-sans grid grid-rows-[auto_1fr_auto] min-h-screen p-8 gap-8 sm:p-20 bg-background">
+    <div className="font-sans grid grid-rows-[auto_1fr_auto] min-h-screen p-8 gap-8  bg-background">
       {/* INPUT SECTION */}
-      <h1 className="text-2xl font-bold">Retirement Income Calculator</h1>
+      <h1 className="text-2xl font-bold">Retirement Cashflow Calculator</h1>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 w-full max-w-3xl">
         <div>
           <label className="block mb-2 font-medium text-sm text-muted-foreground">Starting Age</label>
@@ -176,26 +201,26 @@ export default function RetirementIncomeCalculator() {
       <Card className="py-0">
         <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
           <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:!py-0">
-            <CardTitle>Retirement Income Breakdown</CardTitle>
+            <CardTitle>Retirement Income Breakdown (£)</CardTitle>
             <CardDescription>
               Showing the breakdown of income tax, national insurance, and take-home pay over the retirement years.
             </CardDescription>
           </div>
           <div className="flex">
             {["takeHomePay", "nationalInsurance"].map((key) => {
-              const chart = key as keyof typeof chartConfig
+              const chart = key as keyof typeof incomeConfig
               return (
                 <button
                   key={chart}
-                  data-active={activeChart === chart}
+                  data-active={incomeActiveChart === chart}
                   className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
-                  onClick={() => setActiveChart(chart)}
+                  onClick={() => setIncomeActiveChart(chart)}
                 >
                   <span className="text-muted-foreground text-xs">
-                    {chartConfig[chart].label}
+                    {incomeConfig[chart].label}
                   </span>
                   <span className="text-lg leading-none font-bold sm:text-3xl">
-                    {total[key as keyof typeof total].toLocaleString()}
+                    {incometotal[key as keyof typeof incometotal].toLocaleString()}
                   </span>
                 </button>
               )
@@ -204,15 +229,15 @@ export default function RetirementIncomeCalculator() {
         </CardHeader>
         <CardContent className="px-2 sm:p-6">
           <ChartContainer
-            config={chartConfig}
+            config={incomeConfig}
             className="aspect-auto h-[250px] w-full"
           >
           <BarChart
             accessibilityLayer
             data={incomeChartData}
             margin={{
-              left: 12,
-              right: 12,
+              left: 30,
+              right: 5,
             }}
           >
             <CartesianGrid vertical={false} />
@@ -221,6 +246,12 @@ export default function RetirementIncomeCalculator() {
                 tickLine={false}
                 tickMargin={10}
                 axisLine={false}
+            />
+            <YAxis
+              dataKey="withdrawAmount"
+              tickLine={false}
+              tickMargin={10}
+              axisLine={false}
             />
             <ChartTooltip content={<ChartTooltipContent hideLabel />} />
             <ChartLegend content={<ChartLegendContent />} />
@@ -239,6 +270,81 @@ export default function RetirementIncomeCalculator() {
                 dataKey="incomeTax"
                 stackId="a"
                 fill="var(--color-incomeTax)"
+                radius={[4, 4, 0, 0]}
+              />
+            {/* <Bar dataKey={activeChart} fill={`var(--color-${activeChart})`} /> */}
+            </BarChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+
+      <Card className="py-0">
+        <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
+          <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:!py-0">
+            <CardTitle>Pension Pot Value (£)</CardTitle>
+            <CardDescription>
+              Showing the value of the pension pot over the retirement years.
+            </CardDescription>
+          </div>
+          <div className="flex">
+            {["pensionValue", "pensionGrowth"].map((key) => {
+              const chart = key as keyof typeof pensionValueConfig
+              return (
+                <button
+                  key={chart}
+                  data-active={pensionActiveChart === chart}
+                  className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                  onClick={() => setPensionActiveChart(chart)}
+                >
+                  <span className="text-muted-foreground text-xs">
+                    {pensionValueConfig[chart].label}
+                  </span>
+                  <span className="text-lg leading-none font-bold sm:text-3xl">
+                    {pensiontotal[key as keyof typeof pensiontotal].toLocaleString()}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </CardHeader>
+        <CardContent className="px-2 sm:p-6">
+          <ChartContainer
+            config={pensionValueConfig}
+            className="aspect-auto h-[250px] w-full"
+          >
+          <BarChart
+            accessibilityLayer
+            data={incomeChartData}
+            margin={{
+              left: 30,
+              right: 5,
+            }}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis
+                dataKey="age"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+            />
+            <YAxis
+              dataKey="pensionValue"
+              tickLine={false}
+              tickMargin={10}
+              axisLine={false}
+            />
+            <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+            <ChartLegend content={<ChartLegendContent />} />
+            <Bar
+                dataKey="pensionValue"
+                stackId="a"
+                fill="var(--color-pensionValue)"
+                radius={[0, 0, 4, 4]}
+              />
+              <Bar
+                dataKey="pensionGrowth"
+                stackId="a"
+                fill="var(--color-pensionGrowth)"
                 radius={[4, 4, 0, 0]}
               />
             {/* <Bar dataKey={activeChart} fill={`var(--color-${activeChart})`} /> */}
@@ -285,6 +391,7 @@ export default function RetirementIncomeCalculator() {
 
 const useChartData = (
   pensionValue: number,
+  pensionGrowth: number,
   growthRate: number,
   withdrawRate: number,
   retirementYears: number[],
@@ -296,7 +403,9 @@ const useChartData = (
 
     return retirementYears.map((age) => {
 
+      const previousPensionValue = currentPensionValue;
       currentPensionValue *= 1 + growthRate;
+      const growth = currentPensionValue - previousPensionValue;
       currentPensionValue /= 1 + inflationRate;
 
       const withdrawAmount = currentPensionValue * withdrawRate;
@@ -310,15 +419,9 @@ const useChartData = (
         nationalInsurance: taxInfo.nationalInsurance,
         incomeTax: taxInfo.incomeTax,
         pensionValue: currentPensionValue,
+        pensionGrowth: growth,
         withdrawAmount,
       };
     });
-  }, [
-    pensionValue,
-    growthRate,
-    withdrawRate,
-    retirementYears,
-    inflationRate,
-    taxBandInformation,
-  ]);
+  }, [pensionValue, growthRate, withdrawRate, retirementYears, inflationRate, taxBandInformation]);
 };
