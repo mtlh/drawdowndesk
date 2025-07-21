@@ -29,7 +29,7 @@ const items = [
   },
   {
     title: "Accumulation Forecast",
-    url: "/goal-tracker",
+    url: "/accumulation-forecast",
     icon: MoveUpRightIcon,
   },
   {
