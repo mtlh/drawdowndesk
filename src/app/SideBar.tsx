@@ -1,11 +1,12 @@
 "use client";
 
-import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon } from "lucide-react"
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, MoonIcon, LineChartIcon } from "lucide-react"
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -32,6 +33,11 @@ const items = [
     icon: MoveUpRightIcon,
   },
   {
+    title: "Monte Carlo Simulator",
+    url: "/monte-carlo-simulator",
+    icon: LineChartIcon,
+  },
+  {
     title: "One off Cashflow",
     url: "/one-off-cashflow",
     icon: DollarSign,
@@ -47,6 +53,8 @@ import favicon from "../app/favicon.ico";
 import Image from "next/image";
 import { SignIn, SignOut } from "@/components/SignIn";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
   return (
@@ -76,6 +84,17 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenuButton asChild>
+          <Button variant="ghost" onClick={() => { 
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem("theme", document.documentElement.classList.contains('dark') ? "dark" : "light");
+            }}>
+            <MoonIcon />
+            <span>Toggle light/dark mode</span>
+          </Button>
+        </SidebarMenuButton>
         <SidebarGroup className="gap-4">
           <Authenticated>
             <SignOut />
@@ -84,10 +103,10 @@ export function AppSidebar() {
             <SignIn />
           </Unauthenticated>
           <AuthLoading>
-            <p>Loading...</p>
+            <Skeleton />
           </AuthLoading>
         </SidebarGroup>
-      </SidebarContent>
+      </SidebarFooter>
     </Sidebar>
   )
 }
