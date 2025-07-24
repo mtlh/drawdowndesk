@@ -1,10 +1,13 @@
 "use client";
 
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card"
 import {
   ChartConfig,
@@ -85,6 +88,31 @@ export default function MonteCarloSimulator() {
       </div>
       {monteCarloReturn && (
         <Card className="py-0">
+          <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
+          <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:!py-0">
+            <CardTitle>Monte Carlo Simulation</CardTitle>
+            <CardDescription>
+              Historical returns for a given asset over a given time period.
+            </CardDescription>
+          </div>
+          <div className="flex">
+            {monteCarloReturn.percentitleReturns.map(([key, value]) => {
+              return (
+                <div
+                  key={key}
+                  className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                >
+                  <span className="text-muted-foreground text-xs">
+                    {key}
+                  </span>
+                  <span className="text-lg leading-none font-bold sm:text-3xl">
+                    {value}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </CardHeader>
           <CardContent className="px-2 sm:p-6">
             <ChartContainer config={monteCarloConfig}>
               <LineChart
@@ -95,9 +123,13 @@ export default function MonteCarloSimulator() {
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="year"
-                  tickLine={false}
-                  axisLine={false}
                   tickMargin={1}
+                  domain={['auto', 'auto']}
+                  label={{ value: 'Year', angle: 0, position: 'insideBottom' }}
+                />
+                <YAxis
+                  label={{ value: 'Return %', angle: -90, position: 'insideLeft' }}
+                  domain={['auto', 'auto']}
                 />
                 <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                 {/* Dynamically render lines for each case */}

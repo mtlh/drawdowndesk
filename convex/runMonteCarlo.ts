@@ -9,14 +9,15 @@ export type monteCarloReturn = {
     }[];
     chartdata: ChartRowDynamic[];
     caseKeys: string[];
+    percentitleReturns: [string, number][];
     error?: string;
 }
 
-type CaseLabel<N extends number> = `${N}-${N}`;
+type CaseLabel<N extends string> = `${N}`;
 type ChartRowDynamic = {
   year: number;
 } & {
-  [key in CaseLabel<number>]?: number | null;
+  [key in CaseLabel<string>]?: number | null;
 };
 
 export const getAssetReturnsforPeriods = query({
@@ -73,22 +74,56 @@ export const getAssetReturnsforPeriods = query({
     returns.forEach((fund) => {
         const lookup = fund.yearlyReturns.find(([y]) => y === year);
         row[`${fund.startYear}-${fund.startYear+args.yearPeriod}`] = lookup ? lookup[1] : 0;
+
+        // if (lookup) {
+        //   row["p25"] = +getPercentile([...lookup], 0.25).toFixed(2);
+        //   row["p50"] = +getPercentile([...lookup], 0.50).toFixed(2);
+        //   row["p75"] = +getPercentile([...lookup], 0.75).toFixed(2);
+        // }
     });
+
     return row;
     });
 
     // expected chart data
     // { 
-    //   yearperiod: 1, case 1: 100, case 2: 200, case 3: 300, 
-    //   yearperiod: 2, case 1: 200, case 2: 400, case 3: 600,
+    //   yearperiod: 1, case 1: 100, case 2: 200, case 3: 300, p25: 100, p50: 200, p75: 300,
+    //   yearperiod: 2, case 1: 200, case 2: 400, case 3: 600, p25: 200, p50: 400, p75: 600,
     // }
+
+    // calculate the percentiles
+    const parsedReturns = returns.map(r => parseFloat(r.totalReturn)).filter(r => !isNaN(r));
+    const P25 = +getPercentile(parsedReturns, 0.25).toFixed(2);
+    const P50 = +getPercentile(parsedReturns, 0.50).toFixed(2);
+    const P75 = +getPercentile(parsedReturns, 0.75).toFixed(2);
 
     //  console.log(returns);
      return {
         data: returns,
         chartdata: chartData,
         caseKeys: Object.keys(chartData[0]).filter(key => /\d+$/.test(key)),
+        percentitleReturns: [["P25", P25], ["P50", P50], ["P75", P75]],
         error: undefined,
      };
   },
 });
+
+/**
+ * Compute the p-th percentile of a sorted array using linear interpolation.
+ * @param values  Array of numbers (will be sorted in place)
+ * @param p       Percentile in [0..1] (e.g. 0.5 for 50th)
+ */
+function getPercentile(values: number[], p: number): number {
+  if (values.length === 0) return 0;
+  values.sort((a, b) => a - b);
+
+  const idx = (values.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  const weight = idx - lo;
+
+  if (hi === lo) {
+    return values[lo];
+  }
+  return values[lo] + (values[hi] - values[lo]) * weight;
+}
