@@ -1,6 +1,6 @@
 import { mutation } from "../convex/_generated/server";
 
-export const seedTaxInfo = mutation(async ({ db }) => {
+export const seedHistoricalReturns = mutation(async ({ db }) => {
   
     // Historical Returns
 
@@ -64,13 +64,100 @@ export const seedTaxInfo = mutation(async ({ db }) => {
         { year: 1970, returnAmount: -4.47 },
     ];
     for (const returnData of vtReturns) {
-        await db.insert("historicalReturns", {
-            assetName: "FTSE Global All Cap",
-            assetType: "Stock",
-            returnYear: returnData.year,
-            returnAmount: returnData.returnAmount,
-            lastUpdated: new Date().toISOString(),
-        });
+        const existing = await db
+        .query("historicalReturns")
+        .filter((q) => q.eq(q.field("assetName"), "FTSE Global All Cap"))
+        .filter((q) => q.eq(q.field("returnYear"), returnData.year))
+        .collect();
+
+        if (existing.length === 0) {
+            await db.insert("historicalReturns", {
+                assetName: "FTSE Global All Cap",
+                assetType: "Stock",
+                returnYear: returnData.year,
+                returnAmount: returnData.returnAmount,
+                lastUpdated: new Date().toISOString(),
+            });
+        }
+    }
+
+    // GOLD 
+    const goldReturns: { year: number; percentage: number }[] = [
+        { year: 2025, percentage: 29.21 },
+        { year: 2024, percentage: 27.16 },
+        { year: 2023, percentage: 13.14 },
+        { year: 2022, percentage: -0.38 },
+        { year: 2021, percentage: -3.76 },
+        { year: 2020, percentage: 25.32 },
+        { year: 2019, percentage: 18.33 },
+        { year: 2018, percentage: -1.55 },
+        { year: 2017, percentage: 13.26 },
+        { year: 2016, percentage: 8.47 },
+        { year: 2015, percentage: -10.31 },
+        { year: 2014, percentage: -1.80 },
+        { year: 2013, percentage: -28.04 },
+        { year: 2012, percentage: 7.02 },
+        { year: 2011, percentage: 10.01 },
+        { year: 2010, percentage: 29.79 },
+        { year: 2009, percentage: 24.53 },
+        { year: 2008, percentage: 5.35 },
+        { year: 2007, percentage: 30.97 },
+        { year: 2006, percentage: 23.04 },
+        { year: 2005, percentage: 18.23 },
+        { year: 2004, percentage: 4.85 },
+        { year: 2003, percentage: 19.89 },
+        { year: 2002, percentage: 25.57 },
+        { year: 2001, percentage: 0.75 },
+        { year: 2000, percentage: -5.44 },
+        { year: 1999, percentage: 0.85 },
+        { year: 1998, percentage: -0.83 },
+        { year: 1997, percentage: -21.41 },
+        { year: 1996, percentage: -4.59 },
+        { year: 1995, percentage: 0.98 },
+        { year: 1994, percentage: -2.17 },
+        { year: 1993, percentage: 17.68 },
+        { year: 1992, percentage: -5.73 },
+        { year: 1991, percentage: -8.56 },
+        { year: 1990, percentage: -3.11 },
+        { year: 1989, percentage: -2.84 },
+        { year: 1988, percentage: -15.26 },
+        { year: 1987, percentage: 24.53 },
+        { year: 1986, percentage: 18.96 },
+        { year: 1985, percentage: 6.0 },
+        { year: 1984, percentage: -19.38 },
+        { year: 1983, percentage: -16.31 },
+        { year: 1982, percentage: 14.94 },
+        { year: 1981, percentage: -32.6 },
+        { year: 1980, percentage: 15.19 },
+        { year: 1979, percentage: 126.55 },
+        { year: 1978, percentage: 37.01 },
+        { year: 1977, percentage: 22.64 },
+        { year: 1976, percentage: -4.1 },
+        { year: 1975, percentage: -24.8 },
+        { year: 1974, percentage: 66.15 },
+        { year: 1973, percentage: 72.96 },
+        { year: 1972, percentage: 48.75 },
+        { year: 1971, percentage: 16.72 },
+        { year: 1970, percentage: 6.19 },
+        { year: 1969, percentage: -15.99 },
+        { year: 1968, percentage: 11.14 },
+    ];
+    for (const returnData of goldReturns) {
+        const existing = await db
+        .query("historicalReturns")
+        .filter((q) => q.eq(q.field("assetName"), "Gold"))
+        .filter((q) => q.eq(q.field("returnYear"), returnData.year))
+        .collect();
+
+        if (existing.length === 0) {
+            await db.insert("historicalReturns", {
+                assetName: "Gold",
+                assetType: "Gold",
+                returnYear: returnData.year,
+                returnAmount: returnData.percentage,
+                lastUpdated: new Date().toISOString(),
+            });
+        }
     }
 
   return "Historical returns seeded successfully.";

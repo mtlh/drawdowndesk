@@ -81,6 +81,7 @@ export default function MonteCarloSimulator() {
               <SelectGroup>
                 <SelectLabel>Asset</SelectLabel>
                 <SelectItem value="FTSE Global All Cap">FTSE Global All Cap</SelectItem>
+                <SelectItem value="Gold">Gold</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
