@@ -46,4 +46,12 @@ export default defineSchema({
         lastUpdated: v.optional(v.string()),
     }).index("by_asset", ["taxYearId", "assetType"]),
 
+    // Historical Returns for monte carlo simulations
+    historicalReturns: defineTable({
+        assetName: v.string(),                       // "MSCI All Cap", "S&P 500", "FTSE 100", etc.
+        assetType: v.string(),                       // "Stock", "Bond", etc.
+        returnYear: v.number(),                      // e.g., 2025
+        returnAmount: v.float64(),                   // e.g., 6.5%
+        lastUpdated: v.optional(v.string()),
+    }).index("by_asset", ["assetName", "assetType"]),
 });
