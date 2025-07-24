@@ -58,6 +58,8 @@ export default function MonteCarloSimulator() {
             className="w-full p-2 border rounded-md bg-card"
             defaultValue={20}
             step={1}
+            min={1}
+            max={55}
             onBlur={(e) => {
               const value = parseFloat(e.target.value);
               if (!isNaN(value)) {
@@ -70,7 +72,7 @@ export default function MonteCarloSimulator() {
           <label className="block mb-2 font-medium text-sm text-muted-foreground">Asset</label>
           <Select onValueChange={(value) => setAssetName(value)} defaultValue="FTSE Global All Cap">
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select a fruit" />
+              <SelectValue placeholder="Select an asset" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
