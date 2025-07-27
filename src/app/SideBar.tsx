@@ -62,12 +62,12 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup className="gap-4">
           <SidebarGroupLabel>
-            <h2 className="flex items-center gap-2 text-xl font-bold">
+            <Link className="flex items-center gap-2 text-xl font-bold" href={"/"}>
               <span>
                 <Image src={favicon} alt="Drawdown Desk" width={24} height={24} />
               </span>
               Drawdown Desk
-            </h2>
+            </Link>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>

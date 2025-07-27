@@ -28,13 +28,13 @@ export default function Home() {
               height={40}
               className="mx-auto mb-4"
             />
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">
+            <h2 className="text-4xl font-bold mb-4">
               Professional Financial Planning & Analysis
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto mb-8">
-              Comprehensive tools for retirement planning, wealth management, and financial forecasting. Make
-              informed decisions with advanced modeling and simulation capabilities.
-            </p>
+            <h4 className="text-lg max-w-3xl mx-auto mb-8 italic">
+              Comprehensive tooling for retirement planning, wealth management, and financial forecasting. Make
+              informed decisions with advanced modeling and simulation capabilities with Drawdown Desk today!
+            </h4>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Unauthenticated>
                 <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => void signIn("google", {redirectTo: redirectTo})}>
@@ -55,7 +55,7 @@ export default function Home() {
           </div>
 
           {/* Quick Actions */}
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <Card>
             <CardHeader>
               <CardTitle className="text-center text-2xl">Ready to Start Planning?</CardTitle>
               <CardDescription className="text-center text-lg">
