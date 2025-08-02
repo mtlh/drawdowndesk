@@ -38,8 +38,8 @@ const items = [
     icon: LineChartIcon,
   },
   {
-    title: "One off Cashflow",
-    url: "/one-off-cashflow",
+    title: "One off Capital Gain Calculator",
+    url: "/one-off-cgt",
     icon: DollarSign,
   },
   {

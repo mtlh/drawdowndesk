@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Calculator, PoundSterling, TrendingUp, Calendar } from "lucide-react"
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
 
 // UK Tax rates for 2023-24
 const TAX_RATES = {
@@ -41,6 +43,10 @@ interface TaxCalculation {
 }
 
 export default function OneOffCashflow() {
+
+  // Get current tax data
+  const TAX_RATES = useQuery(api.getTaxYearInfo.getTaxYearInfo, {});
+
   const [data, setData] = useState<WithdrawalData>({
     pension: 0,
     capitalGains: 0,
@@ -68,35 +74,72 @@ export default function OneOffCashflow() {
   })
 
   const calculateIncomeTax = (taxableIncome: number): number => {
-    if (taxableIncome <= TAX_RATES.personalAllowance) return 0
 
-    const taxableAmount = taxableIncome - TAX_RATES.personalAllowance
+    if (!TAX_RATES || !TAX_RATES.personalAllowance || !TAX_RATES.bands) {
+      return 0
+    };
+
+    // console.log(TAX_RATES.bands, taxableIncome);
+
+    if (taxableIncome <= TAX_RATES.personalAllowance?.amount) return 0
+
+    const taxableAmount = taxableIncome - TAX_RATES.personalAllowance.amount
     let tax = 0
 
-    if (taxableAmount <= TAX_RATES.basicRateThreshold - TAX_RATES.personalAllowance) {
-      tax = taxableAmount * TAX_RATES.basicRate
-    } else if (taxableAmount <= TAX_RATES.higherRateThreshold - TAX_RATES.personalAllowance) {
-      tax = (TAX_RATES.basicRateThreshold - TAX_RATES.personalAllowance) * TAX_RATES.basicRate
-      tax += (taxableAmount - (TAX_RATES.basicRateThreshold - TAX_RATES.personalAllowance)) * TAX_RATES.higherRate
+    // console.log(taxableAmount, TAX_RATES.bands, TAX_RATES.personalAllowance);
+
+    const bands = TAX_RATES.bands;
+    // Basic rate
+    if (taxableAmount <= bands[0].bandStartAmount) {
+      tax = taxableAmount * (bands[0].taxRatePercent / 100);
+
+    // Higher rate
+    } else if (taxableAmount <= bands[1].bandStartAmount) {
+      tax += bands[0].bandStartAmount * (bands[0].taxRatePercent / 100);
+      tax += (taxableAmount - bands[0].bandStartAmount) * (bands[1].taxRatePercent / 100);
+
+    // Additional rate
     } else {
-      tax = (TAX_RATES.basicRateThreshold - TAX_RATES.personalAllowance) * TAX_RATES.basicRate
-      tax += (TAX_RATES.higherRateThreshold - TAX_RATES.basicRateThreshold) * TAX_RATES.higherRate
-      tax += (taxableAmount - (TAX_RATES.higherRateThreshold - TAX_RATES.personalAllowance)) * TAX_RATES.additionalRate
+      tax += bands[0].bandStartAmount * (bands[0].taxRatePercent / 100);
+      tax += (bands[1].bandStartAmount - bands[0].bandStartAmount) * (bands[1].taxRatePercent / 100);
+      tax += (taxableAmount - bands[1].bandStartAmount) * (bands[2].taxRatePercent / 100);
     }
+
+    // console.log(tax);
 
     return tax
   }
 
   const calculateCapitalGainsTax = (gains: number, totalIncome: number): number => {
-    if (gains <= TAX_RATES.capitalGainsAllowance) return 0
 
-    const taxableGains = gains - TAX_RATES.capitalGainsAllowance
-    const isHigherRateTaxpayer = totalIncome > TAX_RATES.basicRateThreshold
+    if (!TAX_RATES || !TAX_RATES.capitalGainsTax || !TAX_RATES.bands) {
+      return 0
+    };
 
-    return taxableGains * (isHigherRateTaxpayer ? TAX_RATES.capitalGainsHigherRate : TAX_RATES.capitalGainsBasicRate)
+    // console.log(gains, TAX_RATES.capitalGainsTax);
+
+    if (gains <= TAX_RATES.capitalGainsTax.annualExemptAmount) return 0
+
+    const taxableGains = gains - TAX_RATES.capitalGainsTax.annualExemptAmount;
+
+    const isHigherRateTaxpayer = totalIncome > TAX_RATES.bands[0].bandStartAmount;
+
+    return taxableGains * (isHigherRateTaxpayer ? (TAX_RATES.capitalGainsTax.higherRatePercent / 100) : (TAX_RATES.capitalGainsTax.basicRatePercent / 100))
   }
 
   const calculateTax = (years: number): TaxCalculation => {
+    
+    if (!TAX_RATES || !TAX_RATES.personalAllowance || !TAX_RATES.bands || !TAX_RATES.capitalGainsTax) {
+      return {
+        totalWithdrawal: 0,
+        taxableAmount: 0, // TODO: this is wrong
+        incomeTax: 0, // TODO: this is wrong
+        capitalGainsTax: 0, // TODO: this is wrong
+        totalTax: 0, // TODO: this is wrong
+        netAmount: 0, // TODO: this is wrong
+      }
+    };
+
     const {
         pension = 0,
         capitalGains = 0,
@@ -104,8 +147,8 @@ export default function OneOffCashflow() {
         currentIncome = 0,
     } = data;
 
-    console.log(pension, capitalGains, inheritance);
-    console.log(years);
+    // console.log(pension, capitalGains, inheritance);
+    // console.log(years);
 
     const pensionPerYear = pension / years;
     const capitalGainsPerYear = capitalGains / years;
@@ -116,10 +159,7 @@ export default function OneOffCashflow() {
 
     const totalIncomePerYear = currentIncome + pensionTaxable;
 
-    let incomeTaxPerYear = calculateIncomeTax(totalIncomePerYear);
-    if (currentIncome > 0) {
-        incomeTaxPerYear -= calculateIncomeTax(currentIncome);
-    }
+    const incomeTaxPerYear = calculateIncomeTax(totalIncomePerYear);
 
     const capitalGainsTaxPerYear = calculateCapitalGainsTax(capitalGainsPerYear, totalIncomePerYear);
 
@@ -127,11 +167,12 @@ export default function OneOffCashflow() {
     const totalCapitalGainsTax = capitalGainsTaxPerYear * years;
     const totalTax = totalIncomeTax + totalCapitalGainsTax;
 
-    const totalWithdrawal = pension + capitalGains + inheritance;
+    const totalWithdrawal = pension + capitalGains + inheritance + currentIncome;
+    
     const taxableAmount =
-        pensionTaxable * years + Math.max(0, capitalGains - TAX_RATES.capitalGainsAllowance * years);
+        pensionTaxable * years + Math.max(0, capitalGains - TAX_RATES.capitalGainsTax.annualExemptAmount * years);
 
-    console.log(totalIncomeTax, totalCapitalGainsTax, totalTax);
+    console.log(totalIncomeTax, totalCapitalGainsTax, totalTax, TAX_RATES, data);
 
     return {
             totalWithdrawal,
@@ -146,9 +187,9 @@ export default function OneOffCashflow() {
   useEffect(() => {
     setSingleYearCalc(calculateTax(1))
     setMultiYearCalc(calculateTax(data.yearsToSpread))
-  }, [data])
+  }, [data, TAX_RATES])
 
-  const savings = singleYearCalc.totalTax - multiYearCalc.totalTax
+  const savings = singleYearCalc.capitalGainsTax - multiYearCalc.capitalGainsTax
 
   return (
     <div className="font-sans grid grid-rows-[auto_1fr_auto] min-h-screen p-8 gap-8  bg-background">
@@ -156,10 +197,10 @@ export default function OneOffCashflow() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center justify-center gap-2">
             <Calculator className="h-8 w-8 text-blue-600" />
-            One-off Cashflow  Calculator
+            One-off Captial Gain Calculator
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Calculate tax implications of withdrawing lump sums from pensions, capital gains, and inheritance. See how
+            Calculate tax implications of withdrawing lump sums which are subject to capital gains tax. See how
             spreading over several years can reduce your overall tax burden.
           </p>
         </div>
@@ -192,7 +233,7 @@ export default function OneOffCashflow() {
 
                 <Separator />
 
-                <div>
+                {/* <div>
                   <Label htmlFor="pension">Pension Withdrawal (£)</Label>
                   <Input
                     id="pension"
@@ -206,7 +247,7 @@ export default function OneOffCashflow() {
                     }}
                   />
                   <p className="text-sm text-gray-500 mt-1">25% tax-free, 75% taxed as income</p>
-                </div>
+                </div> */}
 
                 <div>
                   <Label htmlFor="capitalGains">Capital Gains (£)</Label>
@@ -221,10 +262,12 @@ export default function OneOffCashflow() {
                         setData({ ...data, capitalGains: value === "" ? undefined : Number(value) });
                     }}
                   />
-                  <p className="text-sm text-gray-500 mt-1">From shares, property, etc. £6,000 annual allowance</p>
+                  {TAX_RATES?.capitalGainsTax && TAX_RATES.capitalGainsTax.annualExemptAmount > 0 && 
+                    <p className="text-sm text-gray-500 mt-1">From shares. £{TAX_RATES.capitalGainsTax.annualExemptAmount.toLocaleString()} annual allowance</p>
+                  }
                 </div>
 
-                <div>
+                {/* <div>
                   <Label htmlFor="inheritance">Inheritance (£)</Label>
                   <Input
                     id="inheritance"
@@ -237,7 +280,7 @@ export default function OneOffCashflow() {
                     }}
                   />
                   <p className="text-sm text-gray-500 mt-1">Usually tax-free for beneficiaries</p>
-                </div>
+                </div> */}
 
                 <Separator />
 
@@ -282,21 +325,21 @@ export default function OneOffCashflow() {
                 <TabsContent value="comparison" className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-red-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Single Year Tax</p>
-                      <p className="text-2xl font-bold text-red-600">£{singleYearCalc.totalTax.toLocaleString()}</p>
+                      <p className="text-sm text-gray-600">Single Year CGT</p>
+                      <p className="text-2xl font-bold text-red-600">£{singleYearCalc.capitalGainsTax.toLocaleString()}</p>
                     </div>
                     <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <p className="text-sm text-gray-600">{data.yearsToSpread}-Year Tax</p>
-                      <p className="text-2xl font-bold text-green-600">£{multiYearCalc.totalTax.toLocaleString()}</p>
+                      <p className="text-sm text-gray-600">{data.yearsToSpread}-Year CGT</p>
+                      <p className="text-2xl font-bold text-green-600">£{multiYearCalc.capitalGainsTax.toLocaleString()}</p>
                     </div>
                   </div>
 
                   {savings > 0 && (
                     <div className="text-center p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-                      <p className="text-sm text-gray-600">Tax Savings</p>
+                      <p className="text-sm text-gray-600">CGT Savings</p>
                       <p className="text-3xl font-bold text-blue-600">£{savings.toLocaleString()}</p>
                       <Badge variant="secondary" className="mt-2">
-                        {((savings / singleYearCalc.totalTax) * 100).toFixed(1)}% reduction
+                        {((savings / singleYearCalc.capitalGainsTax) * 100).toFixed(1)}% reduction
                       </Badge>
                     </div>
                   )}
@@ -357,10 +400,10 @@ export default function OneOffCashflow() {
                         <span>Total Withdrawal:</span>
                         <span>£{multiYearCalc.totalWithdrawal.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between">
+                      {/* <div className="flex justify-between">
                         <span>Annual Pension:</span>
                         {data.pension && <span>£{(data.pension / data.yearsToSpread).toLocaleString()}</span>}
-                      </div>
+                      </div> */}
                       <div className="flex justify-between">
                         <span>Annual Capital Gains:</span>
                         {data.capitalGains && <span>£{(data.capitalGains / data.yearsToSpread).toLocaleString()}</span>}
@@ -392,59 +435,59 @@ export default function OneOffCashflow() {
         </div>
 
         {/* Tax Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>UK Tax Information (2023-24)</CardTitle>
-            <CardDescription>Current tax rates and allowances used in calculations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold mb-2">Income Tax</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Personal Allowance:</span>
-                    <span>£{TAX_RATES.personalAllowance.toLocaleString()}</span>
+        {
+          TAX_RATES && TAX_RATES.taxYear && TAX_RATES.personalAllowance && TAX_RATES.bands && TAX_RATES.capitalGainsTax &&
+          <Card>
+            <CardHeader>
+              <CardTitle>UK Tax Information ({TAX_RATES.taxYear.taxYear})</CardTitle>
+              <CardDescription>Current tax rates and allowances used in calculations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="gap-6">
+                <div>
+                  <h4 className="font-semibold mb-2">Income Tax</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Personal Allowance:</span>
+                      <span>£{TAX_RATES.personalAllowance.amount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Basic Rate ({TAX_RATES.bands[0].taxRatePercent}%):</span>
+                      <span>
+                        £{TAX_RATES.bands[0].bandStartAmount.toLocaleString()} - £{TAX_RATES.bands[0].bandEndAmount?.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Higher Rate ({TAX_RATES.bands[1].taxRatePercent}%):</span>
+                      <span>
+                        £{TAX_RATES.bands[1].bandStartAmount.toLocaleString()} - £{TAX_RATES.bands[1].bandEndAmount?.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Additional Rate ({TAX_RATES.bands[2].taxRatePercent}%):</span>
+                      <span>Over £{TAX_RATES.bands[2].bandStartAmount.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Basic Rate (20%):</span>
-                    <span>
-                      £{TAX_RATES.personalAllowance.toLocaleString()} - £{TAX_RATES.basicRateThreshold.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Higher Rate (40%):</span>
-                    <span>
-                      £{TAX_RATES.basicRateThreshold.toLocaleString()} - £
-                      {TAX_RATES.higherRateThreshold.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Additional Rate (45%):</span>
-                    <span>Over £{TAX_RATES.higherRateThreshold.toLocaleString()}</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold my-2">Capital Gains Tax</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Annual Exempt Amount:</span>
+                      <span>£{TAX_RATES.capitalGainsTax.annualExemptAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Basic Rate ({TAX_RATES.capitalGainsTax.basicRatePercent}%)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Higher Rate ({TAX_RATES.capitalGainsTax.higherRatePercent}%)</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-2">Capital Gains Tax</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Annual Allowance:</span>
-                    <span>£{TAX_RATES.capitalGainsAllowance.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Basic Rate:</span>
-                    <span>{TAX_RATES.capitalGainsBasicRate * 100}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Higher Rate:</span>
-                    <span>{TAX_RATES.capitalGainsHigherRate * 100}%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
+            </CardContent>
         </Card>
+        }
       </div>
     </div>
   )

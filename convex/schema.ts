@@ -44,7 +44,7 @@ export default defineSchema({
         basicRatePercent: v.float64(),               // e.g., 10%
         higherRatePercent: v.float64(),              // e.g., 20%
         lastUpdated: v.optional(v.string()),
-    }).index("by_asset", ["taxYearId", "assetType"]),
+    }).index("by_taxYear", ["taxYearId"]),
 
     // Historical Returns for monte carlo simulations
     historicalReturns: defineTable({
