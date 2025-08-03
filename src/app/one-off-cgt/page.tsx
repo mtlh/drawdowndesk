@@ -49,7 +49,7 @@ export default function OneOffCashflow() {
 
   const [data, setData] = useState<WithdrawalData>({
     pension: 0,
-    capitalGains: 10000,
+    capitalGains: 100000,
     inheritance: 0,
     currentIncome: 30000,
     yearsToSpread: 3,
