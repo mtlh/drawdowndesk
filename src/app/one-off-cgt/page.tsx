@@ -111,21 +111,32 @@ export default function OneOffCashflow() {
   }
 
   const calculateCapitalGainsTax = (gains: number, totalIncome: number): number => {
-
     if (!TAX_RATES || !TAX_RATES.capitalGainsTax || !TAX_RATES.bands) {
-      return 0
-    };
+      return 0;
+    }
 
-    // console.log(gains, TAX_RATES.capitalGainsTax);
+    const { annualExemptAmount, basicRatePercent, higherRatePercent } = TAX_RATES.capitalGainsTax;
+    const basicRateBand = TAX_RATES.bands[0]; // Assuming first band is basic rate
 
-    if (gains <= TAX_RATES.capitalGainsTax.annualExemptAmount) return 0
+    if (gains <= annualExemptAmount) return 0;
 
-    const taxableGains = gains - TAX_RATES.capitalGainsTax.annualExemptAmount;
+    const taxableGains = gains - annualExemptAmount;
 
-    const isHigherRateTaxpayer = totalIncome > TAX_RATES.bands[0].bandStartAmount;
+    // Calculate how much of the basic rate band remains after total income
+    let remainingBasicRateBand = 0;
+    if (basicRateBand.bandEndAmount) {
+      remainingBasicRateBand = Math.max(0, basicRateBand.bandEndAmount - totalIncome);
+    }
 
-    return taxableGains * (isHigherRateTaxpayer ? (TAX_RATES.capitalGainsTax.higherRatePercent / 100) : (TAX_RATES.capitalGainsTax.basicRatePercent / 100))
-  }
+    // Gains taxed at basic rate
+    const basicRateGains = Math.min(taxableGains, remainingBasicRateBand);
+    const higherRateGains = taxableGains - basicRateGains;
+
+    const basicTax = basicRateGains * (basicRatePercent / 100);
+    const higherTax = higherRateGains * (higherRatePercent / 100);
+
+    return basicTax + higherTax;
+};
 
   const calculateTax = (years: number): TaxCalculation => {
     
@@ -190,6 +201,75 @@ export default function OneOffCashflow() {
   }, [data, TAX_RATES])
 
   const savings = singleYearCalc.capitalGainsTax - multiYearCalc.capitalGainsTax
+
+  let singleyearcapitalGainsBreakdown = null;
+
+  if (data.capitalGains &&
+    data.currentIncome &&
+    TAX_RATES?.capitalGainsTax?.annualExemptAmount &&
+    TAX_RATES?.bands?.[0].bandEndAmount) {
+
+    const taxableGains = data.capitalGains - TAX_RATES.capitalGainsTax.annualExemptAmount;
+    if (taxableGains > 0) {
+      const basicBandEnd = TAX_RATES.bands[0].bandEndAmount;
+      const remainingBasicBand = Math.max(0, basicBandEnd - data.currentIncome);
+
+      const basicRateGains = Math.min(taxableGains, remainingBasicBand);
+      const higherRateGains = taxableGains - basicRateGains;
+
+      singleyearcapitalGainsBreakdown = (
+        <>
+          <div className="flex justify-between">
+            <span>Basic rate ({TAX_RATES.capitalGainsTax.basicRatePercent}%):</span>
+            <span>£{basicRateGains.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Higher rate ({TAX_RATES.capitalGainsTax.higherRatePercent}%):</span>
+            <span>£{higherRateGains.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+          </div>
+        </>
+      );
+    }
+  }
+
+  let multicapitalGainsBreakdown = null;
+
+  if (data.capitalGains &&
+    data.currentIncome &&
+    TAX_RATES?.capitalGainsTax?.annualExemptAmount &&
+    TAX_RATES?.bands?.[0].bandEndAmount) {
+
+    const annualGains = data.capitalGains / data.yearsToSpread;
+    const taxableGains = annualGains - TAX_RATES.capitalGainsTax.annualExemptAmount;
+
+    if (taxableGains > 0) {
+      const basicBandEnd = TAX_RATES.bands[0].bandEndAmount;
+      const remainingBasicBand = Math.max(0, basicBandEnd - data.currentIncome);
+
+      const basicRateGains = Math.min(taxableGains, remainingBasicBand);
+      const higherRateGains = taxableGains - basicRateGains;
+
+      multicapitalGainsBreakdown = (
+        <>
+          <div className="flex justify-between">
+            <span>Total Basic rate ({TAX_RATES.capitalGainsTax.basicRatePercent}%):</span>
+            <span>
+              £{(basicRateGains * data.yearsToSpread).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>Total Higher rate ({TAX_RATES.capitalGainsTax.higherRatePercent}%):</span>
+            <span>
+              £{(higherRateGains * data.yearsToSpread).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </span>
+          </div>
+        </>
+      );
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      multicapitalGainsBreakdown = <span>No taxable gains</span>;
+    }
+  }
 
   return (
     <div className="font-sans grid grid-rows-[auto_1fr_auto] min-h-screen p-8 gap-8  bg-background">
@@ -355,7 +435,7 @@ export default function OneOffCashflow() {
                     </div>
                     <div className="flex justify-between">
                       <span>Net Amount ({data.yearsToSpread} Years):</span>
-                      <span className="font-semibold text-green-600">£{multiYearCalc.netAmount.toLocaleString()}</span>
+                      <span className="font-semibold text-green-600">£{(multiYearCalc.netAmount + ((multiYearCalc.incomeTax / data.yearsToSpread) * (data.yearsToSpread-1))).toLocaleString()}</span>
                     </div>
                   </div>
                 </TabsContent>
@@ -365,15 +445,21 @@ export default function OneOffCashflow() {
                     <h4 className="font-semibold">Single Year Withdrawal</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span>Total Withdrawal:</span>
+                        <span>Overall Income:</span>
                         <span>£{singleYearCalc.totalWithdrawal.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Income Tax:</span>
                         <span>£{singleYearCalc.incomeTax.toLocaleString()}</span>
                       </div>
+                      <Separator />
                       <div className="flex justify-between">
-                        <span>Capital Gains Tax:</span>
+                        <span>Capital Gain:</span>
+                        <span>£{data.capitalGains}</span>
+                      </div>
+                      {singleyearcapitalGainsBreakdown}
+                      <div className="flex justify-between">
+                        <span>Final Capital Gains Tax:</span>
                         <span>£{singleYearCalc.capitalGainsTax.toLocaleString()}</span>
                       </div>
                       <Separator />
@@ -397,8 +483,11 @@ export default function OneOffCashflow() {
                     </h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span>Total Withdrawal:</span>
-                        <span>£{multiYearCalc.totalWithdrawal.toLocaleString()}</span>
+                        <span>Overall Income:</span>
+                        { data.currentIncome && 
+                          data.capitalGains && 
+                          <span>£{((data.currentIncome * data.yearsToSpread) + data.capitalGains).toLocaleString()}</span>
+                        }
                       </div>
                       {/* <div className="flex justify-between">
                         <span>Annual Pension:</span>
@@ -408,14 +497,15 @@ export default function OneOffCashflow() {
                         <span>Annual Capital Gains:</span>
                         {data.capitalGains && <span>£{(data.capitalGains / data.yearsToSpread).toLocaleString()}</span>}
                       </div>
+                      {multicapitalGainsBreakdown}
                       <Separator />
-                      <div className="flex justify-between">
-                        <span>Total Income Tax:</span>
-                        <span>£{multiYearCalc.incomeTax.toLocaleString()}</span>
-                      </div>
                       <div className="flex justify-between">
                         <span>Total CGT:</span>
                         <span>£{multiYearCalc.capitalGainsTax.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total Income Tax:</span>
+                        <span>£{multiYearCalc.incomeTax.toLocaleString()}</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between font-semibold">
@@ -424,7 +514,12 @@ export default function OneOffCashflow() {
                       </div>
                       <div className="flex justify-between font-semibold">
                         <span>Net Amount:</span>
-                        <span className="text-green-600">£{multiYearCalc.netAmount.toLocaleString()}</span>
+                        { data.currentIncome && 
+                          data.capitalGains && 
+                          <span className="text-green-600">£{
+                            ((data.currentIncome * data.yearsToSpread) + data.capitalGains - multiYearCalc.totalTax).toLocaleString()
+                          }</span>
+                        }
                       </div>
                     </div>
                   </div>
