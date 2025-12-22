@@ -19,7 +19,7 @@ export const getUserPortfolio = query({
             const holdings = await ctx.db
             .query("holdings")
             .withIndex("by_portfolio", q =>
-                q.eq("userId", userId).eq("portfolioId", p.portfolioId)
+                q.eq("userId", userId).eq("portfolioId", p._id)
             )
             .collect();
 
