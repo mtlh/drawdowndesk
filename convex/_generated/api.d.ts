@@ -18,9 +18,11 @@ import type * as calculators_getTaxYearInfo from "../calculators/getTaxYearInfo.
 import type * as calculators_runMonteCarlo from "../calculators/runMonteCarlo.js";
 import type * as calculators_seedHistoricalReturns from "../calculators/seedHistoricalReturns.js";
 import type * as http from "../http.js";
+import type * as portfolio_deleteUserHoldings from "../portfolio/deleteUserHoldings.js";
+import type * as portfolio_deleteUserPortfolio from "../portfolio/deleteUserPortfolio.js";
 import type * as portfolio_getUserPortfolio from "../portfolio/getUserPortfolio.js";
 import type * as portfolio_updateUserHoldings from "../portfolio/updateUserHoldings.js";
-import type * as portfolio_updateUserPorfolio from "../portfolio/updateUserPorfolio.js";
+import type * as portfolio_updateUserPortfolio from "../portfolio/updateUserPortfolio.js";
 import type * as tax_runTaxQuery from "../tax/runTaxQuery.js";
 import type * as tax_seedTaxYear from "../tax/seedTaxYear.js";
 
@@ -38,9 +40,11 @@ declare const fullApi: ApiFromModules<{
   "calculators/runMonteCarlo": typeof calculators_runMonteCarlo;
   "calculators/seedHistoricalReturns": typeof calculators_seedHistoricalReturns;
   http: typeof http;
+  "portfolio/deleteUserHoldings": typeof portfolio_deleteUserHoldings;
+  "portfolio/deleteUserPortfolio": typeof portfolio_deleteUserPortfolio;
   "portfolio/getUserPortfolio": typeof portfolio_getUserPortfolio;
   "portfolio/updateUserHoldings": typeof portfolio_updateUserHoldings;
-  "portfolio/updateUserPorfolio": typeof portfolio_updateUserPorfolio;
+  "portfolio/updateUserPortfolio": typeof portfolio_updateUserPortfolio;
   "tax/runTaxQuery": typeof tax_runTaxQuery;
   "tax/seedTaxYear": typeof tax_seedTaxYear;
 }>;

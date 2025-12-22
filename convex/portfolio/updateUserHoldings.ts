@@ -27,7 +27,6 @@ export const updateUserHolding = mutation({
       .withIndex("by_portfolio", q =>
         q.eq("userId", userId)
          .eq("portfolioId", args.portfolioId)
-         .eq("symbol", args.symbol)
       )
       .first();
 

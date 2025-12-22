@@ -19,8 +19,10 @@ type PortfolioExpanded = {
 
 export default function HoldingsPage() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
-  const updatePortfolioMutation = useMutation(api.portfolio.updateUserPorfolio.updateUserPortfolio);
+  const updatePortfolioMutation = useMutation(api.portfolio.updateUserPortfolio.updateUserPortfolio);
   const updateHoldingMutation = useMutation(api.portfolio.updateUserHoldings.updateUserHolding);
+  const deletePortfolioMutation = useMutation(api.portfolio.deleteUserPortfolio.deleteUserPortfolio);
+  const deleteHoldingsMutation = useMutation(api.portfolio.deleteUserHoldings.deleteUserHoldings);
 
   const [portfolios, setPortfolios] = useState<PortfolioExpanded[]>([]);
   const [holdings, setHoldings] = useState<Holding[]>([]);
@@ -40,7 +42,7 @@ export default function HoldingsPage() {
       const initialPortfolios = getPortfolioData.map((p) => ({
         portfolio: p,
         id: p._id,
-        isExpanded: false,
+        isExpanded: true,
       }));
 
       setPortfolios(initialPortfolios);
@@ -167,14 +169,44 @@ export default function HoldingsPage() {
   }
 
   // Delete holding
-  const deleteHolding = (id: Id<"holdings"> | undefined) => {
-    setHoldings(holdings.filter((h) => h._id !== id))
+  const deleteHolding = async (id: Id<"holdings"> | undefined) => {
+    if (!id) return;
+
+    if (!confirm("Are you sure you want to delete this holding?")) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await deleteHoldingsMutation({ holdingId: id as Id<"holdings"> });
+      setHoldings(holdings.filter((h) => h._id !== id))
+    } catch (error) {
+      console.error("Failed to delete holding:", error);
+      alert("Failed to delete holding. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   // Delete portfolio
-  const deletePortfolio = (portfolioId: string) => {
-    setPortfolios(portfolios.filter((p) => p.id !== portfolioId))
-    setHoldings(holdings.filter((h) => h.portfolioId !== portfolioId))
+  const deletePortfolio = async (portfolioId: string) => {
+    if (!confirm("Are you sure you want to delete this portfolio and all its holdings?")) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Delete the portfolio itself
+      await deletePortfolioMutation({ id: portfolioId as Id<"portfolios"> });
+
+      setPortfolios(portfolios.filter((p) => p.id !== portfolioId))
+      setHoldings(holdings.filter((h) => h.portfolioId !== portfolioId))
+    } catch (error) {
+      console.error("Failed to delete portfolio:", error);
+      alert("Failed to delete portfolio. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   // Update portfolio name
