@@ -14,13 +14,15 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as auth from "../auth.js";
-import type * as getTaxYearInfo from "../getTaxYearInfo.js";
+import type * as calculators_getTaxYearInfo from "../calculators/getTaxYearInfo.js";
+import type * as calculators_runMonteCarlo from "../calculators/runMonteCarlo.js";
+import type * as calculators_seedHistoricalReturns from "../calculators/seedHistoricalReturns.js";
 import type * as http from "../http.js";
-import type * as runMonteCarlo from "../runMonteCarlo.js";
-import type * as runTaxQuery from "../runTaxQuery.js";
-import type * as seedHistoricalReturns from "../seedHistoricalReturns.js";
-import type * as seedTaxYear from "../seedTaxYear.js";
-import type * as tasks from "../tasks.js";
+import type * as portfolio_getUserPortfolio from "../portfolio/getUserPortfolio.js";
+import type * as portfolio_updateUserHoldings from "../portfolio/updateUserHoldings.js";
+import type * as portfolio_updateUserPorfolio from "../portfolio/updateUserPorfolio.js";
+import type * as tax_runTaxQuery from "../tax/runTaxQuery.js";
+import type * as tax_seedTaxYear from "../tax/seedTaxYear.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -32,13 +34,15 @@ import type * as tasks from "../tasks.js";
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
-  getTaxYearInfo: typeof getTaxYearInfo;
+  "calculators/getTaxYearInfo": typeof calculators_getTaxYearInfo;
+  "calculators/runMonteCarlo": typeof calculators_runMonteCarlo;
+  "calculators/seedHistoricalReturns": typeof calculators_seedHistoricalReturns;
   http: typeof http;
-  runMonteCarlo: typeof runMonteCarlo;
-  runTaxQuery: typeof runTaxQuery;
-  seedHistoricalReturns: typeof seedHistoricalReturns;
-  seedTaxYear: typeof seedTaxYear;
-  tasks: typeof tasks;
+  "portfolio/getUserPortfolio": typeof portfolio_getUserPortfolio;
+  "portfolio/updateUserHoldings": typeof portfolio_updateUserHoldings;
+  "portfolio/updateUserPorfolio": typeof portfolio_updateUserPorfolio;
+  "tax/runTaxQuery": typeof tax_runTaxQuery;
+  "tax/seedTaxYear": typeof tax_seedTaxYear;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

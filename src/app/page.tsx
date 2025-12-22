@@ -1,98 +1,303 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, TrendingUp, Calculator, Target } from "lucide-react";
-import { redirect } from "next/dist/client/components/redirect";
-import React from "react";
-import favicon from "../app/favicon.ico";
-import Image from "next/image";
-import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { TrendingUp, TrendingDown, Wallet, PieChartIcon, BarChart3 } from "lucide-react"
+import {
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts"
+import { calculatePortfolioSummary, getAccountAllocationData, generateMockPerformanceData, normalizePortfolios, calculateAssetTypeAllocation } from "../lib/calculatePortfolioOverview"
+import { api } from "../../convex/_generated/api"
+import { useQuery } from "convex/react"
+import { isError, isPortfolioArray } from "@/types/portfolios"
 
-export default function Home() {
-  const { signIn } = useAuthActions();
-  const redirectTo = typeof window !== "undefined" ? window.location.href : "/";
+// Color palette matching design inspiration
+const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"]
+
+export default function PortfolioOverview() {
+  const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
+
+  if (!getPortfolioData) { return <div>Loading portfolio…</div>; } 
   
+  if (isError(getPortfolioData)) { return <div>Error: {getPortfolioData.error}</div>; } 
+  
+  if (!isPortfolioArray(getPortfolioData)) { return <div>Error: Unexpected response format.</div>; }
+
+  const portfolioSummary = calculatePortfolioSummary(normalizePortfolios(getPortfolioData))
+  const allocationData = getAccountAllocationData(portfolioSummary.portfolios)
+  const performanceData = generateMockPerformanceData(portfolioSummary.totalValue)
+  const assetTypeData = calculateAssetTypeAllocation(portfolioSummary.portfolios)
   return (
-    <div className="font-sans grid grid-rows-[auto_1fr_auto] min-h-screen p-8 gap-8 sm:p-20 bg-background">
-      <div className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Hero Section */}
-          <div className="text-center mb-16">
-            <Image
-              src={favicon}
-              alt="Drawdown Desk"
-              width={40}
-              height={40}
-              className="mx-auto mb-4"
-            />
-            <h2 className="text-4xl font-bold mb-4">
-              Professional Financial Planning & Analysis
-            </h2>
-            <h4 className="text-lg max-w-3xl mx-auto mb-8 italic">
-              Comprehensive tooling for retirement planning, wealth management, and financial forecasting. Make
-              informed decisions with advanced modeling and simulation capabilities with Drawdown Desk today!
-            </h4>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Unauthenticated>
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => void signIn("google", {redirectTo: redirectTo})}>
-                  Get Started
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Unauthenticated>
-              <AuthLoading>
-                <Skeleton />
-              </AuthLoading>
-              <Authenticated>
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => redirect("/cashflow-calculator")}>
-                  Start a cashflow forcast
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Authenticated>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight text-balance">Portfolio Overview</h1>
+            <p className="text-muted-foreground mt-2">Track your investments across all accounts</p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-muted-foreground">Total Portfolio Value</div>
+            <div className="text-4xl font-bold">
+              ${portfolioSummary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            </div>
+            <div
+              className={`flex items-center gap-1 justify-end mt-1 ${portfolioSummary.totalChangePercent >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
+              {portfolioSummary.totalChangePercent >= 0 ? (
+                <TrendingUp className="h-4 w-4" />
+              ) : (
+                <TrendingDown className="h-4 w-4" />
+              )}
+              <span className="font-semibold">
+                ${Math.abs(portfolioSummary.totalChange).toLocaleString("en-US", { minimumFractionDigits: 2 })} (
+                {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
+                {portfolioSummary.totalChangePercent.toFixed(2)}%)
+              </span>
             </div>
           </div>
+        </div>
 
-          {/* Quick Actions */}
-          <Card>
+        {/* Charts Grid */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Portfolio Performance */}
+          <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-center text-2xl">Ready to Start Planning?</CardTitle>
-              <CardDescription className="text-center text-lg">
-                Choose a tool to begin your financial analysis
-              </CardDescription>
+              <CardTitle>Portfolio Performance</CardTitle>
+              <CardDescription>12-month performance history</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Button
-                  variant="outline"
-                  className="h-auto p-4 flex flex-col items-center space-y-2 bg-transparent"
-                  onClick={() => redirect("/cashflow-calculator")}
-                >
-                  <TrendingUp className="w-6 h-6 text-blue-600" />
-                  <span>Start Cashflow Analysis</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-auto p-4 flex flex-col items-center space-y-2 bg-transparent"
-                  onClick={() => redirect("/monte-carlo-simulator")}
-                >
-                  <Calculator className="w-6 h-6 text-purple-600" />
-                  <span>Run Monte Carlo</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-auto p-4 flex flex-col items-center space-y-2 bg-transparent"
-                  onClick={() => redirect("/goal-tracker")}
-                >
-                  <Target className="w-6 h-6 text-red-600" />
-                  <span>Set Financial Goals</span>
-                </Button>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                    formatter={(value: number) => [`$${value.toLocaleString()}`, "Value"]}
+                  />
+                  <Line type="monotone" dataKey="value" stroke="#4F46E5" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Account Allocation */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Allocation</CardTitle>
+              <CardDescription>Distribution by account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={allocationData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name.split(" ")[0]} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {allocationData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                    formatter={(value: number) => [`$${value.toLocaleString()}`, "Value"]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Asset Type Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Asset Distribution</CardTitle>
+              <CardDescription>Breakdown by asset type</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={assetTypeData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `${value}%`} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                    formatter={(value: number) => [`${value}%`, "Allocation"]}
+                  />
+                  <Bar dataKey="value" fill="#4F46E5" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Quick Stats */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Quick Stats</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                    <Wallet className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Total Accounts</div>
+                    <div className="text-2xl font-bold">{portfolioSummary.portfolios.length}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
+                    <PieChartIcon className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Total Holdings</div>
+                    <div className="text-2xl font-bold">
+                      {portfolioSummary.portfolios.reduce((acc, portfolio) => acc + portfolio.holdings.length, 0)}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+                    <BarChart3 className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">YTD Return</div>
+                    <div
+                      className={`text-2xl font-bold ${portfolioSummary.totalChangePercent >= 0 ? "text-green-600" : "text-red-600"}`}
+                    >
+                      {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
+                      {portfolioSummary.totalChangePercent.toFixed(2)}%
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Account Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Holdings</CardTitle>
+            <CardDescription>Detailed view of holdings across all accounts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue={portfolioSummary.portfolios[0]?.id} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                {portfolioSummary.portfolios.map((portfolio) => (
+                  <TabsTrigger key={portfolio.id} value={portfolio.id}>
+                    {portfolio.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {portfolioSummary.portfolios.map((portfolio) => (
+                <TabsContent key={portfolio.id} value={portfolio.id} className="space-y-4">
+                  {/* Account Summary */}
+                  <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold">{portfolio.name}</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{portfolio.holdings.length} holdings</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold">
+                        ${portfolio.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </div>
+                      <div
+                        className={`text-sm font-medium ${portfolio.changePercent >= 0 ? "text-green-600" : "text-red-600"}`}
+                      >
+                        {portfolio.changePercent >= 0 ? "+" : ""}$
+                        {portfolio.change.toLocaleString("en-US", { minimumFractionDigits: 2 })} (
+                        {portfolio.changePercent >= 0 ? "+" : ""}
+                        {portfolio.changePercent.toFixed(2)}%)
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Holdings Table */}
+                  <div className="rounded-lg border">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="px-4 py-3 text-left text-sm font-medium">Symbol</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
+                            <th className="px-4 py-3 text-right text-sm font-medium">Shares</th>
+                            <th className="px-4 py-3 text-right text-sm font-medium">Avg Price</th>
+                            <th className="px-4 py-3 text-right text-sm font-medium">Current Price</th>
+                            <th className="px-4 py-3 text-right text-sm font-medium">Market Value</th>
+                            <th className="px-4 py-3 text-right text-sm font-medium">Gain/Loss</th>
+                            <th className="px-4 py-3 text-left text-sm font-medium">Purchase Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {portfolio.holdings.map((holding) => (
+                            <tr key={holding._id} className="border-b last:border-0 hover:bg-muted/30">
+                              <td className="px-4 py-3 font-mono font-semibold">{holding.symbol}</td>
+                              <td className="px-4 py-3 text-sm">{holding.name}</td>
+                              <td className="px-4 py-3 text-right">{holding.shares}</td>
+                              <td className="px-4 py-3 text-right">${holding.avgPrice.toFixed(2)}</td>
+                              <td className="px-4 py-3 text-right">${holding.currentPrice.toFixed(2)}</td>
+                              <td className="px-4 py-3 text-right font-semibold">
+                                ${holding.marketValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                              </td>
+                              <td
+                                className={`px-4 py-3 text-right font-semibold ${holding.gainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
+                              >
+                                {holding.gainLoss >= 0 ? "+" : ""}$
+                                {holding.gainLoss.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                <span className="text-xs ml-1">
+                                  ({holding.gainLoss >= 0 ? "+" : ""}
+                                  {holding.gainLossPercent.toFixed(2)}%)
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground">{holding.purchaseDate}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
-}  
+  )
+}

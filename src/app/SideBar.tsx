@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, MoonIcon, LineChartIcon } from "lucide-react"
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, MoonIcon, LineChartIcon, ChevronRight, FileChartPie } from "lucide-react"
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 
 import {
@@ -13,39 +13,62 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
 
-// Menu items.
-const items = [
+// Menu sections with grouped items
+const menuSections = [
   {
-    title: "Home",
-    url: "/",
-    icon: Home,
+    section: "Portfolio",
+    items: [
+      {
+        title: "Overview",
+        url: "/",
+        icon: Home,
+      },
+      {
+        title: "Holdings",
+        url: "/holdings",
+        icon: FileChartPie,
+      },
+      {
+        title: "Goals",
+        url: "/goal-tracker",
+        icon: MonitorCheck,
+      }
+    ]
   },
   {
-    title: "Cashflow Forecast",
-    url: "/cashflow-calculator",
-    icon: FlameKindling,
+    section: "Calculators",
+    items: [
+      {
+        title: "Cashflow Forecast",
+        url: "/cashflow-calculator",
+        icon: FlameKindling,
+      },
+      {
+        title: "Accumulation Forecast",
+        url: "/accumulation-forecast",
+        icon: MoveUpRightIcon,
+      },
+      {
+        title: "Monte Carlo Simulator",
+        url: "/monte-carlo-simulator",
+        icon: LineChartIcon,
+      }
+    ]
   },
   {
-    title: "Accumulation Forecast",
-    url: "/accumulation-forecast",
-    icon: MoveUpRightIcon,
-  },
-  {
-    title: "Monte Carlo Simulator",
-    url: "/monte-carlo-simulator",
-    icon: LineChartIcon,
-  },
-  {
-    title: "One off Capital Gain Calculator",
-    url: "/one-off-cgt",
-    icon: DollarSign,
-  },
-  {
-    title: "Goal Tracker",
-    url: "/goal-tracker",
-    icon: MonitorCheck,
+    section: "Tax Planning",
+    items: [
+      {
+        title: "One off Capital Gain Calculator",
+        url: "/one-off-cgt",
+        icon: DollarSign,
+      }
+    ]
   }
 ]
 
@@ -71,15 +94,31 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+              {menuSections.map((section) => (
+                <Collapsible key={section.section} defaultOpen className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton>
+                        {section.section}
+                        <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {section.items.map((item) => (
+                          <SidebarMenuSubItem key={item.title}>
+                            <SidebarMenuButton asChild>
+                              <Link href={item.url}>
+                                <item.icon />
+                                <span>{item.title}</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>

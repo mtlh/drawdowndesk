@@ -1,4 +1,4 @@
-import { mutation } from "../convex/_generated/server";
+import { mutation } from "../_generated/server";
 
 export const seedTaxInfo = mutation(async ({ db }) => {
   // Tax Year

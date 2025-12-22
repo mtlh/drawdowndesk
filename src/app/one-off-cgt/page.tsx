@@ -45,7 +45,7 @@ interface TaxCalculation {
 export default function OneOffCashflow() {
 
   // Get current tax data
-  const TAX_RATES = useQuery(api.getTaxYearInfo.getTaxYearInfo, {});
+  const TAX_RATES = useQuery(api.calculators.getTaxYearInfo.getTaxYearInfo, {});
 
   const [data, setData] = useState<WithdrawalData>({
     pension: 0,

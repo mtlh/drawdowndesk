@@ -33,7 +33,7 @@ import React from "react";
 
 export default function RetirementIncomeCalculator() {
 
-  const taxBandInformation = useQuery(api.runTaxQuery.getTaxInfoForIncome, {
+  const taxBandInformation = useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, {
     taxYear: 2025
   }) as TaxInfo;
 

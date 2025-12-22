@@ -1,4 +1,4 @@
-import { query } from "./_generated/server";
+import { query } from "../_generated/server";
 
 export const getTaxYearInfo = query({
   handler: async (ctx) => {

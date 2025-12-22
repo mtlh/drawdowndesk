@@ -5,11 +5,6 @@ import { authTables } from "@convex-dev/auth/server";
 export default defineSchema({
   ...authTables,
 
-    tasks: defineTable({
-        text: v.string(),
-        isCompleted: v.optional(v.boolean()),
-    }).index("by_completed", ["isCompleted"]),
-
     taxYears: defineTable({
         taxYear: v.number(),                         // e.g., 2025
         country: v.string(),                        // e.g., "UK"
@@ -54,4 +49,38 @@ export default defineSchema({
         returnAmount: v.float64(),                   // e.g., 6.5%
         lastUpdated: v.optional(v.string()),
     }).index("by_asset", ["assetName", "assetType"]),
+
+    // User Portfolios
+    portfolios: defineTable({
+        userId: v.id("users"),                          // Authenticated user ID
+        name: v.string(),                            // e.g., "My Portfolio"
+        lastUpdated: v.optional(v.string()),
+    }).index("by_userPorfolio", ["userId", "name"]),
+
+    // User Portfolio Holdings
+    holdings: defineTable({
+        portfolioId: v.optional(v.id("portfolios")), // Foreign key to portfolio
+        userId: v.id("users"),                          // Authenticated user ID
+        symbol: v.string(),                          // e.g., "MSFT"
+        name: v.string(),                            // e.g., "Microsoft Corporation"
+        accountName: v.optional(v.string()),         // e.g., "S&S ISA"
+        holdingType: v.string(),                     // e.g., "Stock", "Bond", "Commodity"
+        shares: v.float64(),                         // e.g., 1000
+        avgPrice: v.float64(),                       // e.g., 120.5
+        currentPrice: v.float64(),                   // e.g., 118.2
+        purchaseDate: v.string(),                    // e.g., "2022-03-15"
+        lastUpdated: v.optional(v.string()),
+    }).index("by_portfolio", ["userId", "portfolioId", "symbol"]),
+
+    // Buy and sell events
+    buySellEvents: defineTable({
+        portfolioId: v.optional(v.id("portfolios")), // Foreign key to portfolio
+        holdingId: v.optional(v.id("holdings")),     // Foreign key to holding
+        userId: v.id("users"),                          // Authenticated user ID
+        buyShares: v.float64(),                      // e.g., 1000 (buy positive, sell negative)
+        purchaseDate: v.string(),                    // e.g., "2022-03-15"
+        pricePerShare: v.float64(),                  // e.g., 120.5
+        notes: v.optional(v.string()),
+        lastUpdated: v.optional(v.string()),
+    })
 });

@@ -19,7 +19,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import React, { useState } from "react";
-import { monteCarloReturn } from "../../../convex/runMonteCarlo";
+import { monteCarloReturn } from "../../../convex/calculators/runMonteCarlo"
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -28,7 +28,7 @@ export default function MonteCarloSimulator() {
   const [timePeriod, setTimePeriod] = useState(20);
   const [assetName, setAssetName] = useState("FTSE Global All Cap");
 
-  const monteCarloReturn = useQuery(api.runMonteCarlo.getAssetReturnsforPeriods, {
+  const monteCarloReturn = useQuery(api.calculators.runMonteCarlo.getAssetReturnsforPeriods, {
     assetName: assetName,
     yearPeriod: timePeriod
   }) as unknown as monteCarloReturn;
