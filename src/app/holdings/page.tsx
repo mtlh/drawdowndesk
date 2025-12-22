@@ -101,7 +101,7 @@ export default function HoldingsPage() {
   // Add new holding to a portfolio
   const addHolding = (portfolioId: string) => {
     const newHolding: Holding = {
-      _id: `holding-${Date.now()}-` + portfolioId as Id<"holdings">,
+      _id: `holding-${Date.now()}-` + Math.random().toString(36).slice(2, 2 + 5) + "-" + portfolioId as Id<"holdings">,
       portfolioId: portfolioId as Id<"portfolios">,
       symbol: "",
       name: "",

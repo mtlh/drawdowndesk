@@ -24,10 +24,11 @@ export const updateUserHolding = mutation({
     // 1. Find existing holding using composite index
     const existing = await ctx.db
       .query("holdings")
-      .withIndex("by_portfolio", q =>
-        q.eq("userId", userId)
-         .eq("portfolioId", args.portfolioId)
-      )
+      .filter(q => q.eq("userId", userId.toString()))
+      .filter(q => q.eq("portfolioId", args.portfolioId.toString()))
+      .filter(q => q.eq("symbol", args.symbol))
+      .filter(q => q.eq("name", args.name))
+      .filter(q => q.eq("accountName", args.accountName))
       .first();
 
     const now = new Date().toISOString();

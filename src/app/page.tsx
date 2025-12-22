@@ -1,7 +1,6 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TrendingUp, TrendingDown, Wallet, PieChartIcon, BarChart3 } from "lucide-react"
 import {
   PieChart,
@@ -21,6 +20,8 @@ import { calculatePortfolioSummary, getAccountAllocationData, generateMockPerfor
 import { api } from "../../convex/_generated/api"
 import { useQuery } from "convex/react"
 import { isError, isPortfolioArray } from "@/types/portfolios"
+import { mockTreemapData } from "@/components/customTreeMap/mockData"
+import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
 
 // Color palette matching design inspiration
 const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"]
@@ -208,95 +209,9 @@ export default function PortfolioOverview() {
           </Card>
         </div>
 
-        {/* Account Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Holdings</CardTitle>
-            <CardDescription>Detailed view of holdings across all accounts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue={portfolioSummary.portfolios[0]?.id} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                {portfolioSummary.portfolios.map((portfolio) => (
-                  <TabsTrigger key={portfolio.id} value={portfolio.id}>
-                    {portfolio.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {portfolioSummary.portfolios.map((portfolio) => (
-                <TabsContent key={portfolio.id} value={portfolio.id} className="space-y-4">
-                  {/* Account Summary */}
-                  <div className="flex items-center justify-between rounded-lg border bg-card p-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold">{portfolio.name}</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">{portfolio.holdings.length} holdings</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">
-                        ${portfolio.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                      </div>
-                      <div
-                        className={`text-sm font-medium ${portfolio.changePercent >= 0 ? "text-green-600" : "text-red-600"}`}
-                      >
-                        {portfolio.changePercent >= 0 ? "+" : ""}$
-                        {portfolio.change.toLocaleString("en-US", { minimumFractionDigits: 2 })} (
-                        {portfolio.changePercent >= 0 ? "+" : ""}
-                        {portfolio.changePercent.toFixed(2)}%)
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Holdings Table */}
-                  <div className="rounded-lg border">
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b bg-muted/50">
-                            <th className="px-4 py-3 text-left text-sm font-medium">Symbol</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
-                            <th className="px-4 py-3 text-right text-sm font-medium">Shares</th>
-                            <th className="px-4 py-3 text-right text-sm font-medium">Avg Price</th>
-                            <th className="px-4 py-3 text-right text-sm font-medium">Current Price</th>
-                            <th className="px-4 py-3 text-right text-sm font-medium">Market Value</th>
-                            <th className="px-4 py-3 text-right text-sm font-medium">Gain/Loss</th>
-                            <th className="px-4 py-3 text-left text-sm font-medium">Purchase Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {portfolio.holdings.map((holding) => (
-                            <tr key={holding._id} className="border-b last:border-0 hover:bg-muted/30">
-                              <td className="px-4 py-3 font-mono font-semibold">{holding.symbol}</td>
-                              <td className="px-4 py-3 text-sm">{holding.name}</td>
-                              <td className="px-4 py-3 text-right">{holding.shares}</td>
-                              <td className="px-4 py-3 text-right">${holding.avgPrice.toFixed(2)}</td>
-                              <td className="px-4 py-3 text-right">${holding.currentPrice.toFixed(2)}</td>
-                              <td className="px-4 py-3 text-right font-semibold">
-                                ${holding.marketValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                              </td>
-                              <td
-                                className={`px-4 py-3 text-right font-semibold ${holding.gainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
-                              >
-                                {holding.gainLoss >= 0 ? "+" : ""}$
-                                {holding.gainLoss.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                                <span className="text-xs ml-1">
-                                  ({holding.gainLoss >= 0 ? "+" : ""}
-                                  {holding.gainLossPercent.toFixed(2)}%)
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-muted-foreground">{holding.purchaseDate}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-          </CardContent>
-        </Card>
+        <div style={{ width: "100%", height: 500 }}>
+          <CustomTreemap data={mockTreemapData} />
+        </div>
       </div>
     </div>
   )
