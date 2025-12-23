@@ -141,6 +141,7 @@ export default function HoldingsPage() {
       try {
         // Call mutation to persist in Convex
         await updateHoldingMutation({
+          _id: editingHolding as Id<"holdings">,
           portfolioId: editedValues.portfolioId as Id<"portfolios">,
           symbol: editedValues.symbol,
           name: editedValues.name,

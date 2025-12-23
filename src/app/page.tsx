@@ -71,9 +71,9 @@ export default function PortfolioOverview() {
         </div>
 
         {/* Charts Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-8">
           {/* Portfolio Performance */}
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-5">
             <CardHeader>
               <CardTitle>Portfolio Performance</CardTitle>
               <CardDescription>12-month performance history</CardDescription>
@@ -102,7 +102,7 @@ export default function PortfolioOverview() {
           </Card>
 
           {/* Account Allocation */}
-          <Card>
+          <Card className="lg:col-span-3">
             <CardHeader>
               <CardTitle>Account Allocation</CardTitle>
               <CardDescription>Distribution by account</CardDescription>
@@ -138,7 +138,7 @@ export default function PortfolioOverview() {
           </Card>
 
           {/* Asset Type Distribution */}
-          <Card>
+          <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Asset Distribution</CardTitle>
               <CardDescription>Breakdown by asset type</CardDescription>
@@ -164,7 +164,7 @@ export default function PortfolioOverview() {
           </Card>
 
           {/* Quick Stats */}
-          <Card className="md:col-span-2">
+          <Card className="md:col-span-2 lg:col-span-4">
             <CardHeader>
               <CardTitle>Quick Stats</CardTitle>
             </CardHeader>

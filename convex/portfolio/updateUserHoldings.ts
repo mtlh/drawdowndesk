@@ -1,9 +1,11 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
+import { Holding } from "@/types/portfolios";
 
 export const updateUserHolding = mutation({
   args: {
+    _id: v.optional(v.id("holdings")),
     portfolioId: v.id("portfolios"),
     symbol: v.string(),
     name: v.string(),
@@ -24,17 +26,21 @@ export const updateUserHolding = mutation({
     // 1. Find existing holding using composite index
     const existing = await ctx.db
       .query("holdings")
-      .filter(q => q.eq("userId", userId.toString()))
-      .filter(q => q.eq("portfolioId", args.portfolioId.toString()))
-      .filter(q => q.eq("symbol", args.symbol))
-      .filter(q => q.eq("name", args.name))
-      .filter(q => q.eq("accountName", args.accountName))
-      .first();
+      .withIndex("by_portfolio", q => q.eq("userId", userId).eq("portfolioId", args.portfolioId))
+      .collect();
+
+    let existingHolding: Holding | undefined;
+    for (const holding of existing) {
+      if (holding._id === args._id) {
+        existingHolding = holding;
+        break;
+      }
+    }
 
     const now = new Date().toISOString();
 
     // 2. Insert if missing
-    if (!existing) {
+    if (!existingHolding) {
       await ctx.db.insert("holdings", {
         userId,
         portfolioId: args.portfolioId,
@@ -53,20 +59,23 @@ export const updateUserHolding = mutation({
     }
 
     // 3. Update if present
-    await ctx.db.replace(existing._id, {
-      userId,
-      portfolioId: args.portfolioId,
-      symbol: args.symbol,
-      name: args.name,
-      accountName: args.accountName,
-      holdingType: args.holdingType,
-      shares: args.shares,
-      avgPrice: args.avgPrice,
-      currentPrice: args.currentPrice,
-      purchaseDate: args.purchaseDate,
-      lastUpdated: now,
-    });
+    if (existingHolding._id) {
+      await ctx.db.replace(existingHolding._id, {
+        userId,
+        portfolioId: args.portfolioId,
+        symbol: args.symbol,
+        name: args.name,
+        accountName: args.accountName,
+        holdingType: args.holdingType,
+        shares: args.shares,
+        avgPrice: args.avgPrice,
+        currentPrice: args.currentPrice,
+        purchaseDate: args.purchaseDate,
+        lastUpdated: now,
+      });
+      return { updated: true };
+    }
 
-    return { updated: true };
+    return { error: "Holding not found." };
   },
 });
