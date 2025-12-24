@@ -16,11 +16,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { calculatePortfolioSummary, getAccountAllocationData, generateMockPerformanceData, normalizePortfolios, calculateAssetTypeAllocation } from "../lib/calculatePortfolioOverview"
+import { calculatePortfolioSummary, generateMockPerformanceData, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
 import { api } from "../../convex/_generated/api"
 import { useQuery } from "convex/react"
 import { isError, isPortfolioArray } from "@/types/portfolios"
-import { mockTreemapData } from "@/components/customTreeMap/mockData"
 import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
 
 // Color palette matching design inspiration
@@ -36,9 +35,17 @@ export default function PortfolioOverview() {
   if (!isPortfolioArray(getPortfolioData)) { return <div>Error: Unexpected response format.</div>; }
 
   const portfolioSummary = calculatePortfolioSummary(normalizePortfolios(getPortfolioData))
-  const allocationData = getAccountAllocationData(portfolioSummary.portfolios)
+  const portfolioAllocationData = getPortfolioAllocationData(portfolioSummary.portfolios)
   const performanceData = generateMockPerformanceData(portfolioSummary.totalValue)
   const assetTypeData = calculateAssetTypeAllocation(portfolioSummary.portfolios)
+  const accountAllocationData = getAccountAllocationData(portfolioSummary.portfolios)
+  const treemapData = generateHoldingsTreemapData(portfolioSummary.portfolios)
+
+  // console.log(allocationData)
+  // console.log(performanceData)
+  // console.log(assetTypeData)
+  // console.log(portfolioSummary)
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
@@ -69,6 +76,51 @@ export default function PortfolioOverview() {
             </div>
           </div>
         </div>
+
+        {/* Quick Stats Banner */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Stats</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                  <Wallet className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Total Accounts</div>
+                  <div className="text-2xl font-bold">{portfolioSummary.portfolios.length}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
+                  <PieChartIcon className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Total Holdings</div>
+                  <div className="text-2xl font-bold">
+                    {portfolioSummary.portfolios.reduce((acc, portfolio) => acc + portfolio.holdings.length, 0)}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+                  <BarChart3 className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">YTD Return</div>
+                  <div
+                    className={`text-2xl font-bold ${portfolioSummary.totalChangePercent >= 0 ? "text-green-600" : "text-red-600"}`}
+                  >
+                    {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
+                    {portfolioSummary.totalChangePercent.toFixed(2)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Charts Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-8">
@@ -101,17 +153,17 @@ export default function PortfolioOverview() {
             </CardContent>
           </Card>
 
-          {/* Account Allocation */}
+          {/* Portfolio Split */}
           <Card className="lg:col-span-3">
             <CardHeader>
-              <CardTitle>Account Allocation</CardTitle>
-              <CardDescription>Distribution by account</CardDescription>
+              <CardTitle>Portfolio Split</CardTitle>
+              <CardDescription>Distribution by portfolio</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={allocationData}
+                    data={portfolioAllocationData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -120,7 +172,43 @@ export default function PortfolioOverview() {
                     dataKey="value"
                     label={({ name, percent }) => `${name.split(" ")[0]} ${(percent * 100).toFixed(0)}%`}
                   >
-                    {allocationData.map((entry, index) => (
+                    {portfolioAllocationData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                    formatter={(value: number) => [`$${value.toLocaleString()}`, "Value"]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Account Split */}
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Top Accounts</CardTitle>
+              <CardDescription>Account distrobution by holdings value</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={accountAllocationData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {accountAllocationData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -138,7 +226,7 @@ export default function PortfolioOverview() {
           </Card>
 
           {/* Asset Type Distribution */}
-          <Card className="lg:col-span-4">
+          <Card className="lg:col-span-5">
             <CardHeader>
               <CardTitle>Asset Distribution</CardTitle>
               <CardDescription>Breakdown by asset type</CardDescription>
@@ -149,69 +237,33 @@ export default function PortfolioOverview() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
                   <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `${value}%`} />
-                  <Tooltip
+                  {/* <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "var(--radius)",
                     }}
                     formatter={(value: number) => [`${value}%`, "Allocation"]}
-                  />
+                  /> */}
                   <Bar dataKey="value" fill="#4F46E5" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
-          {/* Quick Stats */}
-          <Card className="md:col-span-2 lg:col-span-4">
-            <CardHeader>
-              <CardTitle>Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                    <Wallet className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Total Accounts</div>
-                    <div className="text-2xl font-bold">{portfolioSummary.portfolios.length}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
-                    <PieChartIcon className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Total Holdings</div>
-                    <div className="text-2xl font-bold">
-                      {portfolioSummary.portfolios.reduce((acc, portfolio) => acc + portfolio.holdings.length, 0)}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
-                    <BarChart3 className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">YTD Return</div>
-                    <div
-                      className={`text-2xl font-bold ${portfolioSummary.totalChangePercent >= 0 ? "text-green-600" : "text-red-600"}`}
-                    >
-                      {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
-                      {portfolioSummary.totalChangePercent.toFixed(2)}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        <div style={{ width: "100%", height: 500 }}>
-          <CustomTreemap data={mockTreemapData} />
-        </div>
+        {/* Holdings Treemap */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Holdings Overview</CardTitle>
+            <CardDescription>Visual breakdown of all holdings by type and value</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div style={{ width: "100%", height: 500 }}>
+              <CustomTreemap data={treemapData} />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

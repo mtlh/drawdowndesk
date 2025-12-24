@@ -125,7 +125,7 @@ export function calculatePortfolioSummary(portfoliosWithHoldings: PortfoliosWith
 }
 
 // Generate allocation data for charts
-export function getAccountAllocationData(portfolios: CalculatedPortfolio[]) {
+export function getPortfolioAllocationData(portfolios: CalculatedPortfolio[]) {
   return portfolios.map((portfolio) => ({
     name: portfolio.name,
     value: portfolio.value,
@@ -150,13 +150,62 @@ export function calculateAssetTypeAllocation(portfolios: CalculatedPortfolio[]) 
   portfolios.forEach((portfolio) => {
     portfolio.holdings.forEach((holding) => {
       const type = holding.holdingType ?? "Other"
-      const value = holding.marketValue
+      allocationMap[type] = (allocationMap[type] ?? 0) + 1
+    })
+  })
+  const totalHoldings = Object.values(allocationMap).reduce((sum, count) => sum + count, 0)
+  return Object.entries(allocationMap).map(([name, value]) => ({
+    name,
+    value: totalHoldings > 0 ? (value / totalHoldings) * 100 : 0,
+  }))
+}
 
-      allocationMap[type] = (allocationMap[type] ?? 0) + value
+// Generate treemap data from all holdings grouped by type
+export function generateHoldingsTreemapData(portfolios: CalculatedPortfolio[]) {
+  interface TreemapNode {
+    name: string
+    value?: number
+    children?: TreemapNode[]
+  }
+
+  const holdingsByType: Record<string, Array<{ symbol: string; marketValue: number }>> = {}
+
+  portfolios.forEach((portfolio) => {
+    portfolio.holdings.forEach((holding) => {
+      const type = holding.holdingType ?? "Other"
+      if (!holdingsByType[type]) {
+        holdingsByType[type] = []
+      }
+      holdingsByType[type].push({
+        symbol: holding.symbol,
+        marketValue: holding.marketValue,
+      })
     })
   })
 
-  return Object.entries(allocationMap).map(([name, value]) => ({
+  const children: TreemapNode[] = Object.entries(holdingsByType).map(([type, holdings]) => ({
+    name: type,
+    children: holdings.map((holding) => ({
+      name: holding.symbol,
+      value: holding.marketValue,
+    })),
+  }))
+
+  return children
+}
+
+// Generate allocation data by accounts
+export function getAccountAllocationData(portfolios: CalculatedPortfolio[]) {
+  const accountMap: Record<string, number> = {}
+
+  portfolios.forEach((portfolio) => {
+    portfolio.holdings.forEach((holding) => {
+      const accountName = holding.accountName ?? "Unknown"
+      accountMap[accountName] = (accountMap[accountName] ?? 0) + holding.marketValue
+    })
+  })
+
+  return Object.entries(accountMap).map(([name, value]) => ({
     name,
     value,
   }))
