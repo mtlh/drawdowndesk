@@ -21,26 +21,27 @@ export const updateUserPortfolio = mutation({
       return { success: true, portfolioId: newId };
     }
 
-    const portfolio = await ctx.db
-      .query("portfolios")
-      .filter(q => q.eq("userId", userId.toString()))
-      .filter(q => q.eq("_id", args.id?.toString()))
-      .first();
+    const portfolio = await ctx.db.get(args.id);
 
     if (!portfolio) {
-        const newId = await ctx.db.insert("portfolios", {
+      const newId = await ctx.db.insert("portfolios", {
           userId: userId,
           name: args.name,
           lastUpdated: new Date().toISOString(),
         });
         return { success: true, portfolioId: newId };
-    } else { 
-        await ctx.db.replace(portfolio._id, {
-            name: args.name,
-            userId: portfolio.userId,
-            lastUpdated: new Date().toISOString(),
-        });
-        return { success: true, portfolioId: portfolio._id };
     }
+
+    if (portfolio.userId !== userId) {
+      return { error: "Unauthorized." };
+    }
+
+    await ctx.db.replace(portfolio._id, {
+      name: args.name,
+      userId: portfolio.userId,
+      lastUpdated: new Date().toISOString(),
+    });
+      
+    return { success: true, portfolioId: portfolio._id };
   },
 });

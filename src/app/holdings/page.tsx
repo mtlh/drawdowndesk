@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Save, Trash2, ChevronDown, ChevronRight, X } from "lucide-react"
+import { Plus, Save, Trash2, ChevronDown, ChevronRight, X, InfoIcon } from "lucide-react"
 import { Holding, isError, isPortfolioArray, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
+import { TooltipTrigger, TooltipContent, Tooltip } from "@radix-ui/react-tooltip"
 
 type PortfolioExpanded = {
   portfolio: Portfolio
@@ -343,9 +344,9 @@ export default function HoldingsPage() {
                               className="mb-1 border-none p-0 text-xl font-semibold shadow-none focus-visible:ring-0"
                             />
                             <CardDescription>
-                              Value: ${stats.totalValue.toFixed(2)} • Gain:{" "}
+                              Value: £{stats.totalValue.toFixed(2)} • Gain:{" "}
                               <span className={stats.totalGain >= 0 ? "text-green-600" : "text-red-600"}>
-                                ${stats.totalGain.toFixed(2)} ({stats.totalGainPercent.toFixed(2)}%)
+                                £{stats.totalGain.toFixed(2)} ({stats.totalGainPercent.toFixed(2)}%)
                               </span>
                             </CardDescription>
                           </div>
@@ -378,14 +379,29 @@ export default function HoldingsPage() {
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead>Symbol</TableHead>
-                                  <TableHead>Name</TableHead>
-                                  <TableHead>Account</TableHead>
-                                  <TableHead>Type</TableHead>
+                                  <TableHead className="text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <InfoIcon className="size-4 text-muted-foreground cursor-pointer" />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right" align="center">
+                                          <p className="bg-white p-2 rounded-2xl">
+                                            In the format of Ticker.Exchange eg. ACWI.LON
+                                          </p>
+                                        </TooltipContent>
+                                      </Tooltip>
+
+                                      <span>Ticker</span>
+                                    </div>
+                                  </TableHead>
+                                  <TableHead className="text-right">Name</TableHead>
+                                  <TableHead className="text-right">Account</TableHead>
+                                  <TableHead className="text-right">Type</TableHead>
                                   <TableHead className="text-right">Shares</TableHead>
                                   <TableHead className="text-right">Avg Price</TableHead>
                                   <TableHead className="text-right">Current Price</TableHead>
-                                  <TableHead>Purchase Date</TableHead>
+                                  <TableHead className="text-right">Purchase Date</TableHead>
                                   <TableHead className="text-right">Market Value</TableHead>
                                   <TableHead className="text-right">Gain/Loss</TableHead>
                                   <TableHead className="text-right">Actions</TableHead>
@@ -400,7 +416,7 @@ export default function HoldingsPage() {
                                   const gainLossPercent = cost > 0 ? (gainLoss / cost) * 100 : 0
 
                                   return (
-                                    <TableRow key={holding._id}>
+                                    <TableRow key={holding._id} className="text-right">
                                       <TableCell>
                                         {isEditing ? (
                                           <Input
@@ -411,7 +427,7 @@ export default function HoldingsPage() {
                                                 symbol: e.target.value,
                                               })
                                             }
-                                            className="h-8"
+                                            className="h-8 text-right"
                                           />
                                         ) : (
                                           <span
@@ -432,7 +448,7 @@ export default function HoldingsPage() {
                                                 name: e.target.value,
                                               })
                                             }
-                                            className="h-8"
+                                            className="h-8 text-right"
                                           />
                                         ) : (
                                           <span
@@ -453,7 +469,7 @@ export default function HoldingsPage() {
                                                 accountName: e.target.value,
                                               })
                                             }
-                                            className="h-8"
+                                            className="h-8 text-right"
                                           />
                                         ) : (
                                           <span
@@ -474,7 +490,7 @@ export default function HoldingsPage() {
                                                 holdingType: e.target.value,
                                               })
                                             }
-                                            className="h-8"
+                                            className="h-8 text-right"
                                           />
                                         ) : (
                                           <span
@@ -526,7 +542,7 @@ export default function HoldingsPage() {
                                             className="cursor-pointer hover:underline"
                                             onClick={() => startEditing(holding)}
                                           >
-                                            ${holding.avgPrice.toFixed(2)}
+                                            £{holding.avgPrice.toFixed(2)}
                                           </span>
                                         )}
                                       </TableCell>
@@ -549,7 +565,7 @@ export default function HoldingsPage() {
                                             className="cursor-pointer hover:underline"
                                             onClick={() => startEditing(holding)}
                                           >
-                                            ${holding.currentPrice.toFixed(2)}
+                                            £{holding.currentPrice.toFixed(2)}
                                           </span>
                                         )}
                                       </TableCell>
@@ -564,7 +580,7 @@ export default function HoldingsPage() {
                                                 purchaseDate: e.target.value,
                                               })
                                             }
-                                            className="h-8"
+                                            className="h-8 text-right"
                                           />
                                         ) : (
                                           <span
@@ -576,11 +592,11 @@ export default function HoldingsPage() {
                                         )}
                                       </TableCell>
                                       <TableCell className="text-right font-medium">
-                                        ${marketValue.toFixed(2)}
+                                        £{marketValue.toFixed(2)}
                                       </TableCell>
                                       <TableCell className="text-right">
                                         <span className={gainLoss >= 0 ? "text-green-600" : "text-red-600"}>
-                                          ${gainLoss.toFixed(2)} ({gainLossPercent.toFixed(2)}%)
+                                          £{gainLoss.toFixed(2)} ({gainLossPercent.toFixed(2)}%)
                                         </span>
                                       </TableCell>
                                       <TableCell className="text-right">

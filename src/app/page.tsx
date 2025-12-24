@@ -58,7 +58,7 @@ export default function PortfolioOverview() {
           <div className="text-right">
             <div className="text-sm text-muted-foreground">Total Portfolio Value</div>
             <div className="text-4xl font-bold">
-              ${portfolioSummary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              £{portfolioSummary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </div>
             <div
               className={`flex items-center gap-1 justify-end mt-1 ${portfolioSummary.totalChangePercent >= 0 ? "text-green-600" : "text-red-600"}`}
@@ -69,7 +69,7 @@ export default function PortfolioOverview() {
                 <TrendingDown className="h-4 w-4" />
               )}
               <span className="font-semibold">
-                ${Math.abs(portfolioSummary.totalChange).toLocaleString("en-US", { minimumFractionDigits: 2 })} (
+                £{Math.abs(portfolioSummary.totalChange).toLocaleString("en-US", { minimumFractionDigits: 2 })} (
                 {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
                 {portfolioSummary.totalChangePercent.toFixed(2)}%)
               </span>
@@ -137,7 +137,7 @@ export default function PortfolioOverview() {
                   <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
                   <YAxis
                     stroke="hsl(var(--muted-foreground))"
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
                   />
                   <Tooltip
                     contentStyle={{
@@ -145,7 +145,7 @@ export default function PortfolioOverview() {
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "var(--radius)",
                     }}
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, "Value"]}
+                    formatter={(value: number) => [`£${value.toLocaleString()}`, "Value"]}
                   />
                   <Line type="monotone" dataKey="value" stroke="#4F46E5" strokeWidth={2} dot={false} />
                 </LineChart>
@@ -182,7 +182,7 @@ export default function PortfolioOverview() {
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "var(--radius)",
                     }}
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, "Value"]}
+                    formatter={(value: number) => [`£${value.toLocaleString()}`, "Value"]}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -218,7 +218,7 @@ export default function PortfolioOverview() {
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "var(--radius)",
                     }}
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, "Value"]}
+                    formatter={(value: number) => [`£${value.toLocaleString()}`, "Value"]}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -243,7 +243,7 @@ export default function PortfolioOverview() {
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "var(--radius)",
                     }}
-                    formatter={(value: number) => [`${value}%`, "Allocation"]}
+                    formatter={(value: number) => [`£{value}%`, "Allocation"]}
                   /> */}
                   <Bar dataKey="value" fill="#4F46E5" radius={[8, 8, 0, 0]} />
                 </BarChart>
