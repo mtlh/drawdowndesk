@@ -2,11 +2,11 @@ import YahooFinance from "yahoo-finance2";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
 
-export const convex = new ConvexHttpClient(
+const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL!
 );
 
-export const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 export async function GET() {
     
