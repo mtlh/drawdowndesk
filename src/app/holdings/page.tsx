@@ -550,14 +550,8 @@ export default function HoldingsPage() {
                                         {isEditing ? (
                                           <Input
                                             type="number"
-                                            step="0.01"
                                             value={editedValues.currentPrice || 0}
-                                            onChange={(e) =>
-                                              setEditedValues({
-                                                ...editedValues,
-                                                currentPrice: Number.parseFloat(e.target.value),
-                                              })
-                                            }
+                                            disabled={true}
                                             className="h-8 text-right"
                                           />
                                         ) : (

@@ -70,7 +70,7 @@ export default defineSchema({
         currentPrice: v.float64(),                   // e.g., 118.2
         purchaseDate: v.string(),                    // e.g., "2022-03-15"
         lastUpdated: v.optional(v.string()),
-    }).index("by_portfolio", ["userId", "portfolioId"]),
+    }).index("by_portfolio", ["userId", "portfolioId"]).index("by_symbol", ["symbol"]),
 
     // Buy and sell events
     buySellEvents: defineTable({

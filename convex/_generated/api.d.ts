@@ -18,6 +18,7 @@ import type * as calculators_getTaxYearInfo from "../calculators/getTaxYearInfo.
 import type * as calculators_runMonteCarlo from "../calculators/runMonteCarlo.js";
 import type * as calculators_seedHistoricalReturns from "../calculators/seedHistoricalReturns.js";
 import type * as http from "../http.js";
+import type * as portfolio_currentPriceUpdates_updateHoldingWithTicker from "../portfolio/currentPriceUpdates/updateHoldingWithTicker.js";
 import type * as portfolio_deleteUserHoldings from "../portfolio/deleteUserHoldings.js";
 import type * as portfolio_deleteUserPortfolio from "../portfolio/deleteUserPortfolio.js";
 import type * as portfolio_getUserPortfolio from "../portfolio/getUserPortfolio.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   "calculators/runMonteCarlo": typeof calculators_runMonteCarlo;
   "calculators/seedHistoricalReturns": typeof calculators_seedHistoricalReturns;
   http: typeof http;
+  "portfolio/currentPriceUpdates/updateHoldingWithTicker": typeof portfolio_currentPriceUpdates_updateHoldingWithTicker;
   "portfolio/deleteUserHoldings": typeof portfolio_deleteUserHoldings;
   "portfolio/deleteUserPortfolio": typeof portfolio_deleteUserPortfolio;
   "portfolio/getUserPortfolio": typeof portfolio_getUserPortfolio;
