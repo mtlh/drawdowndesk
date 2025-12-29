@@ -15,6 +15,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  LabelList,
 } from "recharts"
 import { calculatePortfolioSummary, generateMockPerformanceData, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
 import { api } from "../../convex/_generated/api"
@@ -166,29 +167,39 @@ export default function PortfolioOverview() {
                     data={portfolioAllocationData}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
                     outerRadius={100}
-                    fill="#8884d8"
+                    paddingAngle={2}
+                    cornerRadius={6}
                     dataKey="value"
-                    label={({ name, percent }) => `${name.split(" ")[0]} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                    label={({ name, percent }) =>
+                      `${name.split(" ")[0]} ${(percent * 100).toFixed(0)}%`
+                    }
                   >
                     {portfolioAllocationData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const { name, value } = payload[0].payload;
+                      return (
+                        <div className="
+                          bg-card border border-border rounded-[var(--radius)]
+                          px-3 py-2 shadow-lg text-[0.85rem] text-foreground
+                          pointer-events-none relative z-[9999]
+                        ">
+                          <div className="font-semibold">{name}</div>
+                          <div>£{value.toLocaleString()}</div>
+                        </div>
+                      );
                     }}
-                    formatter={(value: number) => [`£${value.toLocaleString()}`, "Value"]}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
           {/* Account Split */}
           <Card className="lg:col-span-3">
             <CardHeader>
@@ -198,27 +209,49 @@ export default function PortfolioOverview() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
+                  <defs>
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.15" />
+                    </filter>
+                  </defs>
                   <Pie
                     data={accountAllocationData}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    outerRadius={100}
-                    fill="#8884d8"
+                    outerRadius={110}
+                    innerRadius={60}
+                    paddingAngle={2}
+                    cornerRadius={6}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                    filter="url(#shadow)"
+                    label={({ name, percent }) =>
+                      `${name} ${(percent * 100).toFixed(0)}%`
+                    }
                   >
                     {accountAllocationData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                        stroke="hsl(var(--card))"
+                        strokeWidth={2}
+                      />
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
+                    content={({ active, payload }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const { name, value } = payload[0].payload;
+                      return (
+                        <div
+                          className="
+                          bg-card border border-border rounded-[var(--radius)] px-3 py-2 shadow-lg text-[0.85rem] text-foreground pointer-events-none relative z-[9999]"
+                        >
+                          <div style={{ fontWeight: 600 }}>{name}</div>
+                          <div>£{value.toLocaleString()}</div>
+                        </div>
+                      );
                     }}
-                    formatter={(value: number) => [`£${value.toLocaleString()}`, "Value"]}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -233,19 +266,45 @@ export default function PortfolioOverview() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={assetTypeData}>
+                <BarChart data={assetTypeData} barGap={8} barCategoryGap="40%">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `${value}%`} />
-                  {/* <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
+                  <XAxis
+                    dataKey="name"
+                    stroke="hsl(var(--muted-foreground))"
+                    interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    tickFormatter={(value) => `${value.toFixed(2)}%`}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const { name, value } = payload[0].payload;
+                      return (
+                        <div className="
+                          bg-card border border-border rounded-[var(--radius)]
+                          px-3 py-2 shadow-lg text-[0.85rem] text-foreground
+                          pointer-events-none relative z-[9999]
+                        ">
+                          <div className="font-semibold">{name}</div>
+                          <div>{value.toFixed(2)}%</div>
+                        </div>
+                      );
                     }}
-                    formatter={(value: number) => [`£{value}%`, "Allocation"]}
-                  /> */}
-                  <Bar dataKey="value" fill="#4F46E5" radius={[8, 8, 0, 0]} />
+                  />
+                  <Bar
+                      dataKey="value"
+                      radius={[8, 8, 0, 0]}
+                      barSize="80%"
+                    >
+                      {assetTypeData.map((entry, index) => (
+                        <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -260,7 +319,7 @@ export default function PortfolioOverview() {
           </CardHeader>
           <CardContent>
             <div style={{ width: "100%", height: 500 }}>
-              <CustomTreemap data={treemapData} />
+              <CustomTreemap data={treemapData} colors={COLORS} />
             </div>
           </CardContent>
         </Card>

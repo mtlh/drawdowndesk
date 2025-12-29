@@ -400,7 +400,6 @@ export default function HoldingsPage() {
                                           </p>
                                         </TooltipContent>
                                       </Tooltip>
-
                                       <span>Ticker</span>
                                     </div>
                                   </TableHead>
@@ -436,6 +435,7 @@ export default function HoldingsPage() {
                                                 symbol: e.target.value,
                                               })
                                             }
+                                            style={{ width: `${(editedValues.symbol?.length || 1) + 5}ch` }}
                                             className="h-8 text-right"
                                           />
                                         ) : (
@@ -457,6 +457,7 @@ export default function HoldingsPage() {
                                                 name: e.target.value,
                                               })
                                             }
+                                            style={{ width: `${(editedValues.name?.length || 1) + 5}ch` }}
                                             className="h-8 text-right"
                                           />
                                         ) : (
@@ -478,6 +479,7 @@ export default function HoldingsPage() {
                                                 accountName: e.target.value,
                                               })
                                             }
+                                            style={{ width: `${(editedValues.accountName?.length || 1) + 5}ch` }}
                                             className="h-8 text-right"
                                           />
                                         ) : (
@@ -499,6 +501,7 @@ export default function HoldingsPage() {
                                                 holdingType: e.target.value,
                                               })
                                             }
+                                            style={{ width: `${(editedValues.holdingType?.length || 1) + 5}ch` }}
                                             className="h-8 text-right"
                                           />
                                         ) : (
@@ -522,6 +525,7 @@ export default function HoldingsPage() {
                                                 shares: Number.parseFloat(e.target.value),
                                               })
                                             }
+                                            style={{ width: `${(editedValues.shares?.toString()?.length || 1) + 8}ch` }}
                                             className="h-8 text-right"
                                           />
                                         ) : (
@@ -545,6 +549,7 @@ export default function HoldingsPage() {
                                                 avgPrice: Number.parseFloat(e.target.value),
                                               })
                                             }
+                                            style={{ width: `${(editedValues.avgPrice?.toString()?.length || 1) + 8}ch` }}
                                             className="h-8 text-right"
                                           />
                                         ) : (

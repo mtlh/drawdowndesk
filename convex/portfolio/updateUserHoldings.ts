@@ -5,7 +5,7 @@ import { Holding } from "@/types/portfolios";
 
 export const updateUserHolding = mutation({
   args: {
-    _id: v.optional(v.id("holdings")),
+    _id: v.optional(v.string()),
     portfolioId: v.id("portfolios"),
     symbol: v.string(),
     name: v.string(),

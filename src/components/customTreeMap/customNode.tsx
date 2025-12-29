@@ -11,13 +11,48 @@ export const CustomNode: React.FC<CustomNodeProps> = (props) => {
     y = 0,
     width = 0,
     height = 0,
-    depth = 0,
-    name,
-    value,
+    name = "",
+    value = 0,
     colors,
   } = props;
 
-  const color = colors[depth % colors.length];
+  // stable hash function for consistent color mapping
+  const hashString = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0; // unsigned 32‑bit
+    }
+    return hash;
+  };
+
+  // derive stable color index from hashed name
+  const colorIndex = hashString(name) % colors.length;
+  const baseHex = colors[colorIndex];
+
+  // helper to convert hex -> rgba with optional alpha
+  const hexToRgba = (hex: string, alpha = 1) => {
+    const h = hex.replace("#", "");
+    const bigint = parseInt(
+      h.length === 3 ? h.split("").map(c => c + c).join("") : h,
+      16
+    );
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const fillOpacity = +(0.85 + Math.random() * 0.15).toFixed(2);
+  const color = hexToRgba(baseHex, fillOpacity);
+
+  // compute font size based on both width and height (keeps text proportional)
+  const computedFontSize = Math.max(
+    10,
+    Math.min(
+      Math.floor(width * 0.03), // scale with width
+      Math.floor(height * 0.15) // but never exceed a portion of height
+    )
+  );
 
   return (
     <g>
@@ -29,16 +64,14 @@ export const CustomNode: React.FC<CustomNodeProps> = (props) => {
         fill={color}
         stroke="#fff"
       />
-      {name && width > 80 && height > 20 && (
         <text 
             x={x + 4}
-            y={y + 18}
+            y={y + 4 + computedFontSize}
             fill="#fff"
-            fontSize={15}
-            style={{ shapeRendering: "crispEdges", textRendering: "optimizeLegibility", }}>
+            fontSize={computedFontSize}
+            style={{ shapeRendering: "crispEdges", textRendering: "optimizeLegibility" }}>
           {name} ({value})
         </text>
-      )}
     </g>
   );
 };

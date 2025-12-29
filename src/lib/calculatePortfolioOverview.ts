@@ -150,13 +150,18 @@ export function calculateAssetTypeAllocation(portfolios: CalculatedPortfolio[]) 
   portfolios.forEach((portfolio) => {
     portfolio.holdings.forEach((holding) => {
       const type = holding.holdingType ?? "Other"
-      allocationMap[type] = (allocationMap[type] ?? 0) + 1
+      const marketValue = typeof holding.marketValue === "number"
+        ? holding.marketValue
+        : (holding.shares ?? 0) * (holding.currentPrice ?? 0)
+      allocationMap[type] = (allocationMap[type] ?? 0) + marketValue
     })
   })
-  const totalHoldings = Object.values(allocationMap).reduce((sum, count) => sum + count, 0)
+
+  const totalMarketValue = Object.values(allocationMap).reduce((sum, v) => sum + v, 0)
+  
   return Object.entries(allocationMap).map(([name, value]) => ({
     name,
-    value: totalHoldings > 0 ? (value / totalHoldings) * 100 : 0,
+    value: totalMarketValue > 0 ? (value / totalMarketValue) * 100 : 0,
   }))
 }
 
