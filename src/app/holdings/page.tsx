@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { TooltipTrigger, TooltipContent, Tooltip } from "@radix-ui/react-tooltip"
+import { RefreshButton } from "@/components/RefreshHoldingsButton"
 
 type PortfolioExpanded = {
   portfolio: Portfolio
@@ -249,12 +250,20 @@ export default function HoldingsPage() {
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Holdings</h1>
-              <p className="text-muted-foreground">Manage your investment portfolios and holdings</p>
+              <p className="text-muted-foreground">
+                Manage your investment portfolios and holdings
+              </p>
             </div>
-            <Button onClick={() => setShowNewPortfolioForm(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Portfolio
-            </Button>
+            <div className="flex items-center gap-2">
+              <RefreshButton />
+              <Button
+                onClick={() => setShowNewPortfolioForm(true)}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Portfolio
+              </Button>
+            </div>
           </div>
 
           {/* New Portfolio Form Modal */}
@@ -506,6 +515,7 @@ export default function HoldingsPage() {
                                           <Input
                                             type="number"
                                             value={editedValues.shares || 0}
+                                            step="0.001"
                                             onChange={(e) =>
                                               setEditedValues({
                                                 ...editedValues,
