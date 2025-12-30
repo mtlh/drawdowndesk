@@ -16,7 +16,13 @@ export async function GET() {
         holdings.map(async (ticker) => { 
             //console.log(ticker)
             const q = await yahooFinance.quote(ticker); 
-            //console.log(q)
+            // console.log(q)
+
+            // If currency is GBp convert to GBP
+            if (q.currency === "GBp") {
+                q.regularMarketPrice = q.regularMarketPrice / 100;
+            }
+
             if (q) {
                 await convex.mutation(api.portfolio.currentPriceUpdates.updateHoldingWithTicker.updateHoldingWithTicker, {
                     symbol: q.symbol,

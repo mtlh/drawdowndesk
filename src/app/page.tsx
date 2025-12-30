@@ -14,8 +14,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  LabelList,
+  ResponsiveContainer
 } from "recharts"
 import { calculatePortfolioSummary, generateMockPerformanceData, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
 import { api } from "../../convex/_generated/api"
