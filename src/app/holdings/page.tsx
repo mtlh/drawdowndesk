@@ -428,9 +428,15 @@ export default function HoldingsPage() {
                             </div>
                           </Link>
                         ) : allocationData.length === 0 ? (
-                          <div className="py-8 text-center text-muted-foreground">
-                            No holdings with value in this portfolio.
-                          </div>
+                          <Link
+                            href={`/holdings/${portfolioExpanded.id}`}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                          >
+                            <div className="py-8 text-center text-muted-foreground hover:text-foreground">
+                              No holdings with value in this portfolio.
+                              <div className="mt-4 text-sm font-medium">Click to manage holdings</div>
+                            </div>
+                          </Link>
                         ) : (
                           <Link 
                             href={`/holdings/${portfolioExpanded.id}`}
@@ -472,13 +478,25 @@ export default function HoldingsPage() {
                           </Link>
                         )
                       ) : portfolioHoldings.length === 0 ? (
-                        <div className="py-8 text-center text-muted-foreground">
-                          No holdings in this portfolio yet.
-                        </div>
+                        <Link
+                          href={`/holdings/${portfolioExpanded.id}`}
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                          <div className="py-8 text-center text-muted-foreground hover:text-foreground">
+                            No holdings in this portfolio yet.
+                            <div className="mt-4 text-sm font-medium">Click to add holdings</div>
+                          </div>
+                        </Link>
                       ) : allocationData.length === 0 ? (
-                        <div className="py-8 text-center text-muted-foreground">
-                          No holdings with market value in this portfolio.
-                        </div>
+                        <Link
+                          href={`/holdings/${portfolioExpanded.id}`}
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                          <div className="py-8 text-center text-muted-foreground hover:text-foreground">
+                            No holdings with market value in this portfolio.
+                            <div className="mt-4 text-sm font-medium">Click to manage holdings</div>
+                          </div>
+                        </Link>
                       ) : (
                         <Link 
                           href={`/holdings/${portfolioExpanded.id}`}
