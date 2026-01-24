@@ -29,6 +29,29 @@ interface TaxCalculation {
   netAmount: number
 }
 
+interface TaxBand {
+  bandName: string
+  bandStartAmount: number
+  bandEndAmount?: number
+  taxRatePercent: number
+}
+
+interface PersonalAllowance {
+  amount: number
+}
+
+interface CapitalGainsTax {
+  annualExemptAmount: number
+  basicRatePercent: number
+  higherRatePercent: number
+}
+
+interface TaxRates {
+  personalAllowance: PersonalAllowance
+  bands: TaxBand[]
+  capitalGainsTax: CapitalGainsTax
+}
+
 export default function OneOffCashflow() {
 
   // Get current tax data
@@ -60,7 +83,7 @@ export default function OneOffCashflow() {
     netAmount: 0,
   })
 
-  const calculateIncomeTax = (taxableIncome: number, taxRates: any): number => {
+  const calculateIncomeTax = (taxableIncome: number, taxRates: TaxRates): number => {
 
     if (!taxRates || !taxRates.personalAllowance || !taxRates.bands) {
       return 0
@@ -97,7 +120,7 @@ export default function OneOffCashflow() {
     return tax
   }
 
-  const calculateCapitalGainsTax = (gains: number, totalIncome: number, taxRates: any): number => {
+  const calculateCapitalGainsTax = (gains: number, totalIncome: number, taxRates: TaxRates): number => {
     if (!taxRates || !taxRates.capitalGainsTax || !taxRates.bands) {
       return 0;
     }
@@ -125,62 +148,62 @@ export default function OneOffCashflow() {
     return basicTax + higherTax;
 };
 
-  const calculateTax = (years: number): TaxCalculation => {
-    
-    if (!TAX_RATES || !TAX_RATES.personalAllowance || !TAX_RATES.bands || !TAX_RATES.capitalGainsTax) {
-      return {
-        totalWithdrawal: 0,
-        taxableAmount: 0,
-        incomeTax: 0,
-        capitalGainsTax: 0,
-        totalTax: 0,
-        netAmount: 0,
-      }
-    };
-
-    const {
-        pension = 0,
-        capitalGains = 0,
-        inheritance = 0,
-        currentIncome = 0,
-    } = data;
-
-    const pensionPerYear = pension / years;
-    const capitalGainsPerYear = capitalGains / years;
-
-    const pensionTaxable = pensionPerYear * 0.75;
-
-    const totalIncomePerYear = currentIncome + pensionTaxable;
-
-    const incomeTaxPerYear = calculateIncomeTax(totalIncomePerYear, TAX_RATES);
-
-    const capitalGainsTaxPerYear = calculateCapitalGainsTax(capitalGainsPerYear, totalIncomePerYear, TAX_RATES);
-
-    const totalIncomeTax = incomeTaxPerYear * years;
-    const totalCapitalGainsTax = capitalGainsTaxPerYear * years;
-    const totalTax = totalIncomeTax + totalCapitalGainsTax;
-
-    const totalWithdrawal = pension + capitalGains + inheritance + currentIncome;
-    
-    const taxableAmount =
-        pensionTaxable * years + Math.max(0, capitalGains - TAX_RATES.capitalGainsTax.annualExemptAmount * years);
-
-    console.log(totalIncomeTax, totalCapitalGainsTax, totalTax, TAX_RATES, data);
-
-    return {
-            totalWithdrawal,
-            taxableAmount,
-            incomeTax: totalIncomeTax,
-            capitalGainsTax: totalCapitalGainsTax,
-            totalTax,
-            netAmount: totalWithdrawal - totalTax,
-        };
-    };
-
   useEffect(() => {
+    const calculateTax = (years: number): TaxCalculation => {
+      
+      if (!TAX_RATES || !TAX_RATES.personalAllowance || !TAX_RATES.bands || !TAX_RATES.capitalGainsTax) {
+        return {
+          totalWithdrawal: 0,
+          taxableAmount: 0,
+          incomeTax: 0,
+          capitalGainsTax: 0,
+          totalTax: 0,
+          netAmount: 0,
+        }
+      };
+
+      const {
+          pension = 0,
+          capitalGains = 0,
+          inheritance = 0,
+          currentIncome = 0,
+      } = data;
+
+      const pensionPerYear = pension / years;
+      const capitalGainsPerYear = capitalGains / years;
+
+      const pensionTaxable = pensionPerYear * 0.75;
+
+      const totalIncomePerYear = currentIncome + pensionTaxable;
+
+      const incomeTaxPerYear = calculateIncomeTax(totalIncomePerYear, TAX_RATES as TaxRates);
+
+      const capitalGainsTaxPerYear = calculateCapitalGainsTax(capitalGainsPerYear, totalIncomePerYear, TAX_RATES as TaxRates);
+
+      const totalIncomeTax = incomeTaxPerYear * years;
+      const totalCapitalGainsTax = capitalGainsTaxPerYear * years;
+      const totalTax = totalIncomeTax + totalCapitalGainsTax;
+
+      const totalWithdrawal = pension + capitalGains + inheritance + currentIncome;
+      
+      const taxableAmount =
+          pensionTaxable * years + Math.max(0, capitalGains - (TAX_RATES as TaxRates).capitalGainsTax.annualExemptAmount * years);
+
+      console.log(totalIncomeTax, totalCapitalGainsTax, totalTax, TAX_RATES, data);
+
+      return {
+              totalWithdrawal,
+              taxableAmount,
+              incomeTax: totalIncomeTax,
+              capitalGainsTax: totalCapitalGainsTax,
+              totalTax,
+              netAmount: totalWithdrawal - totalTax,
+          };
+      };
+
     setSingleYearCalc(calculateTax(1))
     setMultiYearCalc(calculateTax(data.yearsToSpread))
-  }, [data, TAX_RATES, calculateTax])
+  }, [data, TAX_RATES])
 
   const savings = singleYearCalc.capitalGainsTax - multiYearCalc.capitalGainsTax
 

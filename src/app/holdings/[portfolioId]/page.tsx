@@ -30,7 +30,6 @@ export default function PortfolioHoldingsPage() {
   const [editingSimpleHolding, setEditingSimpleHolding] = useState<string | null>(null);
   const [editedValues, setEditedValues] = useState<Partial<Holding>>({});
   const [editedSimpleValues, setEditedSimpleValues] = useState<Partial<SimpleHolding>>({});
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (
@@ -106,7 +105,6 @@ export default function PortfolioHoldingsPage() {
         return;
       }
 
-      setIsSaving(true);
       try {
         await updateHoldingMutation({
           _id: editingHolding === "new" ? undefined : (editingHolding as Id<"holdings">),
@@ -140,8 +138,6 @@ export default function PortfolioHoldingsPage() {
       } catch (error) {
         console.error("Failed to save holding:", error);
         alert("Failed to save holding. Please try again.");
-      } finally {
-        setIsSaving(false);
       }
     }
   };
@@ -154,15 +150,12 @@ export default function PortfolioHoldingsPage() {
       return;
     }
 
-    setIsSaving(true);
     try {
       await deleteHoldingsMutation({ holdingId: id as Id<"holdings"> });
       setHoldings(holdings.filter((h) => h._id !== id));
     } catch (error) {
       console.error("Failed to delete holding:", error);
       alert("Failed to delete holding. Please try again.");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -215,7 +208,6 @@ export default function PortfolioHoldingsPage() {
         return;
       }
 
-      setIsSaving(true);
       try {
         await updateSimpleHoldingMutation({
           _id: editingSimpleHolding === "new" ? undefined : (editingSimpleHolding as Id<"simpleHoldings">),
@@ -246,8 +238,6 @@ export default function PortfolioHoldingsPage() {
       } catch (error) {
         console.error("Failed to save holding:", error);
         alert("Failed to save holding. Please try again.");
-      } finally {
-        setIsSaving(false);
       }
     }
   };
@@ -260,15 +250,12 @@ export default function PortfolioHoldingsPage() {
       return;
     }
 
-    setIsSaving(true);
     try {
       await deleteSimpleHoldingMutation({ holdingId: id });
       setSimpleHoldings(simpleHoldings.filter((h) => h._id !== id));
     } catch (error) {
       console.error("Failed to delete holding:", error);
       alert("Failed to delete holding. Please try again.");
-    } finally {
-      setIsSaving(false);
     }
   };
 

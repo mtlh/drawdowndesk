@@ -24,13 +24,13 @@ export interface PortfolioSummary {
 export type Id<T> = string & { __tableName: T }
 
 export interface Holding {
-  _id: Id<"holdings">
+  _id: Id<"holdings"> | undefined
   lastUpdated?: string
   portfolioId?: Id<"portfolios">
   accountName?: string
   symbol: string
   name: string
-  userId: string
+  userId?: string
   shares: number
   avgPrice: number
   currentPrice: number
@@ -70,19 +70,21 @@ export function normalizePortfolios(
 
   return data.map((p) => {
     // Combine regular holdings with simple holdings converted to holding format
-    const simpleHoldingsAsHoldings: Holding[] = (p.simpleHoldings || []).map((sh) => ({
-      _id: undefined,
-      portfolioId: p._id,
-      symbol: sh.name,
-      name: sh.name,
-      userId: p.userId,
-      accountName: sh.accountName,
-      holdingType: sh.holdingType || "Other",
-      shares: 1,
-      avgPrice: sh.value,
-      currentPrice: sh.value,
-      purchaseDate: new Date().toISOString().split("T")[0],
-    }))
+    const simpleHoldingsAsHoldings: Holding[] = (p.simpleHoldings || []).map((sh) => {
+      const holding: Holding & { _id?: Id<"holdings"> } = {
+        _id: undefined,
+        portfolioId: p._id,
+        symbol: sh.name,
+        name: sh.name,
+        accountName: sh.accountName,
+        holdingType: sh.holdingType || "Other",
+        shares: 1,
+        avgPrice: sh.value,
+        currentPrice: sh.value,
+        purchaseDate: new Date().toISOString().split("T")[0],
+      }
+      return holding as Holding
+    })
 
     return {
       _id: p._id,
