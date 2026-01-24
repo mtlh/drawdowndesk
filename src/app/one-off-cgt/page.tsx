@@ -12,19 +12,6 @@ import { Calculator, PoundSterling, TrendingUp, Calendar } from "lucide-react"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 
-// UK Tax rates for 2023-24
-const TAX_RATES = {
-  personalAllowance: 12570,
-  basicRate: 0.2,
-  basicRateThreshold: 50270,
-  higherRate: 0.4,
-  higherRateThreshold: 125140,
-  additionalRate: 0.45,
-  capitalGainsAllowance: 6000,
-  capitalGainsBasicRate: 0.1,
-  capitalGainsHigherRate: 0.2,
-}
-
 interface WithdrawalData {
   pension: number | undefined
   capitalGains: number | undefined
@@ -73,22 +60,22 @@ export default function OneOffCashflow() {
     netAmount: 0,
   })
 
-  const calculateIncomeTax = (taxableIncome: number): number => {
+  const calculateIncomeTax = (taxableIncome: number, taxRates: any): number => {
 
-    if (!TAX_RATES || !TAX_RATES.personalAllowance || !TAX_RATES.bands) {
+    if (!taxRates || !taxRates.personalAllowance || !taxRates.bands) {
       return 0
     };
 
-    // console.log(TAX_RATES.bands, taxableIncome);
+    // console.log(taxRates.bands, taxableIncome);
 
-    if (taxableIncome <= TAX_RATES.personalAllowance?.amount) return 0
+    if (taxableIncome <= taxRates.personalAllowance?.amount) return 0
 
-    const taxableAmount = taxableIncome - TAX_RATES.personalAllowance.amount
+    const taxableAmount = taxableIncome - taxRates.personalAllowance.amount
     let tax = 0
 
-    // console.log(taxableAmount, TAX_RATES.bands, TAX_RATES.personalAllowance);
+    // console.log(taxableAmount, taxRates.bands, taxRates.personalAllowance);
 
-    const bands = TAX_RATES.bands;
+    const bands = taxRates.bands;
     // Basic rate
     if (taxableAmount <= bands[0].bandStartAmount) {
       tax = taxableAmount * (bands[0].taxRatePercent / 100);
@@ -110,13 +97,13 @@ export default function OneOffCashflow() {
     return tax
   }
 
-  const calculateCapitalGainsTax = (gains: number, totalIncome: number): number => {
-    if (!TAX_RATES || !TAX_RATES.capitalGainsTax || !TAX_RATES.bands) {
+  const calculateCapitalGainsTax = (gains: number, totalIncome: number, taxRates: any): number => {
+    if (!taxRates || !taxRates.capitalGainsTax || !taxRates.bands) {
       return 0;
     }
 
-    const { annualExemptAmount, basicRatePercent, higherRatePercent } = TAX_RATES.capitalGainsTax;
-    const basicRateBand = TAX_RATES.bands[0]; // Assuming first band is basic rate
+    const { annualExemptAmount, basicRatePercent, higherRatePercent } = taxRates.capitalGainsTax;
+    const basicRateBand = taxRates.bands[0]; // Assuming first band is basic rate
 
     if (gains <= annualExemptAmount) return 0;
 
@@ -124,7 +111,7 @@ export default function OneOffCashflow() {
 
     // Calculate how much of the basic rate band remains after total income
     let remainingBasicRateBand = 0;
-    if (basicRateBand.bandEndAmount) {
+    if (basicRateBand?.bandEndAmount) {
       remainingBasicRateBand = Math.max(0, basicRateBand.bandEndAmount - totalIncome);
     }
 
@@ -143,11 +130,11 @@ export default function OneOffCashflow() {
     if (!TAX_RATES || !TAX_RATES.personalAllowance || !TAX_RATES.bands || !TAX_RATES.capitalGainsTax) {
       return {
         totalWithdrawal: 0,
-        taxableAmount: 0, // TODO: this is wrong
-        incomeTax: 0, // TODO: this is wrong
-        capitalGainsTax: 0, // TODO: this is wrong
-        totalTax: 0, // TODO: this is wrong
-        netAmount: 0, // TODO: this is wrong
+        taxableAmount: 0,
+        incomeTax: 0,
+        capitalGainsTax: 0,
+        totalTax: 0,
+        netAmount: 0,
       }
     };
 
@@ -158,21 +145,16 @@ export default function OneOffCashflow() {
         currentIncome = 0,
     } = data;
 
-    // console.log(pension, capitalGains, inheritance);
-    // console.log(years);
-
     const pensionPerYear = pension / years;
     const capitalGainsPerYear = capitalGains / years;
-    const inheritancePerYear = inheritance / years;
 
-    const pensionTaxFree = pensionPerYear * 0.25;
     const pensionTaxable = pensionPerYear * 0.75;
 
     const totalIncomePerYear = currentIncome + pensionTaxable;
 
-    const incomeTaxPerYear = calculateIncomeTax(totalIncomePerYear);
+    const incomeTaxPerYear = calculateIncomeTax(totalIncomePerYear, TAX_RATES);
 
-    const capitalGainsTaxPerYear = calculateCapitalGainsTax(capitalGainsPerYear, totalIncomePerYear);
+    const capitalGainsTaxPerYear = calculateCapitalGainsTax(capitalGainsPerYear, totalIncomePerYear, TAX_RATES);
 
     const totalIncomeTax = incomeTaxPerYear * years;
     const totalCapitalGainsTax = capitalGainsTaxPerYear * years;
@@ -198,7 +180,7 @@ export default function OneOffCashflow() {
   useEffect(() => {
     setSingleYearCalc(calculateTax(1))
     setMultiYearCalc(calculateTax(data.yearsToSpread))
-  }, [data, TAX_RATES])
+  }, [data, TAX_RATES, calculateTax])
 
   const savings = singleYearCalc.capitalGainsTax - multiYearCalc.capitalGainsTax
 
@@ -266,7 +248,6 @@ export default function OneOffCashflow() {
         </>
       );
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       multicapitalGainsBreakdown = <span>No taxable gains</span>;
     }
   }

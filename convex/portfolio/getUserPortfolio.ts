@@ -24,7 +24,7 @@ export const getUserPortfolio = query({
             .collect();
 
             // For manual portfolios, also fetch simpleHoldings
-            let simpleHoldings = [];
+            let simpleHoldings: any[] = [];
             if (p.portfolioType === "manual") {
                 simpleHoldings = await ctx.db
                     .query("simpleHoldings")
