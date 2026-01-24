@@ -53,6 +53,12 @@ export type PortfoliosWithHoldings = Portfolio[]
 export function normalizePortfolios(
   data: {
     holdings: Holding[];
+    simpleHoldings?: Array<{
+      name: string;
+      value: number;
+      accountName?: string;
+      holdingType?: string;
+    }>;
     _id: Id<"portfolios">;
     _creationTime: number;
     lastUpdated?: string;
@@ -62,14 +68,31 @@ export function normalizePortfolios(
 ): Portfolio[] {
   if (!data || "error" in data) return []
 
-  return data.map((p) => ({
-    _id: p._id,
-    _creationTime: p._creationTime,
-    lastUpdated: p.lastUpdated,
-    name: p.name,
-    userId: p.userId,
-    holdings: p.holdings,
-  }))
+  return data.map((p) => {
+    // Combine regular holdings with simple holdings converted to holding format
+    const simpleHoldingsAsHoldings: Holding[] = (p.simpleHoldings || []).map((sh) => ({
+      _id: undefined,
+      portfolioId: p._id,
+      symbol: sh.name,
+      name: sh.name,
+      userId: p.userId,
+      accountName: sh.accountName,
+      holdingType: sh.holdingType || "Other",
+      shares: 1,
+      avgPrice: sh.value,
+      currentPrice: sh.value,
+      purchaseDate: new Date().toISOString().split("T")[0],
+    }))
+
+    return {
+      _id: p._id,
+      _creationTime: p._creationTime,
+      lastUpdated: p.lastUpdated,
+      name: p.name,
+      userId: p.userId,
+      holdings: [...p.holdings, ...simpleHoldingsAsHoldings],
+    }
+  })
 }
 
 export function calculateHoldingMetrics(holding: Holding): CalculatedHolding {

@@ -54,6 +54,7 @@ export default defineSchema({
     portfolios: defineTable({
         userId: v.id("users"),                          // Authenticated user ID
         name: v.string(),                            // e.g., "My Portfolio"
+        portfolioType: v.optional(v.union(v.literal("live"), v.literal("manual"))), // "live" for API-tracked, "manual" for pensions/OICS
         lastUpdated: v.optional(v.string()),
     }).index("by_userPorfolio", ["userId", "name"]),
 
@@ -71,6 +72,18 @@ export default defineSchema({
         purchaseDate: v.string(),                    // e.g., "2022-03-15"
         lastUpdated: v.optional(v.string()),
     }).index("by_portfolio", ["userId", "portfolioId"]).index("by_symbol", ["symbol"]),
+
+    // Simple holdings for manual portfolios (pensions, OICS, etc.)
+    simpleHoldings: defineTable({
+        portfolioId: v.id("portfolios"),              // Foreign key to portfolio
+        userId: v.id("users"),                          // Authenticated user ID
+        name: v.string(),                            // e.g., "Vanguard Global All Cap"
+        value: v.float64(),                           // Total current value in GBP
+        accountName: v.optional(v.string()),         // e.g., "S&S ISA", "Pension"
+        holdingType: v.optional(v.string()),         // e.g., "Fund", "Pension", "Savings"
+        notes: v.optional(v.string()),                // Optional notes
+        lastUpdated: v.optional(v.string()),
+    }).index("by_portfolio", ["userId", "portfolioId"]),
 
     // Buy and sell events
     buySellEvents: defineTable({

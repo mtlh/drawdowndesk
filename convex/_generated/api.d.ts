@@ -22,6 +22,7 @@ import type * as portfolio_currentPriceUpdates_updateHoldingWithTicker from "../
 import type * as portfolio_deleteUserHoldings from "../portfolio/deleteUserHoldings.js";
 import type * as portfolio_deleteUserPortfolio from "../portfolio/deleteUserPortfolio.js";
 import type * as portfolio_getUserPortfolio from "../portfolio/getUserPortfolio.js";
+import type * as portfolio_updateSimpleHoldings from "../portfolio/updateSimpleHoldings.js";
 import type * as portfolio_updateUserHoldings from "../portfolio/updateUserHoldings.js";
 import type * as portfolio_updateUserPortfolio from "../portfolio/updateUserPortfolio.js";
 import type * as tax_runTaxQuery from "../tax/runTaxQuery.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   "portfolio/deleteUserHoldings": typeof portfolio_deleteUserHoldings;
   "portfolio/deleteUserPortfolio": typeof portfolio_deleteUserPortfolio;
   "portfolio/getUserPortfolio": typeof portfolio_getUserPortfolio;
+  "portfolio/updateSimpleHoldings": typeof portfolio_updateSimpleHoldings;
   "portfolio/updateUserHoldings": typeof portfolio_updateUserHoldings;
   "portfolio/updateUserPortfolio": typeof portfolio_updateUserPortfolio;
   "tax/runTaxQuery": typeof tax_runTaxQuery;

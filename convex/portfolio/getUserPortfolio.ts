@@ -23,7 +23,23 @@ export const getUserPortfolio = query({
             )
             .collect();
 
-            return { ...p, holdings };
+            // For manual portfolios, also fetch simpleHoldings
+            let simpleHoldings = [];
+            if (p.portfolioType === "manual") {
+                simpleHoldings = await ctx.db
+                    .query("simpleHoldings")
+                    .withIndex("by_portfolio", q =>
+                        q.eq("userId", userId).eq("portfolioId", p._id)
+                    )
+                    .collect();
+            }
+
+            return { 
+                ...p, 
+                holdings, 
+                simpleHoldings: simpleHoldings.length > 0 ? simpleHoldings : undefined,
+                portfolioType: p.portfolioType || "live" // Default to "live" for backward compatibility
+            };
         })
     );
     return portfoliosWithHoldings;

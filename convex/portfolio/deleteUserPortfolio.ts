@@ -34,6 +34,16 @@ export const deleteUserPortfolio = mutation({
       await ctx.db.delete(holding._id);
     }
 
+    // Delete simpleHoldings for manual portfolios
+    const simpleHoldings = await ctx.db
+      .query("simpleHoldings")
+      .withIndex("by_portfolio", (q) => q.eq("userId", userId).eq("portfolioId", portfolio._id))
+      .collect();
+
+    for (const simpleHolding of simpleHoldings) {
+      await ctx.db.delete(simpleHolding._id);
+    }
+
     return { success: true, message: "Portfolio deleted." };
   },
 });

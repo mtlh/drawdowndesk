@@ -39,8 +39,8 @@ export async function GET() {
         await convex.mutation(
             api.portfolio.currentPriceUpdates.updateHoldingWithTicker.updateHoldingWithTicker,
             {
-            symbol: q.symbol,
-            currentPrice: q.regularMarketPrice,
+                symbol: q.symbol,
+                currentPrice: q.regularMarketPrice,
             }
         );
     }

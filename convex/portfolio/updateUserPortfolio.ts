@@ -3,7 +3,11 @@ import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 
 export const updateUserPortfolio = mutation({
-  args: { id: v.optional(v.id("portfolios")), name: v.string() },
+  args: { 
+    id: v.optional(v.id("portfolios")), 
+    name: v.string(),
+    portfolioType: v.optional(v.union(v.literal("live"), v.literal("manual")))
+  },
   handler: async (ctx, args) => {
     
     const userId = await getAuthUserId(ctx);
@@ -11,11 +15,14 @@ export const updateUserPortfolio = mutation({
       return { error: "User not found." };
     }
 
+    const portfolioType = args.portfolioType || "live"; // Default to "live" for backward compatibility
+
     // If no ID provided, create a new portfolio
     if (!args.id) {
       const newId = await ctx.db.insert("portfolios", {
         userId: userId,
         name: args.name,
+        portfolioType: portfolioType,
         lastUpdated: new Date().toISOString(),
       });
       return { success: true, portfolioId: newId };
@@ -27,6 +34,7 @@ export const updateUserPortfolio = mutation({
       const newId = await ctx.db.insert("portfolios", {
           userId: userId,
           name: args.name,
+          portfolioType: portfolioType,
           lastUpdated: new Date().toISOString(),
         });
         return { success: true, portfolioId: newId };
@@ -39,6 +47,7 @@ export const updateUserPortfolio = mutation({
     await ctx.db.replace(portfolio._id, {
       name: args.name,
       userId: portfolio.userId,
+      portfolioType: portfolio.portfolioType || portfolioType, // Preserve existing type if not updating
       lastUpdated: new Date().toISOString(),
     });
       

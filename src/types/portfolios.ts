@@ -2,6 +2,7 @@ import { Id } from "../../convex/_generated/dataModel";
 
 export interface Portfolio {
   name: string;                // e.g., "My Portfolio"
+  portfolioType?: "live" | "manual";  // "live" for API-tracked, "manual" for pensions/OICS
   lastUpdated?: string;        // Optional ISO timestamp
 }
 
@@ -30,10 +31,25 @@ export interface BuySellEvent {
   lastUpdated?: string;        // Optional ISO timestamp
 }
 
+export interface SimpleHolding {
+  _id: Id<"simpleHoldings"> | undefined;
+  portfolioId: Id<"portfolios">;
+  name: string;                // e.g., "Vanguard Global All Cap"
+  value: number;               // Total current value in GBP
+  accountName?: string;        // e.g., "S&S ISA", "Pension"
+  holdingType?: string;        // e.g., "Fund", "Pension", "Savings"
+  notes?: string;              // Optional notes
+  lastUpdated?: string;        // Optional ISO timestamp
+}
+
 export interface PortfolioWithHoldings {
+  _id: Id<"portfolios">;
+  userId: Id<"users">;
   holdings: Holding[];
+  simpleHoldings?: SimpleHolding[];  // For manual portfolios
   lastUpdated?: string;
   name: string;
+  portfolioType?: "live" | "manual";
 }
 
 type PortfolioData = | PortfolioWithHoldings[] | { error: string } | undefined; 
