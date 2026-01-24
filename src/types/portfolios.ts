@@ -13,6 +13,7 @@ export interface Holding {
   name: string;                // e.g., "Microsoft Corporation"
   accountName?: string;        // e.g., "S&S ISA"
   holdingType: string;         // e.g., "Stock", "Bond", "Commodity"
+  currency?: string;           // e.g., "GBP", "USD", "GBp"
   shares: number;              // e.g., 1000
   avgPrice: number;            // e.g., 120.5
   currentPrice: number;        // e.g., 118.2

@@ -66,6 +66,7 @@ export default defineSchema({
         name: v.string(),                            // e.g., "Microsoft Corporation"
         accountName: v.optional(v.string()),         // e.g., "S&S ISA"
         holdingType: v.string(),                     // e.g., "Stock", "Bond", "Commodity"
+        currency: v.optional(v.string()),            // e.g., "USD", "GBp", "EUR"
         shares: v.float64(),                         // e.g., 1000
         avgPrice: v.float64(),                       // e.g., 120.5
         currentPrice: v.float64(),                   // e.g., 118.2

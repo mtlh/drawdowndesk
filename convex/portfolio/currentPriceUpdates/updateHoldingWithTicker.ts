@@ -8,7 +8,10 @@ export const getAllHoldings = query({
       .query("holdings")
       .collect();
 
-    return holdings.flatMap((h) => h.symbol);
+    return holdings.map((h) => ({
+      symbol: h.symbol,
+      currency: h.currency || "GBP",
+    }));
   },
 });
 

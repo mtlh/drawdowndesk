@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, Trash2, InfoIcon, Plus } from "lucide-react"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Holding, SimpleHolding, isError, isPortfolioArray } from "@/types/portfolios"
@@ -113,6 +114,7 @@ export default function PortfolioHoldingsPage() {
           name: editedValues.name,
           accountName: editedValues.accountName,
           holdingType: editedValues.holdingType || "Stock",
+          currency: editedValues.currency || "GBP",
           shares: editedValues.shares || 0,
           avgPrice: editedValues.avgPrice || 0,
           currentPrice: editedValues.currentPrice || 0,
@@ -182,6 +184,7 @@ export default function PortfolioHoldingsPage() {
         name: "",
         accountName: "",
         holdingType: "Stock",
+        currency: "GBP",
         shares: 0,
         avgPrice: 0,
         currentPrice: 0,
@@ -485,6 +488,7 @@ export default function PortfolioHoldingsPage() {
                         <TableHead className="text-right">Name</TableHead>
                         <TableHead className="text-right">Account</TableHead>
                         <TableHead className="text-right">Type</TableHead>
+                        <TableHead className="text-right">Currency</TableHead>
                         <TableHead className="text-right">Shares</TableHead>
                         <TableHead className="text-right">Avg Price</TableHead>
                         <TableHead className="text-right">Current Price</TableHead>
@@ -589,6 +593,36 @@ export default function PortfolioHoldingsPage() {
                                   onClick={() => startEditing(holding)}
                                 >
                                   {holding.holdingType}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isEditing ? (
+                                <Select
+                                  value={editedValues.currency || "GBP"}
+                                  onValueChange={(value) =>
+                                    setEditedValues({
+                                      ...editedValues,
+                                      currency: value,
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className="h-8 text-right">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="GBP">GBP</SelectItem>
+                                    <SelectItem value="GBp">GBp</SelectItem>
+                                    <SelectItem value="USD">USD</SelectItem>
+                                    <SelectItem value="EUR">EUR</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <span
+                                  className="cursor-pointer hover:underline"
+                                  onClick={() => startEditing(holding)}
+                                >
+                                  {holding.currency || "GBP"}
                                 </span>
                               )}
                             </TableCell>
