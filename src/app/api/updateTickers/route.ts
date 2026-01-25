@@ -52,6 +52,9 @@ async function fetchQuoteWithRetry(
     try {
       const apiKey = getNextKey();
 
+      // add 250ms delay between requests to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
       const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
       const response = await fetch(url);
 

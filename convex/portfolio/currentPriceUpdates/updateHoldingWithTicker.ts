@@ -4,8 +4,13 @@ import { v } from "convex/values";
 export const getAllHoldings = query({
   handler: async (ctx) => {
 
+    const oneDayMs = 24 * 60 * 60 * 1000; 
+    const cutoff = Date.now() - oneDayMs; 
+    
     const holdings = await ctx.db
       .query("holdings")
+      .filter(q => q.gt(q.field("lastUpdated"), cutoff))
+      .order("asc")
       .collect();
 
     return holdings.map((h) => ({
