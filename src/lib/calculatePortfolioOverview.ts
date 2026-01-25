@@ -99,18 +99,9 @@ export function normalizePortfolios(
 }
 
 export function calculateHoldingMetrics(holding: Holding): CalculatedHolding {
-  // Convert prices based on currency if needed
-  let currentPrice = holding.currentPrice
-  let avgPrice = holding.avgPrice
-  
-  // If currency is GBp (pence), convert to pounds
-  if (holding.currency === "GBp") {
-    currentPrice = currentPrice / 100
-    avgPrice = avgPrice / 100
-  }
-  
-  const marketValue = holding.shares * currentPrice
-  const costBasis = holding.shares * avgPrice
+  // Use market price * shares directly (currency has already been normalized)
+  const marketValue = holding.shares * holding.currentPrice
+  const costBasis = holding.shares * holding.avgPrice
   const gainLoss = marketValue - costBasis
   const gainLossPercent = costBasis !== 0 ? (gainLoss / costBasis) * 100 : 0
 
