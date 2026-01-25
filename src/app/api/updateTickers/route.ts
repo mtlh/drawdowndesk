@@ -44,6 +44,15 @@ interface AlphaVantageQuote {
   price: number;
 }
 
+class SkipTickerError extends Error {
+  skip = true;
+  
+  constructor(message: string) {
+    super(message);
+    this.name = "SkipTickerError";
+  }
+}
+
 async function fetchQuoteWithRetry(
   symbol: string,
   retries = ALPHAVANTAGE_KEYS.length
@@ -86,7 +95,15 @@ async function fetchQuoteWithRetry(
       }
 
       const quote = data["Global Quote"];
-      if (!quote || !quote["05. price"]) {
+      // Check if quote is empty (no properties)
+      if (!quote || Object.keys(quote).length === 0) {
+        const errorMsg = `Empty response for symbol ${symbol} - skipping this ticker for now`;
+        console.log(errorMsg);
+        // Throw a specific error that indicates we should skip this ticker
+        throw new SkipTickerError(errorMsg);
+      }
+      
+      if (!quote["05. price"]) {
         const errorMsg = `No price data found for symbol ${symbol}`;
         console.warn(
           `[Attempt ${attempt}/${retries}] ${errorMsg}\nURL: ${url}\n`,
@@ -99,6 +116,11 @@ async function fetchQuoteWithRetry(
         price: parseFloat(quote["05. price"]),
       };
     } catch (error) {
+      // If this is a skip error (empty response), don't retry - just skip this ticker
+      if (error instanceof SkipTickerError) {
+        throw error;
+      }
+      
       if (attempt === retries) {
         console.error(`Failed to fetch quote for ${symbol} after ${retries} retries`);
         throw error;
@@ -125,12 +147,22 @@ export async function GET() {
 
   const results: Array<{ symbol: string; price: number; currency: string }> = [];
   for (const holding of uniqueHoldings) {
-    const quote = await fetchQuoteWithRetry(holding.symbol);
-    results.push({
-      symbol: quote.symbol,
-      price: quote.price,
-      currency: holding.currency,
-    });
+    try {
+      const quote = await fetchQuoteWithRetry(holding.symbol);
+      results.push({
+        symbol: quote.symbol,
+        price: quote.price,
+        currency: holding.currency,
+      });
+    } catch (error) {
+      // If it's a skip error, just log and move to next ticker
+      if (error instanceof SkipTickerError) {
+        console.log(`Skipping ${holding.symbol} - will retry on next refresh`);
+      } else {
+        // For other errors, re-throw or log as needed
+        console.error(`Error processing ${holding.symbol}:`, error);
+      }
+    }
   }
 
   for (const q of results) {
