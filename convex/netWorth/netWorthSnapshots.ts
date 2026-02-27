@@ -1,0 +1,119 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { mutation, query } from "../_generated/server";
+import { v } from "convex/values";
+
+// Calculate total portfolio value and save net worth snapshot
+export const calculateAndSaveNetWorthSnapshot = mutation({
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { error: "User not found." };
+    }
+
+    let investmentsValue = 0;
+
+    // Get all live holdings for the user (regardless of portfolioId)
+    const allHoldings = await ctx.db
+      .query("holdings")
+      .filter(q => q.eq(q.field("userId"), userId))
+      .collect();
+
+    for (const holding of allHoldings) {
+      const shares = holding.shares || 0;
+      let currentPrice = holding.currentPrice || 0;
+
+      // Convert GBp (pence) to GBP (pounds)
+      if (holding.currency === "GBp") {
+        currentPrice = currentPrice / 100;
+      }
+
+      investmentsValue += shares * currentPrice;
+    }
+
+    // Get all simple holdings for the user
+    const allSimpleHoldings = await ctx.db
+      .query("simpleHoldings")
+      .filter(q => q.eq(q.field("userId"), userId))
+      .collect();
+
+    for (const simpleHolding of allSimpleHoldings) {
+      investmentsValue += simpleHolding.value || 0;
+    }
+
+    // Get all accounts for net worth calculation
+    const accounts = await ctx.db
+      .query("accounts")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    let accountsValue = 0;
+    for (const account of accounts) {
+      accountsValue += account.value || 0;
+    }
+
+    const netWorth = investmentsValue + accountsValue;
+    const today = new Date().toISOString().split("T")[0];
+
+    // Delete any existing snapshot for today and create a fresh one
+    const existingSnapshots = await ctx.db
+      .query("netWorthSnapshots")
+      .withIndex("by_userDate", q => q.eq("userId", userId).eq("snapshotDate", today))
+      .collect();
+
+    for (const snapshot of existingSnapshots) {
+      await ctx.db.delete(snapshot._id);
+    }
+
+    // Insert new snapshot with fresh data
+    await ctx.db.insert("netWorthSnapshots", {
+      userId,
+      investmentsValue,
+      accountsValue,
+      netWorth,
+      snapshotDate: today,
+      lastUpdated: new Date().toISOString(),
+    });
+
+    console.log("Net Worth Calculation:", {
+      holdingsCount: allHoldings.length,
+      holdingsValues: allHoldings.map(h => ({ symbol: h.symbol, shares: h.shares, price: h.currentPrice, currency: h.currency, value: h.shares * (h.currency === "GBp" ? h.currentPrice / 100 : h.currentPrice) })),
+      simpleHoldingsCount: allSimpleHoldings.length,
+      simpleHoldingsValues: allSimpleHoldings.map(s => ({ name: s.name, value: s.value })),
+      accountsCount: accounts.length,
+      accountsValues: accounts.map(a => ({ name: a.name, value: a.value })),
+      investmentsValue,
+      accountsValue,
+      netWorth,
+    });
+
+    return { success: true, investmentsValue, accountsValue, netWorth };
+  },
+});
+
+// Get net worth snapshots for the last N months
+export const getNetWorthSnapshots = query({
+  args: {
+    months: v.optional(v.number()),
+  },
+
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { error: "User not found." };
+    }
+
+    const months = args.months || 12;
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - months);
+    const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+    const snapshots = await ctx.db
+      .query("netWorthSnapshots")
+      .withIndex("by_userDate", q => q.eq("userId", userId))
+      .filter(q => q.gte(q.field("snapshotDate"), cutoffStr))
+      .order("asc")
+      .collect();
+
+    return snapshots;
+  },
+});
