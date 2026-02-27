@@ -8,16 +8,14 @@
  * @module
  */
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
+import type * as accounts_accountCrud from "../accounts/accountCrud.js";
 import type * as auth from "../auth.js";
 import type * as calculators_getTaxYearInfo from "../calculators/getTaxYearInfo.js";
 import type * as calculators_runMonteCarlo from "../calculators/runMonteCarlo.js";
 import type * as calculators_seedHistoricalReturns from "../calculators/seedHistoricalReturns.js";
+import type * as goals_goalCrud from "../goals/goalCrud.js";
 import type * as http from "../http.js";
+import type * as netWorth_netWorthSnapshots from "../netWorth/netWorthSnapshots.js";
 import type * as portfolio_currentPriceUpdates_updateHoldingWithTicker from "../portfolio/currentPriceUpdates/updateHoldingWithTicker.js";
 import type * as portfolio_deleteUserHoldings from "../portfolio/deleteUserHoldings.js";
 import type * as portfolio_deleteUserPortfolio from "../portfolio/deleteUserPortfolio.js";
@@ -29,20 +27,21 @@ import type * as portfolio_updateUserPortfolio from "../portfolio/updateUserPort
 import type * as tax_runTaxQuery from "../tax/runTaxQuery.js";
 import type * as tax_seedTaxYear from "../tax/seedTaxYear.js";
 
-/**
- * A utility for referencing Convex functions in your app's API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
+
 declare const fullApi: ApiFromModules<{
+  "accounts/accountCrud": typeof accounts_accountCrud;
   auth: typeof auth;
   "calculators/getTaxYearInfo": typeof calculators_getTaxYearInfo;
   "calculators/runMonteCarlo": typeof calculators_runMonteCarlo;
   "calculators/seedHistoricalReturns": typeof calculators_seedHistoricalReturns;
+  "goals/goalCrud": typeof goals_goalCrud;
   http: typeof http;
+  "netWorth/netWorthSnapshots": typeof netWorth_netWorthSnapshots;
   "portfolio/currentPriceUpdates/updateHoldingWithTicker": typeof portfolio_currentPriceUpdates_updateHoldingWithTicker;
   "portfolio/deleteUserHoldings": typeof portfolio_deleteUserHoldings;
   "portfolio/deleteUserPortfolio": typeof portfolio_deleteUserPortfolio;
@@ -54,11 +53,31 @@ declare const fullApi: ApiFromModules<{
   "tax/runTaxQuery": typeof tax_runTaxQuery;
   "tax/seedTaxYear": typeof tax_seedTaxYear;
 }>;
+
+/**
+ * A utility for referencing Convex functions in your app's public API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 export declare const api: FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
 >;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
 export declare const internal: FilterApi<
   typeof fullApi,
   FunctionReference<any, "internal">
 >;
+
+export declare const components: {};
