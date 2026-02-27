@@ -2,11 +2,19 @@ import { query } from "../_generated/server";
 
 export const getTaxYearInfo = query({
   handler: async (ctx) => {
-    // Get the taxYeardocument
-    const taxYear = await ctx.db
+    // Get the taxYeardocument - use 2025 as fallback if current year not seeded
+    let taxYear = await ctx.db
       .query("taxYears")
       .withIndex("by_year", (q) => q.eq("taxYear", new Date().getFullYear()))
       .first();
+
+    // Fallback to 2025 if current year not found
+    if (!taxYear) {
+      taxYear = await ctx.db
+        .query("taxYears")
+        .withIndex("by_year", (q) => q.eq("taxYear", 2025))
+        .first();
+    }
 
     if (!taxYear) return { error: "Tax year not found." };
 

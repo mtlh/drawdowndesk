@@ -30,10 +30,18 @@ export const getTaxInfoForIncome = query({
       .collect();
     if (!bands || bands.length === 0) return { error: "No tax bands found for this year." };
 
+    // Get capital gains tax
+    const capitalGainsTax = await ctx.db
+      .query("capitalGainsTax")
+      .withIndex("by_taxYear", (q) => q.eq("taxYearId", taxYearId))
+      .first();
+    if (!capitalGainsTax) return { error: "Capital gains tax not found for this year." };
+
     return {
       taxYear: args.taxYear,
       personalAllowance: allowance,
       bands: bands,
+      capitalGainsTax: capitalGainsTax,
     };
   },
 });

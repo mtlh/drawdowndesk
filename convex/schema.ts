@@ -66,7 +66,9 @@ export default defineSchema({
         name: v.string(),                            // e.g., "Microsoft Corporation"
         accountName: v.optional(v.string()),         // e.g., "S&S ISA"
         holdingType: v.string(),                     // e.g., "Stock", "Bond", "Commodity"
-        currency: v.optional(v.string()),            // e.g., "USD", "GBp", "EUR"
+        dataType: v.optional(v.string()),             // "stock" or "etf" for Twelve Data API
+        exchange: v.optional(v.string()),             // e.g., "LON", "NASDAQ", "LSE" for Twelve Data API
+        currency: v.optional(v.string()),             // e.g., "USD", "GBp", "EUR"
         shares: v.float64(),                         // e.g., 1000
         avgPrice: v.float64(),                       // e.g., 120.5
         currentPrice: v.float64(),                   // e.g., 118.2
@@ -105,4 +107,40 @@ export default defineSchema({
         snapshotDate: v.string(),                      // Date of snapshot (YYYY-MM-DD)
         lastUpdated: v.optional(v.string()),
     }).index("by_userDate", ["userId", "snapshotDate"]),
+
+    // Net worth snapshots including all accounts
+    netWorthSnapshots: defineTable({
+        userId: v.id("users"),                          // Authenticated user ID
+        investmentsValue: v.float64(),                 // Total investment portfolio value in GBP
+        accountsValue: v.float64(),                    // Total value of non-investment accounts
+        netWorth: v.float64(),                         // Total net worth (investments + accounts)
+        snapshotDate: v.string(),                      // Date of snapshot (YYYY-MM-DD)
+        lastUpdated: v.optional(v.string()),
+    }).index("by_userDate", ["userId", "snapshotDate"]),
+
+    // Non-investment accounts (bank accounts, savings, etc.)
+    accounts: defineTable({
+        userId: v.id("users"),                          // Authenticated user ID
+        name: v.string(),                            // e.g., "NatWest Current Account"
+        accountType: v.string(),                      // "bank", "savings", "pension", "crypto", "cash", "other"
+        tag: v.optional(v.string()),                  // User-defined tag: "emergency fund", "house fund", "holiday", etc.
+        value: v.float64(),                           // Current value in GBP
+        portfolioId: v.optional(v.id("portfolios")),  // Optional link to investment portfolio for importing
+        notes: v.optional(v.string()),
+        lastUpdated: v.optional(v.string()),
+    }).index("by_user", ["userId"]),
+
+    // Financial goals
+    goals: defineTable({
+        userId: v.id("users"),                          // Authenticated user ID
+        name: v.string(),                            // e.g., "Wedding Fund"
+        targetAmount: v.float64(),                   // Target amount in GBP
+        currentAmount: v.float64(),                  // Current amount saved in GBP
+        targetDate: v.string(),                       // Target date (YYYY-MM-DD)
+        category: v.optional(v.string()),            // Category: "wedding", "house", "car", "holiday", "emergency", "retirement", "other"
+        notes: v.optional(v.string()),
+        isCompleted: v.boolean(),                     // Whether the goal has been reached
+        completedDate: v.optional(v.string()),        // Date when goal was completed
+        lastUpdated: v.optional(v.string()),
+    }).index("by_user", ["userId"]),
 });
