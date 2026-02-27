@@ -202,8 +202,6 @@ const useCashflowCalculation = (
         statePension: currentStatePension,
         pensionTaxFree,
         pensionTaxed,
-        isaWithdrawal: isaWithdrawal,
-        giaWithdrawal,
         grossIncome: pensionWithdrawal + isaWithdrawal + giaWithdrawal + currentStatePension,
         incomeTax: pensionIncomeTax + giaIncomeTax + ((currentStatePension / (totalTaxableIncome || 1)) * incomeTax || 0),
         nationalInsurance,
