@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Target, Calendar, TrendingUp, CheckCircle2, Clock, Edit2, Trash2 } from "lucide-react"
+import { Plus, Target, Calendar, TrendingUp, CheckCircle2, Clock, Edit2, Trash2, Link2, RefreshCw } from "lucide-react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
@@ -27,11 +27,28 @@ interface Goal {
   notes?: string
   isCompleted: boolean
   completedDate?: string
+  linkedPortfolioId?: Id<"portfolios">
+  autoSyncPortfolio?: boolean
+  portfolioValue?: number | null
+  portfolioName?: string | null
   lastUpdated?: string
 }
 
+interface Portfolio {
+  _id: Id<"portfolios">
+  _creationTime: number
+  userId: string
+  name: string
+  portfolioType?: "live" | "manual"
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  holdings?: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  simpleHoldings?: any[]
+}
+
 export default function GoalTracker() {
-  const goals = useQuery(api.goals.goalCrud.getGoals)
+  const goals = useQuery(api.goals.goalCrud.getGoalsWithPortfolio)
+  const portfolios = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio)
   const createGoal = useMutation(api.goals.goalCrud.createGoal)
   const updateGoal = useMutation(api.goals.goalCrud.updateGoal)
   const deleteGoal = useMutation(api.goals.goalCrud.deleteGoal)
@@ -45,6 +62,8 @@ export default function GoalTracker() {
     targetDate: "",
     category: "other",
     notes: "",
+    linkedPortfolioId: undefined as Id<"portfolios"> | undefined,
+    autoSyncPortfolio: false,
   })
 
   const isLoading = goals === undefined
@@ -71,6 +90,39 @@ export default function GoalTracker() {
     return amountRemaining > 0 ? amountRemaining / monthsRemaining : 0
   }
 
+  // Helper function to convert price from pence to pounds if needed
+  const getPriceInPounds = (price: number, currency: string | undefined): number => {
+    if (currency === "GBp") {
+      return price / 100
+    }
+    // Note: USD/EUR conversion would require exchange rates - currently not implemented
+    // For now, these currencies are displayed as-is (in their original currency)
+    return price
+  }
+
+  // Helper function to calculate portfolio total value in GBP
+  const getPortfolioTotalValue = (portfolio: Portfolio | undefined): number => {
+    if (!portfolio) return 0
+    let total = 0
+
+    // Add live holdings value (shares * currentPrice), converted to GBP
+    if (portfolio.holdings) {
+      for (const holding of portfolio.holdings) {
+        const holdingValue = (holding.shares || 0) * (holding.currentPrice || 0)
+        total += getPriceInPounds(holdingValue, holding.currency)
+      }
+    }
+
+    // Add simple holdings value (already in GBP per schema)
+    if (portfolio.simpleHoldings) {
+      for (const holding of portfolio.simpleHoldings) {
+        total += holding.value || 0
+      }
+    }
+
+    return total
+  }
+
   const handleCreateGoal = async () => {
     await createGoal({
       name: newGoal.name,
@@ -79,6 +131,8 @@ export default function GoalTracker() {
       targetDate: newGoal.targetDate,
       category: newGoal.category,
       notes: newGoal.notes || undefined,
+      linkedPortfolioId: newGoal.linkedPortfolioId,
+      autoSyncPortfolio: newGoal.autoSyncPortfolio,
     })
     setNewGoal({
       name: "",
@@ -87,6 +141,8 @@ export default function GoalTracker() {
       targetDate: "",
       category: "other",
       notes: "",
+      linkedPortfolioId: undefined,
+      autoSyncPortfolio: false,
     })
     setIsDialogOpen(false)
   }
@@ -101,21 +157,25 @@ export default function GoalTracker() {
       targetDate: editingGoal.targetDate,
       category: editingGoal.category,
       notes: editingGoal.notes,
+      linkedPortfolioId: editingGoal.linkedPortfolioId,
+      autoSyncPortfolio: editingGoal.autoSyncPortfolio,
     })
     setEditingGoal(null)
+  }
+
+  // Sync currentAmount from linked portfolio
+  const handleSyncFromPortfolio = async (goal: Goal) => {
+    if (!goal.linkedPortfolioId || goal.portfolioValue === null || goal.portfolioValue === undefined) return
+    await updateGoal({
+      goalId: goal._id,
+      currentAmount: goal.portfolioValue,
+    })
   }
 
   const handleDeleteGoal = async (goalId: Id<"goals">) => {
     if (confirm("Are you sure you want to delete this goal?")) {
       await deleteGoal({ goalId })
     }
-  }
-
-  const handleUpdateCurrentAmount = async (goal: Goal, newAmount: number) => {
-    await updateGoal({
-      goalId: goal._id,
-      currentAmount: newAmount,
-    })
   }
 
   const categories = [
@@ -270,6 +330,39 @@ export default function GoalTracker() {
                         />
                       </div>
                       <div className="space-y-2">
+                        <Label htmlFor="linkedPortfolio">Link to Portfolio (optional)</Label>
+                        <Select
+                          value={newGoal.linkedPortfolioId || "none"}
+                          onValueChange={(value) => setNewGoal({ ...newGoal, linkedPortfolioId: value === "none" ? undefined : value as Id<"portfolios"> })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a portfolio to track" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None (manual tracking)</SelectItem>
+                            {Array.isArray(portfolios) && portfolios.map((portfolio) => (
+                              <SelectItem key={portfolio._id} value={portfolio._id}>
+                                {portfolio.name} (£{getPortfolioTotalValue(portfolio).toLocaleString()})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {newGoal.linkedPortfolioId && (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="autoSync"
+                            checked={newGoal.autoSyncPortfolio}
+                            onChange={(e) => setNewGoal({ ...newGoal, autoSyncPortfolio: e.target.checked })}
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor="autoSync" className="text-sm font-normal">
+                            Auto-sync portfolio value to currentAmount
+                          </Label>
+                        </div>
+                      )}
+                      <div className="space-y-2">
                         <Label htmlFor="notes">Notes (optional)</Label>
                         <Input
                           id="notes"
@@ -377,36 +470,43 @@ export default function GoalTracker() {
                                 </div>
                               </div>
 
-                              {/* Quick add to goal */}
-                              <div className="flex gap-2">
-                                <Input
-                                  type="number"
-                                  placeholder="Add to goal..."
-                                  className="h-8"
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      const value = Number((e.target as HTMLInputElement).value)
-                                      if (value > 0) {
-                                        handleUpdateCurrentAmount(goal, goal.currentAmount + value)
-                                        ;(e.target as HTMLInputElement).value = ""
-                                      }
-                                    }
-                                  }}
-                                />
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const input = document.querySelector(`#goal-${goal._id}`) as HTMLInputElement
-                                    if (input && Number(input.value) > 0) {
-                                      handleUpdateCurrentAmount(goal, goal.currentAmount + Number(input.value))
-                                      input.value = ""
-                                    }
-                                  }}
-                                >
-                                  Add
-                                </Button>
-                              </div>
+                              {/* Linked Portfolio Info */}
+                              {goal.linkedPortfolioId && (
+                                <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Link2 className="h-3 w-3" />
+                                    <span className="font-medium">{goal.portfolioName}</span>
+                                    {goal.autoSyncPortfolio && (
+                                      <Badge variant="outline" className="text-xs ml-auto">Auto-sync</Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-sm">
+                                      <span className="text-muted-foreground">Portfolio Value: </span>
+                                      <span className="font-medium">£{(goal.portfolioValue || 0).toLocaleString()}</span>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs"
+                                      onClick={() => handleSyncFromPortfolio(goal)}
+                                    >
+                                      <RefreshCw className="h-3 w-3 mr-1" />
+                                      Sync
+                                    </Button>
+                                  </div>
+                                  {goal.portfolioValue !== undefined && goal.portfolioValue !== null && (
+                                    <div className="text-xs text-muted-foreground">
+                                      {goal.portfolioValue >= goal.targetAmount ? (
+                                        <span className="text-emerald-600">Portfolio exceeds target by £{(goal.portfolioValue - goal.targetAmount).toLocaleString()}</span>
+                                      ) : (
+                                        <span>Portfolio is £{(goal.targetAmount - goal.portfolioValue).toLocaleString()} below target</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
                             </CardContent>
                           </Card>
                         )
@@ -518,6 +618,39 @@ export default function GoalTracker() {
                           onChange={(e) => setEditingGoal({ ...editingGoal, targetDate: e.target.value })}
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="editLinkedPortfolio">Link to Portfolio</Label>
+                        <Select
+                          value={editingGoal.linkedPortfolioId || "none"}
+                          onValueChange={(value) => setEditingGoal({ ...editingGoal, linkedPortfolioId: value === "none" ? undefined : value as Id<"portfolios"> })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a portfolio to track" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None (manual tracking)</SelectItem>
+                            {Array.isArray(portfolios) && portfolios.map((portfolio) => (
+                              <SelectItem key={portfolio._id} value={portfolio._id}>
+                                {portfolio.name} (£{getPortfolioTotalValue(portfolio).toLocaleString()})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {editingGoal.linkedPortfolioId && (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="editAutoSync"
+                            checked={editingGoal.autoSyncPortfolio || false}
+                            onChange={(e) => setEditingGoal({ ...editingGoal, autoSyncPortfolio: e.target.checked })}
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor="editAutoSync" className="text-sm font-normal">
+                            Auto-sync portfolio value to currentAmount
+                          </Label>
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <Label htmlFor="editNotes">Notes</Label>
                         <Input

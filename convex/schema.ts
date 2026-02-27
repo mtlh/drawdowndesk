@@ -141,6 +141,8 @@ export default defineSchema({
         notes: v.optional(v.string()),
         isCompleted: v.boolean(),                     // Whether the goal has been reached
         completedDate: v.optional(v.string()),        // Date when goal was completed
+        linkedPortfolioId: v.optional(v.id("portfolios")), // Optional link to portfolio for tracking
+        autoSyncPortfolio: v.optional(v.boolean()),  // Auto-sync currentAmount from portfolio value
         lastUpdated: v.optional(v.string()),
     }).index("by_user", ["userId"]),
 });
