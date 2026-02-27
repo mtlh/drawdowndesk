@@ -70,20 +70,22 @@ export const updateGoal = mutation({
     }
 
     // Check if goal is now completed
+    let completedDate: string | undefined = undefined;
     if (updates.currentAmount !== undefined) {
       const targetAmount = updates.targetAmount ?? goal.targetAmount;
       const isNowCompleted = updates.currentAmount >= targetAmount;
       if (isNowCompleted && !goal.isCompleted) {
         updates.isCompleted = true;
-        updates.completedDate = new Date().toISOString().split("T")[0];
+        completedDate = new Date().toISOString().split("T")[0];
       } else if (!isNowCompleted && goal.isCompleted) {
         updates.isCompleted = false;
-        updates.completedDate = undefined;
+        completedDate = undefined;
       }
     }
 
     await ctx.db.patch(goalId, {
       ...updates,
+      completedDate,
       lastUpdated: new Date().toISOString(),
     });
 
