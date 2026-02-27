@@ -96,5 +96,13 @@ export default defineSchema({
         pricePerShare: v.float64(),                  // e.g., 120.5
         notes: v.optional(v.string()),
         lastUpdated: v.optional(v.string()),
-    })
+    }),
+
+    // Portfolio value snapshots for performance tracking
+    portfolioSnapshots: defineTable({
+        userId: v.id("users"),                          // Authenticated user ID
+        totalValue: v.float64(),                       // Total portfolio value in GBP
+        snapshotDate: v.string(),                      // Date of snapshot (YYYY-MM-DD)
+        lastUpdated: v.optional(v.string()),
+    }).index("by_userDate", ["userId", "snapshotDate"]),
 });

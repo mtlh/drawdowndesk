@@ -11,6 +11,11 @@ import { Badge } from "@/components/ui/badge"
 import { Calculator, PoundSterling, TrendingUp, Calendar } from "lucide-react"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
+import {
+  calculateIncomeTax,
+  calculateCapitalGainsTax,
+  type TaxRates,
+} from "@/lib/taxCalculations"
 
 interface WithdrawalData {
   pension: number | undefined
@@ -29,28 +34,6 @@ interface TaxCalculation {
   netAmount: number
 }
 
-interface TaxBand {
-  bandName: string
-  bandStartAmount: number
-  bandEndAmount?: number
-  taxRatePercent: number
-}
-
-interface PersonalAllowance {
-  amount: number
-}
-
-interface CapitalGainsTax {
-  annualExemptAmount: number
-  basicRatePercent: number
-  higherRatePercent: number
-}
-
-interface TaxRates {
-  personalAllowance: PersonalAllowance
-  bands: TaxBand[]
-  capitalGainsTax: CapitalGainsTax
-}
 
 export default function OneOffCashflow() {
 
@@ -83,70 +66,6 @@ export default function OneOffCashflow() {
     netAmount: 0,
   })
 
-  const calculateIncomeTax = (taxableIncome: number, taxRates: TaxRates): number => {
-
-    if (!taxRates || !taxRates.personalAllowance || !taxRates.bands) {
-      return 0
-    };
-
-    // console.log(taxRates.bands, taxableIncome);
-
-    if (taxableIncome <= taxRates.personalAllowance?.amount) return 0
-
-    const taxableAmount = taxableIncome - taxRates.personalAllowance.amount
-    let tax = 0
-
-    // console.log(taxableAmount, taxRates.bands, taxRates.personalAllowance);
-
-    const bands = taxRates.bands;
-    // Basic rate
-    if (taxableAmount <= bands[0].bandStartAmount) {
-      tax = taxableAmount * (bands[0].taxRatePercent / 100);
-
-    // Higher rate
-    } else if (taxableAmount <= bands[1].bandStartAmount) {
-      tax += bands[0].bandStartAmount * (bands[0].taxRatePercent / 100);
-      tax += (taxableAmount - bands[0].bandStartAmount) * (bands[1].taxRatePercent / 100);
-
-    // Additional rate
-    } else {
-      tax += bands[0].bandStartAmount * (bands[0].taxRatePercent / 100);
-      tax += (bands[1].bandStartAmount - bands[0].bandStartAmount) * (bands[1].taxRatePercent / 100);
-      tax += (taxableAmount - bands[1].bandStartAmount) * (bands[2].taxRatePercent / 100);
-    }
-
-    // console.log(tax);
-
-    return tax
-  }
-
-  const calculateCapitalGainsTax = (gains: number, totalIncome: number, taxRates: TaxRates): number => {
-    if (!taxRates || !taxRates.capitalGainsTax || !taxRates.bands) {
-      return 0;
-    }
-
-    const { annualExemptAmount, basicRatePercent, higherRatePercent } = taxRates.capitalGainsTax;
-    const basicRateBand = taxRates.bands[0]; // Assuming first band is basic rate
-
-    if (gains <= annualExemptAmount) return 0;
-
-    const taxableGains = gains - annualExemptAmount;
-
-    // Calculate how much of the basic rate band remains after total income
-    let remainingBasicRateBand = 0;
-    if (basicRateBand?.bandEndAmount) {
-      remainingBasicRateBand = Math.max(0, basicRateBand.bandEndAmount - totalIncome);
-    }
-
-    // Gains taxed at basic rate
-    const basicRateGains = Math.min(taxableGains, remainingBasicRateBand);
-    const higherRateGains = taxableGains - basicRateGains;
-
-    const basicTax = basicRateGains * (basicRatePercent / 100);
-    const higherTax = higherRateGains * (higherRatePercent / 100);
-
-    return basicTax + higherTax;
-};
 
   useEffect(() => {
     const calculateTax = (years: number): TaxCalculation => {

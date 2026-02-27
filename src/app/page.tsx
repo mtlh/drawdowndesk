@@ -16,7 +16,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts"
-import { calculatePortfolioSummary, generateMockPerformanceData, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
+import { calculatePortfolioSummary, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
 import { api } from "../../convex/_generated/api"
 import { useQuery } from "convex/react"
 import { isError, isPortfolioArray } from "@/types/portfolios"
@@ -28,6 +28,7 @@ const COLORS = CHART_COLORS_MAIN
 
 export default function PortfolioOverview() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
+  const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
 
   if (!getPortfolioData) { return <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -39,7 +40,17 @@ export default function PortfolioOverview() {
 
   const portfolioSummary = calculatePortfolioSummary(normalizePortfolios(getPortfolioData))
   const portfolioAllocationData = getPortfolioAllocationData(portfolioSummary.portfolios)
-  const performanceData = generateMockPerformanceData(portfolioSummary.totalValue)
+
+  // Convert snapshots to performance chart data
+  // Only show actual data points - no mock/fake data
+  const hasSnapshots = getPortfolioSnapshots && Array.isArray(getPortfolioSnapshots) && getPortfolioSnapshots.length > 0;
+  const performanceData = hasSnapshots
+    ? getPortfolioSnapshots.map(snapshot => ({
+        date: new Date(snapshot.snapshotDate).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
+        value: snapshot.totalValue,
+      }))
+    : [{ date: new Date().toLocaleDateString("en-GB", { month: "short", day: "numeric" }), value: portfolioSummary.totalValue }];
+
   const assetTypeData = calculateAssetTypeAllocation(portfolioSummary.portfolios)
   const accountAllocationData = getAccountAllocationData(portfolioSummary.portfolios)
   const treemapData = generateHoldingsTreemapData(portfolioSummary.portfolios)

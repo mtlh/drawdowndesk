@@ -182,5 +182,19 @@ export async function GET() {
     );
   }
 
+  // After updating prices, calculate total portfolio value and save a snapshot
+  try {
+    const result = await convex.mutation(
+      api.portfolio.portfolioSnapshots.calculateAndSaveSnapshot,
+      {}
+    );
+
+    if (result && !result.error) {
+      console.log(`Portfolio snapshot saved: £${result.totalValue?.toLocaleString()}`);
+    }
+  } catch (snapshotError) {
+    console.error("Failed to save portfolio snapshot:", snapshotError);
+  }
+
   return new Response("Success");
 }
