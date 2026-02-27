@@ -64,8 +64,6 @@ interface CashflowYear {
   statePension: number;
   pensionTaxFree: number;
   pensionTaxed: number;
-  isaWithdrawal: number;
-  giaWithdrawal: number;
   grossIncome: number;
   incomeTax: number;
   nationalInsurance: number;
