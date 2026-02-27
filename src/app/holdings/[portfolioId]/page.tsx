@@ -7,8 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Trash2, InfoIcon, Plus } from "lucide-react"
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { ArrowLeft, Save, Trash2, Plus } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
@@ -265,38 +264,36 @@ export default function PortfolioHoldingsPage() {
   return (
     <div className="flex h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
-          <div className="mb-8">
-            <Button variant="ghost" onClick={() => router.push("/holdings")} className="gap-2 mb-4">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Holdings
-            </Button>
-            <div className="flex items-center justify-between">
+        <div className="p-8 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => router.push("/holdings")}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">{portfolio.name}</h1>
-                <p className="text-muted-foreground mt-2">
-                  Total Value: £{totalValue.toFixed(2)}
+                <h1 className="text-2xl font-bold">{portfolio.name}</h1>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-lg font-semibold">£{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   {!isManual && (
-                    <> • Gain:{" "}
-                      <span className={totalGain >= 0 ? "text-green-600" : "text-red-600"}>
-                        £{totalGain.toFixed(2)} ({totalGainPercent.toFixed(2)}%)
-                      </span>
-                    </>
+                    <span className={`text-sm ${totalGain >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {totalGain >= 0 ? "+" : ""}£{totalGain.toFixed(2)} ({totalGainPercent >= 0 ? "+" : ""}{totalGainPercent.toFixed(2)}%)
+                    </span>
                   )}
                   {isManual && (
-                    <> • Manual Portfolio</>
+                    <span className="text-sm text-muted-foreground">Manual</span>
                   )}
-                </p>
+                </div>
               </div>
-              <Button onClick={addHolding} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Holding
-              </Button>
             </div>
+            <Button onClick={addHolding} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Holding
+            </Button>
           </div>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-0">
               {isManual ? (
                 portfolioSimpleHoldings.length === 0 ? (
                   <div className="py-8 text-center text-muted-foreground">
@@ -462,40 +459,23 @@ export default function PortfolioHoldingsPage() {
                   </div>
                 )
               ) : portfolioHoldings.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  No holdings in this portfolio yet.
+                <div className="py-12 text-center text-muted-foreground">
+                  No holdings in this portfolio yet. Click &quot;Add Holding&quot; to get started.
                 </div>
               ) : (
-                <div className="rounded-md border">
+                <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <InfoIcon className="size-4 text-muted-foreground cursor-pointer" />
-                              </TooltipTrigger>
-                              <TooltipContent side="right" align="center">
-                                <p className="bg-white p-2 rounded-2xl">
-                                  In the format of Ticker.Exchange eg. ACWI.LON
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                            <span>Ticker</span>
-                          </div>
-                        </TableHead>
-                        <TableHead className="text-right">Name</TableHead>
-                        <TableHead className="text-right">Account</TableHead>
-                        <TableHead className="text-right">Type</TableHead>
-                        <TableHead className="text-right">Currency</TableHead>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead>Ticker</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Account</TableHead>
                         <TableHead className="text-right">Shares</TableHead>
-                        <TableHead className="text-right">Avg Price</TableHead>
-                        <TableHead className="text-right">Current Price</TableHead>
-                        <TableHead className="text-right">Purchase Date</TableHead>
-                        <TableHead className="text-right">Market Value</TableHead>
+                        <TableHead className="text-right">Avg</TableHead>
+                        <TableHead className="text-right">Current</TableHead>
+                        <TableHead className="text-right">Value</TableHead>
                         <TableHead className="text-right">Gain/Loss</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
                         <TableBody>

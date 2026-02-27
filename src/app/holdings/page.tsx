@@ -13,8 +13,7 @@ import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { RefreshButton } from "@/components/RefreshHoldingsButton"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
-
-const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#EC4899", "#84CC16", "#F97316", "#6366F1"]
+import { CHART_COLORS, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 
 type PortfolioExpanded = {
   portfolio: Portfolio & { _id?: string; lastUpdated?: string }
@@ -70,25 +69,47 @@ export default function HoldingsPage() {
     }
   }
 
-  // Calculate allocation data for pie chart
+  // Calculate allocation data for pie chart - aggregates duplicates by name
   const getPortfolioAllocationData = (portfolioId: string, portfolioType?: "live" | "manual") => {
     if (portfolioType === "manual") {
       const portfolioSimpleHoldings = simpleHoldings.filter((h) => h.portfolioId === portfolioId)
-      return portfolioSimpleHoldings.map((holding) => ({
+      const rawData = portfolioSimpleHoldings.map((holding) => ({
         name: holding.name || "Unknown",
         value: holding.value,
-        holding: holding
-      })).filter(item => item.value > 0) // Only include holdings with value
+      })).filter(item => item.value > 0)
+
+      // Aggregate by name to handle duplicates
+      const aggregated = rawData.reduce((acc, item) => {
+        if (acc[item.name]) {
+          acc[item.name].value += item.value;
+        } else {
+          acc[item.name] = { ...item };
+        }
+        return acc;
+      }, {} as Record<string, { name: string; value: number }>);
+
+      return Object.values(aggregated);
     } else {
       const portfolioHoldings = holdings.filter((h) => h.portfolioId === portfolioId)
-      return portfolioHoldings.map((holding) => {
+      const rawData = portfolioHoldings.map((holding) => {
         const marketValue = holding.shares * holding.currentPrice
         return {
           name: holding.symbol || holding.name || "Unknown",
           value: marketValue,
-          holding: holding
         }
-      }).filter(item => item.value > 0) // Only include holdings with value
+      }).filter(item => item.value > 0)
+
+      // Aggregate by name to handle duplicates
+      const aggregated = rawData.reduce((acc, item) => {
+        if (acc[item.name]) {
+          acc[item.name].value += item.value;
+        } else {
+          acc[item.name] = { ...item };
+        }
+        return acc;
+      }, {} as Record<string, { name: string; value: number }>);
+
+      return Object.values(aggregated);
     }
   }
 
@@ -438,27 +459,24 @@ export default function HoldingsPage() {
                             </div>
                           </Link>
                         ) : (
-                          <Link 
+                          <Link
                             href={`/holdings/${portfolioExpanded.id}`}
                             className="w-full cursor-pointer hover:opacity-80 transition-opacity"
                           >
-                            <ResponsiveContainer width="100%" height={250}>
+                            <ResponsiveContainer width="100%" height={220}>
                               <PieChart>
                                 <Pie
                                   data={allocationData}
                                   cx="50%"
                                   cy="50%"
-                                  outerRadius={80}
-                                  paddingAngle={2}
-                                  cornerRadius={6}
+                                  innerRadius={DONUT_INNER_RADIUS - 10}
+                                  outerRadius={DONUT_OUTER_RADIUS - 20}
+                                  paddingAngle={3}
+                                  cornerRadius={8}
                                   dataKey="value"
-                                  labelLine={false}
-                                  label={({ name, percent }) =>
-                                    `${name} ${(percent * 100).toFixed(0)}%`
-                                  }
                                 >
-                                  {allocationData.map((_, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                  {allocationData.map((item, index) => (
+                                    <Cell key={item.name} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
                                   ))}
                                 </Pie>
                                 <RechartsTooltip
@@ -475,6 +493,14 @@ export default function HoldingsPage() {
                                 />
                               </PieChart>
                             </ResponsiveContainer>
+                            <div className="flex flex-wrap justify-center gap-2 mt-2">
+                              {allocationData.slice(0, 5).map((item, index) => (
+                                <div key={item.name} className="flex items-center gap-1.5 text-xs">
+                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
+                                  <span className="text-muted-foreground">{item.name}</span>
+                                </div>
+                              ))}
+                            </div>
                           </Link>
                         )
                       ) : portfolioHoldings.length === 0 ? (
@@ -498,27 +524,24 @@ export default function HoldingsPage() {
                           </div>
                         </Link>
                       ) : (
-                        <Link 
+                        <Link
                           href={`/holdings/${portfolioExpanded.id}`}
                           className="w-full cursor-pointer hover:opacity-80 transition-opacity"
                         >
-                          <ResponsiveContainer width="100%" height={250}>
+                          <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
                               <Pie
                                 data={allocationData}
                                 cx="50%"
                                 cy="50%"
-                                outerRadius={80}
-                                paddingAngle={2}
-                                cornerRadius={6}
+                                innerRadius={DONUT_INNER_RADIUS - 10}
+                                outerRadius={DONUT_OUTER_RADIUS - 20}
+                                paddingAngle={3}
+                                cornerRadius={8}
                                 dataKey="value"
-                                labelLine={false}
-                                label={({ name, percent }) =>
-                                  `${name} ${(percent * 100).toFixed(0)}%`
-                                }
                               >
-                                {allocationData.map((_, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                {allocationData.map((item, index) => (
+                                  <Cell key={item.name} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
                                 ))}
                               </Pie>
                               <RechartsTooltip
@@ -535,6 +558,14 @@ export default function HoldingsPage() {
                               />
                             </PieChart>
                           </ResponsiveContainer>
+                          <div className="flex flex-wrap justify-center gap-2 mt-2">
+                            {allocationData.slice(0, 5).map((item, index) => (
+                              <div key={item.name} className="flex items-center gap-1.5 text-xs">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
+                                <span className="text-muted-foreground">{item.name}</span>
+                              </div>
+                            ))}
+                          </div>
                         </Link>
                       )}
                     </CardContent>

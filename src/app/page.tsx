@@ -21,17 +21,20 @@ import { api } from "../../convex/_generated/api"
 import { useQuery } from "convex/react"
 import { isError, isPortfolioArray } from "@/types/portfolios"
 import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
+import { CHART_COLORS, CHART_COLORS_MAIN, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
+import { RefreshButton } from "@/components/RefreshHoldingsButton"
 
-// Color palette matching design inspiration
-const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"]
+const COLORS = CHART_COLORS_MAIN
 
 export default function PortfolioOverview() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
 
-  if (!getPortfolioData) { return <div>Loading portfolio…</div>; } 
-  
-  if (isError(getPortfolioData)) { return <div>Error: {getPortfolioData.error}</div>; } 
-  
+  if (!getPortfolioData) { return <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>; }
+
+  if (isError(getPortfolioData)) { return <div>Error: {getPortfolioData.error}</div>; }
+
   if (!isPortfolioArray(getPortfolioData)) { return <div>Error: Unexpected response format.</div>; }
 
   const portfolioSummary = calculatePortfolioSummary(normalizePortfolios(getPortfolioData))
@@ -41,268 +44,271 @@ export default function PortfolioOverview() {
   const accountAllocationData = getAccountAllocationData(portfolioSummary.portfolios)
   const treemapData = generateHoldingsTreemapData(portfolioSummary.portfolios)
 
-  // console.log(allocationData)
-  // console.log(performanceData)
-  // console.log(assetTypeData)
-  // console.log(portfolioSummary)
+  // Custom tooltip for line chart
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-sm text-muted-foreground">£{payload[0].value.toLocaleString()}</p>
+      </div>
+    );
+  };
+
+  // Custom tooltip for pie/donut charts
+  const PieTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; value: number } }> }) => {
+    if (!active || !payload?.length) return null;
+    const { name, value } = payload[0].payload;
+    return (
+      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
+        <p className="text-sm font-medium">{name}</p>
+        <p className="text-sm text-muted-foreground">£{value.toLocaleString()}</p>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight text-balance">Portfolio Overview</h1>
-            <p className="text-muted-foreground mt-2">Track your investments across all accounts</p>
+            <h1 className="text-3xl font-bold tracking-tight">Portfolio Overview</h1>
+            <p className="text-muted-foreground mt-1">Track your investments across all accounts</p>
           </div>
-          <div className="text-right">
-            <div className="text-sm text-muted-foreground">Total Portfolio Value</div>
-            <div className="text-4xl font-bold">
-              £{portfolioSummary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </div>
-            <div
-              className={`flex items-center gap-1 justify-end mt-1 ${portfolioSummary.totalChangePercent >= 0 ? "text-green-600" : "text-red-600"}`}
-            >
-              {portfolioSummary.totalChangePercent >= 0 ? (
-                <TrendingUp className="h-4 w-4" />
-              ) : (
-                <TrendingDown className="h-4 w-4" />
-              )}
-              <span className="font-semibold">
-                £{Math.abs(portfolioSummary.totalChange).toLocaleString("en-US", { minimumFractionDigits: 2 })} (
-                {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
-                {portfolioSummary.totalChangePercent.toFixed(2)}%)
-              </span>
+          <div className="flex items-center gap-4">
+            <RefreshButton label="Refresh Prices" />
+            <div className="text-right">
+              <div className="text-sm text-muted-foreground">Total Value</div>
+              <div className="text-3xl font-bold">
+                £{portfolioSummary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </div>
+              <div
+                className={`flex items-center gap-1 justify-end text-sm ${portfolioSummary.totalChangePercent >= 0 ? "text-emerald-600" : "text-red-600"}`}
+              >
+                {portfolioSummary.totalChangePercent >= 0 ? (
+                  <TrendingUp className="h-3.5 w-3.5" />
+                ) : (
+                  <TrendingDown className="h-3.5 w-3.5" />
+                )}
+                <span className="font-medium">
+                  {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
+                  {portfolioSummary.totalChangePercent.toFixed(2)}%
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Quick Stats Banner */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Stats</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+        {/* Quick Stats */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
                   <Wallet className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">Total Accounts</div>
+                  <div className="text-sm text-muted-foreground">Accounts</div>
                   <div className="text-2xl font-bold">{portfolioSummary.portfolios.length}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
-                  <PieChartIcon className="h-6 w-6 text-green-600" />
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-emerald-500/5 to-transparent border-emerald-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
+                  <PieChartIcon className="h-6 w-6 text-emerald-600" />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">Total Holdings</div>
+                  <div className="text-sm text-muted-foreground">Holdings</div>
                   <div className="text-2xl font-bold">
                     {portfolioSummary.portfolios.reduce((acc, portfolio) => acc + portfolio.holdings.length, 0)}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-blue-500/5 to-transparent border-blue-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
                   <BarChart3 className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">YTD Return</div>
-                  <div
-                    className={`text-2xl font-bold ${portfolioSummary.totalChangePercent >= 0 ? "text-green-600" : "text-red-600"}`}
-                  >
+                  <div className={`text-2xl font-bold ${portfolioSummary.totalChangePercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                     {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
                     {portfolioSummary.totalChangePercent.toFixed(2)}%
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Charts Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-8">
-          {/* Portfolio Performance */}
+        <div className="grid gap-6 lg:grid-cols-8">
+          {/* Portfolio Performance - Line Chart */}
           <Card className="lg:col-span-5">
-            <CardHeader>
-              <CardTitle>Portfolio Performance</CardTitle>
-              <CardDescription>12-month performance history</CardDescription>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Performance</CardTitle>
+              <CardDescription>12-month history</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={performanceData}>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={performanceData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#4F46E5" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                  <XAxis
+                    dataKey="date"
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <YAxis
                     stroke="hsl(var(--muted-foreground))"
                     tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
-                    }}
-                    formatter={(value: number) => [`£${value.toLocaleString()}`, "Value"]}
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#4F46E5"
+                    strokeWidth={2.5}
+                    dot={false}
+                    fill="url(#valueGradient)"
                   />
-                  <Line type="monotone" dataKey="value" stroke="#4F46E5" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          {/* Portfolio Split */}
+          {/* Portfolio Split - Donut Chart */}
           <Card className="lg:col-span-3">
-            <CardHeader>
-              <CardTitle>Portfolio Split</CardTitle>
-              <CardDescription>Distribution by portfolio</CardDescription>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">By Portfolio</CardTitle>
+              <CardDescription>Distribution</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
                     data={portfolioAllocationData}
                     cx="50%"
                     cy="50%"
-                    outerRadius={100}
-                    paddingAngle={2}
-                    cornerRadius={6}
+                    innerRadius={DONUT_INNER_RADIUS}
+                    outerRadius={DONUT_OUTER_RADIUS}
+                    paddingAngle={3}
+                    cornerRadius={8}
                     dataKey="value"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name.split(" ")[0]} ${(percent * 100).toFixed(0)}%`
-                    }
                   >
-                    {portfolioAllocationData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {portfolioAllocationData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                     ))}
                   </Pie>
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const { name, value } = payload[0].payload;
-                      return (
-                        <div className="
-                          bg-card border border-border rounded-[var(--radius)]
-                          px-3 py-2 shadow-lg text-[0.85rem] text-foreground
-                          pointer-events-none relative z-[9999]
-                        ">
-                          <div className="font-semibold">{name}</div>
-                          <div>£{value.toLocaleString()}</div>
-                        </div>
-                      );
-                    }}
-                  />
+                  <Tooltip content={<PieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
+              {/* Legend below donut */}
+              <div className="flex flex-wrap justify-center gap-3 mt-2">
+                {portfolioAllocationData.map((entry, index) => (
+                  <div key={entry.name} className="flex items-center gap-1.5 text-xs">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                    <span className="text-muted-foreground">{entry.name}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
-          {/* Account Split */}
+
+          {/* Account Split - Donut Chart */}
           <Card className="lg:col-span-3">
-            <CardHeader>
-              <CardTitle>Top Accounts</CardTitle>
-              <CardDescription>Account distrobution by holdings value</CardDescription>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">By Account</CardTitle>
+              <CardDescription>Holdings value</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
-                  <defs>
-                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                      <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.15" />
-                    </filter>
-                  </defs>
                   <Pie
                     data={accountAllocationData}
                     cx="50%"
                     cy="50%"
-                    outerRadius={110}
-                    innerRadius={60}
-                    paddingAngle={2}
-                    cornerRadius={6}
+                    innerRadius={DONUT_INNER_RADIUS - 10}
+                    outerRadius={DONUT_OUTER_RADIUS - 10}
+                    paddingAngle={3}
+                    cornerRadius={8}
                     dataKey="value"
-                    labelLine={false}
-                    filter="url(#shadow)"
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
-                    }
                   >
-                    {accountAllocationData.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                        stroke="hsl(var(--card))"
-                        strokeWidth={2}
-                      />
+                    {accountAllocationData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                     ))}
                   </Pie>
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload || !payload.length) return null;
-                      const { name, value } = payload[0].payload;
-                      return (
-                        <div
-                          className="
-                          bg-card border border-border rounded-[var(--radius)] px-3 py-2 shadow-lg text-[0.85rem] text-foreground pointer-events-none relative z-[9999]"
-                        >
-                          <div style={{ fontWeight: 600 }}>{name}</div>
-                          <div>£{value.toLocaleString()}</div>
-                        </div>
-                      );
-                    }}
-                  />
+                  <Tooltip content={<PieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
+              <div className="flex flex-wrap justify-center gap-3 mt-2">
+                {accountAllocationData.map((entry, index) => (
+                  <div key={entry.name} className="flex items-center gap-1.5 text-xs">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                    <span className="text-muted-foreground">{entry.name}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Asset Type Distribution */}
+          {/* Asset Distribution - Bar Chart */}
           <Card className="lg:col-span-5">
-            <CardHeader>
-              <CardTitle>Asset Distribution</CardTitle>
-              <CardDescription>Breakdown by asset type</CardDescription>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Asset Allocation</CardTitle>
+              <CardDescription>By type</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={assetTypeData} barGap={8} barCategoryGap="40%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={assetTypeData} barGap={8} barCategoryGap="30%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis
                     dataKey="name"
                     stroke="hsl(var(--muted-foreground))"
-                    interval={0}
-                    angle={-15}
-                    textAnchor="end"
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
                   />
                   <YAxis
                     stroke="hsl(var(--muted-foreground))"
-                    tickFormatter={(value) => `${value.toFixed(2)}%`}
+                    tickFormatter={(value) => `${value.toFixed(0)}%`}
+                    tick={{ fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
                   />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
                       const { name, value } = payload[0].payload;
                       return (
-                        <div className="
-                          bg-card border border-border rounded-[var(--radius)]
-                          px-3 py-2 shadow-lg text-[0.85rem] text-foreground
-                          pointer-events-none relative z-[9999]
-                        ">
-                          <div className="font-semibold">{name}</div>
-                          <div>{value.toFixed(2)}%</div>
+                        <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
+                          <p className="text-sm font-medium">{name}</p>
+                          <p className="text-sm text-muted-foreground">{value.toFixed(1)}%</p>
                         </div>
                       );
                     }}
                   />
-                  <Bar
-                      dataKey="value"
-                      radius={[8, 8, 0, 0]}
-                      barSize="80%"
-                    >
-                      {assetTypeData.map((entry, index) => (
-                        <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>
+                    {assetTypeData.map((entry, index) => (
+                      <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -312,13 +318,13 @@ export default function PortfolioOverview() {
 
         {/* Holdings Treemap */}
         <Card>
-          <CardHeader>
-            <CardTitle>Holdings Overview</CardTitle>
-            <CardDescription>Visual breakdown of all holdings by type and value</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Holdings</CardTitle>
+            <CardDescription>Visual breakdown by value</CardDescription>
           </CardHeader>
           <CardContent>
-            <div style={{ width: "100%", height: 500 }}>
-              <CustomTreemap data={treemapData} colors={COLORS} />
+            <div style={{ width: "100%", height: 450 }}>
+              <CustomTreemap data={treemapData} colors={[...CHART_COLORS]} />
             </div>
           </CardContent>
         </Card>

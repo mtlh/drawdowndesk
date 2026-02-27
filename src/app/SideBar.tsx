@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, MoonIcon, LineChartIcon, ChevronRight, FileChartPie } from "lucide-react"
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie } from "lucide-react"
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 
 import {
@@ -77,7 +77,6 @@ import Image from "next/image";
 import { SignIn, SignOut } from "@/components/SignIn";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
   return (
@@ -125,15 +124,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenuButton asChild>
-          <Button variant="ghost" onClick={() => { 
-            document.documentElement.classList.toggle('dark');
-            localStorage.setItem("theme", document.documentElement.classList.contains('dark') ? "dark" : "light");
-            }}>
-            <MoonIcon />
-            <span>Toggle light/dark mode</span>
-          </Button>
-        </SidebarMenuButton>
         <SidebarGroup className="gap-4">
           <Authenticated>
             <SignOut />
