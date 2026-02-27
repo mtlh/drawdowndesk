@@ -5,9 +5,9 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Trash2, Plus } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { ArrowLeft, Save, Trash2, Plus, ChevronDown, ChevronRight, TrendingUp, TrendingDown } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
@@ -26,8 +26,8 @@ export default function PortfolioHoldingsPage() {
 
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [simpleHoldings, setSimpleHoldings] = useState<SimpleHolding[]>([]);
-  const [editingHolding, setEditingHolding] = useState<string | null>(null);
-  const [editingSimpleHolding, setEditingSimpleHolding] = useState<string | null>(null);
+  const [expandedHoldingId, setExpandedHoldingId] = useState<string | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [editedValues, setEditedValues] = useState<Partial<Holding>>({});
   const [editedSimpleValues, setEditedSimpleValues] = useState<Partial<SimpleHolding>>({});
 
@@ -43,7 +43,9 @@ export default function PortfolioHoldingsPage() {
   }, [getPortfolioData, holdings.length]);
 
   if (!getPortfolioData) {
-    return <div>Loading portfolio…</div>;
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>;
   }
 
   if (isError(getPortfolioData)) {
@@ -82,32 +84,47 @@ export default function PortfolioHoldingsPage() {
   }
 
   // Calculate portfolio stats
-  const totalValue = isManual 
+  const totalValue = isManual
     ? portfolioSimpleHoldings.reduce((sum, h) => sum + h.value, 0)
     : portfolioHoldings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
-  const totalCost = isManual 
+  const totalCost = isManual
     ? 0
     : portfolioHoldings.reduce((sum, h) => sum + h.shares * h.avgPrice, 0);
   const totalGain = totalValue - totalCost;
   const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
 
-  // Start editing a holding
-  const startEditing = (holding: Holding) => {
-    if (holding._id) setEditingHolding(holding._id);
-    setEditedValues(holding);
+  // Toggle expand a holding
+  const toggleHolding = (holdingId: string | null) => {
+    if (expandedHoldingId === holdingId) {
+      setExpandedHoldingId(null);
+      setIsCreatingNew(false);
+      setEditedValues({});
+      setEditedSimpleValues({});
+    } else {
+      const holding = portfolioHoldings.find(h => h._id === holdingId) || portfolioSimpleHoldings.find(h => h._id === holdingId);
+      if (holding) {
+        setExpandedHoldingId(holdingId);
+        setIsCreatingNew(false);
+        if ('symbol' in holding) {
+          setEditedValues(holding);
+        } else {
+          setEditedSimpleValues(holding);
+        }
+      }
+    }
   };
 
   // Save edited holding
   const saveHolding = async () => {
-    if (editingHolding && editedValues) {
-      if (!editedValues.symbol || !editedValues.name || !editedValues.portfolioId) {
-        alert("Please fill in all required fields (Symbol, Name)");
-        return;
-      }
+    if (!editedValues.symbol || !editedValues.name || !editedValues.portfolioId) {
+      alert("Please fill in Symbol and Name");
+      return;
+    }
 
-      try {
+    try {
+      if (isCreatingNew) {
+        // Create new holding - don't pass _id
         await updateHoldingMutation({
-          _id: editingHolding === "new" ? undefined : (editingHolding as Id<"holdings">),
           portfolioId: editedValues.portfolioId as Id<"portfolios">,
           symbol: editedValues.symbol,
           name: editedValues.name,
@@ -119,65 +136,131 @@ export default function PortfolioHoldingsPage() {
           currentPrice: editedValues.currentPrice || 0,
           purchaseDate: editedValues.purchaseDate || new Date().toISOString().split("T")[0],
         });
-
-        // Update local state with the saved values
-        if (editingHolding === "new") {
-          // For new holdings, add to the list
-          setHoldings([...holdings.filter((_, idx) => idx !== holdings.length - 1), editedValues as Holding]);
-        } else {
-          // For existing holdings, update the specific holding
-          setHoldings(
-            holdings.map((h) =>
-              h._id === editingHolding
-                ? { ...editedValues, _id: h._id } as Holding
-                : h
-            )
-          );
+        // Refresh data
+        const newData = await getPortfolioData;
+        if (newData && isPortfolioArray(newData)) {
+          setHoldings(newData.flatMap((p) => p.holdings));
         }
-        setEditingHolding(null);
-        setEditedValues({});
-      } catch (error) {
-        console.error("Failed to save holding:", error);
-        alert("Failed to save holding. Please try again.");
+      } else {
+        await updateHoldingMutation({
+          _id: expandedHoldingId as Id<"holdings">,
+          portfolioId: editedValues.portfolioId as Id<"portfolios">,
+          symbol: editedValues.symbol,
+          name: editedValues.name,
+          accountName: editedValues.accountName,
+          holdingType: editedValues.holdingType || "Stock",
+          currency: editedValues.currency || "GBP",
+          shares: editedValues.shares || 0,
+          avgPrice: editedValues.avgPrice || 0,
+          currentPrice: editedValues.currentPrice || 0,
+          purchaseDate: editedValues.purchaseDate || new Date().toISOString().split("T")[0],
+        });
+        setHoldings(holdings.map((h) =>
+          h._id === expandedHoldingId
+            ? { ...editedValues, _id: h._id } as Holding
+            : h
+        ));
       }
+      setExpandedHoldingId(null);
+      setIsCreatingNew(false);
+      setEditedValues({});
+    } catch (error) {
+      console.error("Failed to save holding:", error);
+      alert("Failed to save holding. Please try again.");
     }
   };
 
   // Delete holding
-  const deleteHolding = async (id: Id<"holdings"> | undefined) => {
-    if (!id) return;
-
-    if (!confirm("Are you sure you want to delete this holding?")) {
+  const deleteHolding = async () => {
+    if (!expandedHoldingId || !confirm("Are you sure you want to delete this holding?")) {
       return;
     }
 
     try {
-      await deleteHoldingsMutation({ holdingId: id as Id<"holdings"> });
-      setHoldings(holdings.filter((h) => h._id !== id));
+      await deleteHoldingsMutation({ holdingId: expandedHoldingId as Id<"holdings"> });
+      setHoldings(holdings.filter((h) => h._id !== expandedHoldingId));
+      setExpandedHoldingId(null);
     } catch (error) {
       console.error("Failed to delete holding:", error);
       alert("Failed to delete holding. Please try again.");
     }
   };
 
-  // Add new holding
+  // Save edited simple holding
+  const saveSimpleHolding = async () => {
+    if (!editedSimpleValues.name || editedSimpleValues.portfolioId === undefined) {
+      alert("Please fill in Name and Value");
+      return;
+    }
+
+    try {
+      if (isCreatingNew) {
+        await updateSimpleHoldingMutation({
+          portfolioId: editedSimpleValues.portfolioId as Id<"portfolios">,
+          name: editedSimpleValues.name,
+          value: editedSimpleValues.value || 0,
+          accountName: editedSimpleValues.accountName,
+          holdingType: editedSimpleValues.holdingType,
+          notes: editedSimpleValues.notes,
+        });
+        const newData = await getPortfolioData;
+        if (newData && isPortfolioArray(newData)) {
+          setSimpleHoldings(newData.flatMap((p) => p.simpleHoldings || []));
+        }
+      } else {
+        await updateSimpleHoldingMutation({
+          _id: expandedHoldingId as Id<"simpleHoldings">,
+          portfolioId: editedSimpleValues.portfolioId as Id<"portfolios">,
+          name: editedSimpleValues.name,
+          value: editedSimpleValues.value || 0,
+          accountName: editedSimpleValues.accountName,
+          holdingType: editedSimpleValues.holdingType,
+          notes: editedSimpleValues.notes,
+        });
+        setSimpleHoldings(simpleHoldings.map((h) =>
+          h._id === expandedHoldingId
+            ? { ...editedSimpleValues, _id: h._id } as SimpleHolding
+            : h
+        ));
+      }
+      setExpandedHoldingId(null);
+      setIsCreatingNew(false);
+      setEditedSimpleValues({});
+    } catch (error) {
+      console.error("Failed to save holding:", error);
+      alert("Failed to save holding. Please try again.");
+    }
+  };
+
+  // Delete simple holding
+  const deleteSimpleHolding = async () => {
+    if (!expandedHoldingId || !confirm("Are you sure you want to delete this holding?")) {
+      return;
+    }
+
+    try {
+      await deleteSimpleHoldingMutation({ holdingId: expandedHoldingId as Id<"simpleHoldings"> });
+      setSimpleHoldings(simpleHoldings.filter((h) => h._id !== expandedHoldingId));
+      setExpandedHoldingId(null);
+    } catch (error) {
+      console.error("Failed to delete holding:", error);
+      alert("Failed to delete holding. Please try again.");
+    }
+  };
+
+  // Add new holding - create blank entry
   const addHolding = () => {
     if (isManual) {
-      const newSimpleHolding: SimpleHolding = {
-        _id: undefined,
+      setEditedSimpleValues({
         portfolioId: portfolioId as Id<"portfolios">,
         name: "",
         value: 0,
         accountName: "",
         holdingType: "",
         notes: "",
-      };
-      setSimpleHoldings([...simpleHoldings, newSimpleHolding]);
-      setEditingSimpleHolding("new");
-      setEditedSimpleValues(newSimpleHolding);
+      });
     } else {
-      const newHolding: Holding = {
-        _id: undefined,
+      setEditedValues({
         portfolioId: portfolioId as Id<"portfolios">,
         symbol: "",
         name: "",
@@ -188,78 +271,13 @@ export default function PortfolioHoldingsPage() {
         avgPrice: 0,
         currentPrice: 0,
         purchaseDate: new Date().toISOString().split("T")[0],
-        lastUpdated: new Date().toISOString(),
-      };
-      setHoldings([...holdings, newHolding]);
-      setEditingHolding("new");
-      setEditedValues(newHolding);
+      });
     }
+    setExpandedHoldingId("new");
+    setIsCreatingNew(true);
   };
 
-  // Start editing a simple holding
-  const startEditingSimple = (holding: SimpleHolding) => {
-    if (holding._id) setEditingSimpleHolding(holding._id);
-    setEditedSimpleValues(holding);
-  };
-
-  // Save edited simple holding
-  const saveSimpleHolding = async () => {
-    if (editingSimpleHolding && editedSimpleValues) {
-      if (!editedSimpleValues.name || editedSimpleValues.portfolioId === undefined) {
-        alert("Please fill in all required fields (Name, Value)");
-        return;
-      }
-
-      try {
-        await updateSimpleHoldingMutation({
-          _id: editingSimpleHolding === "new" ? undefined : (editingSimpleHolding as Id<"simpleHoldings">),
-          portfolioId: editedSimpleValues.portfolioId as Id<"portfolios">,
-          name: editedSimpleValues.name,
-          value: editedSimpleValues.value || 0,
-          accountName: editedSimpleValues.accountName,
-          holdingType: editedSimpleValues.holdingType,
-          notes: editedSimpleValues.notes,
-        });
-
-        // Update local state with the saved values
-        if (editingSimpleHolding === "new") {
-          // For new holdings, add to the list
-          setSimpleHoldings([...simpleHoldings.filter((_, idx) => idx !== simpleHoldings.length - 1), editedSimpleValues as SimpleHolding]);
-        } else {
-          // For existing holdings, update the specific holding
-          setSimpleHoldings(
-            simpleHoldings.map((h) =>
-              h._id === editingSimpleHolding
-                ? { ...editedSimpleValues, _id: h._id } as SimpleHolding
-                : h
-            )
-          );
-        }
-        setEditingSimpleHolding(null);
-        setEditedSimpleValues({});
-      } catch (error) {
-        console.error("Failed to save holding:", error);
-        alert("Failed to save holding. Please try again.");
-      }
-    }
-  };
-
-  // Delete simple holding
-  const deleteSimpleHolding = async (id: Id<"simpleHoldings"> | undefined) => {
-    if (!id) return;
-
-    if (!confirm("Are you sure you want to delete this holding?")) {
-      return;
-    }
-
-    try {
-      await deleteSimpleHoldingMutation({ holdingId: id });
-      setSimpleHoldings(simpleHoldings.filter((h) => h._id !== id));
-    } catch (error) {
-      console.error("Failed to delete holding:", error);
-      alert("Failed to delete holding. Please try again.");
-    }
-  };
+  const isExpanded = expandedHoldingId !== null;
 
   return (
     <div className="flex h-screen bg-background">
@@ -292,446 +310,416 @@ export default function PortfolioHoldingsPage() {
             </Button>
           </div>
 
-          <Card>
-            <CardContent className="p-0">
-              {isManual ? (
-                portfolioSimpleHoldings.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">
-                    No holdings in this portfolio yet.
-                  </div>
-                ) : (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-right">Name</TableHead>
-                          <TableHead className="text-right">Account</TableHead>
-                          <TableHead className="text-right">Type</TableHead>
-                          <TableHead className="text-right">Value</TableHead>
-                          <TableHead className="text-right">Notes</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {portfolioSimpleHoldings.map((holding, index) => {
-                          const isEditing = editingSimpleHolding === holding._id || (editingSimpleHolding === "new" && index === portfolioSimpleHoldings.length - 1 && !holding._id);
-                          return (
-                            <TableRow key={holding._id || `new-${index}`} className="text-right">
-                              <TableCell>
-                                {isEditing ? (
-                                  <Input
-                                    value={editedSimpleValues.name || ""}
-                                    onChange={(e) =>
-                                      setEditedSimpleValues({
-                                        ...editedSimpleValues,
-                                        name: e.target.value,
-                                      })
-                                    }
-                                    style={{ width: `${(editedSimpleValues.name?.length || 1) + 5}ch` }}
-                                    className="h-8 text-right"
-                                  />
-                                ) : (
-                                  <span
-                                    className="cursor-pointer hover:underline"
-                                    onClick={() => startEditingSimple(holding)}
-                                  >
-                                    {holding.name || "-"}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {isEditing ? (
-                                  <Input
-                                    value={editedSimpleValues.accountName || ""}
-                                    onChange={(e) =>
-                                      setEditedSimpleValues({
-                                        ...editedSimpleValues,
-                                        accountName: e.target.value,
-                                      })
-                                    }
-                                    style={{ width: `${(editedSimpleValues.accountName?.length || 1) + 5}ch` }}
-                                    className="h-8 text-right"
-                                    placeholder="e.g., S&S ISA"
-                                  />
-                                ) : (
-                                  <span
-                                    className="cursor-pointer hover:underline"
-                                    onClick={() => startEditingSimple(holding)}
-                                  >
-                                    {holding.accountName || "-"}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {isEditing ? (
-                                  <Input
-                                    value={editedSimpleValues.holdingType || ""}
-                                    onChange={(e) =>
-                                      setEditedSimpleValues({
-                                        ...editedSimpleValues,
-                                        holdingType: e.target.value,
-                                      })
-                                    }
-                                    style={{ width: `${(editedSimpleValues.holdingType?.length || 1) + 5}ch` }}
-                                    className="h-8 text-right"
-                                    placeholder="e.g., Fund"
-                                  />
-                                ) : (
-                                  <span
-                                    className="cursor-pointer hover:underline"
-                                    onClick={() => startEditingSimple(holding)}
-                                  >
-                                    {holding.holdingType || "-"}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {isEditing ? (
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={editedSimpleValues.value || 0}
-                                    onChange={(e) =>
-                                      setEditedSimpleValues({
-                                        ...editedSimpleValues,
-                                        value: Number.parseFloat(e.target.value),
-                                      })
-                                    }
-                                    style={{ width: `${(editedSimpleValues.value?.toString()?.length || 1) + 8}ch` }}
-                                    className="h-8 text-right"
-                                  />
-                                ) : (
-                                  <span
-                                    className="cursor-pointer hover:underline"
-                                    onClick={() => startEditingSimple(holding)}
-                                  >
-                                    £{holding.value.toFixed(2)}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {isEditing ? (
-                                  <Input
-                                    value={editedSimpleValues.notes || ""}
-                                    onChange={(e) =>
-                                      setEditedSimpleValues({
-                                        ...editedSimpleValues,
-                                        notes: e.target.value,
-                                      })
-                                    }
-                                    style={{ width: `${(editedSimpleValues.notes?.length || 1) + 5}ch` }}
-                                    className="h-8 text-right"
-                                    placeholder="Optional notes"
-                                  />
-                                ) : (
-                                  <span
-                                    className="cursor-pointer hover:underline"
-                                    onClick={() => startEditingSimple(holding)}
-                                  >
-                                    {holding.notes || "-"}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  {isEditing ? (
-                                    <Button
-                                      size="sm"
-                                      variant="default"
-                                      onClick={saveSimpleHolding}
-                                      className="h-8 gap-1"
-                                    >
-                                      <Save className="h-3 w-3" />
-                                      Save
-                                    </Button>
-                                  ) : (
-                                    <Button size="sm" variant="ghost" onClick={() => deleteSimpleHolding(holding._id)}>
-                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )
-              ) : portfolioHoldings.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground">
-                  No holdings in this portfolio yet. Click &quot;Add Holding&quot; to get started.
-                </div>
+          {/* Holdings List */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {isManual ? (
+              portfolioSimpleHoldings.length === 0 && !isExpanded ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    No holdings yet. Click &quot;Add Holding&quot; to get started.
+                  </CardContent>
+                </Card>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead>Ticker</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Account</TableHead>
-                        <TableHead className="text-right">Shares</TableHead>
-                        <TableHead className="text-right">Avg</TableHead>
-                        <TableHead className="text-right">Current</TableHead>
-                        <TableHead className="text-right">Value</TableHead>
-                        <TableHead className="text-right">Gain/Loss</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                        <TableBody>
-                          {portfolioHoldings.map((holding, index) => {
-                            const isEditing = editingHolding === holding._id || (editingHolding === "new" && index === portfolioHoldings.length - 1 && !holding._id);
-                        const marketValue = holding.shares * holding.currentPrice;
-                        const cost = holding.shares * holding.avgPrice;
-                        const gainLoss = marketValue - cost;
-                        const gainLossPercent = cost > 0 ? (gainLoss / cost) * 100 : 0;
+                <>
+                  {portfolioSimpleHoldings.map((holding) => (
+                    <HoldingCard
+                      key={holding._id || "new"}
+                      holding={holding}
+                      isExpanded={expandedHoldingId === holding._id}
+                      isCreating={isCreatingNew && expandedHoldingId === "new"}
+                      onToggle={() => toggleHolding(holding._id || null)}
+                      editedValues={editedSimpleValues}
+                      setEditedValues={setEditedSimpleValues}
+                      onSave={saveSimpleHolding}
+                      onDelete={deleteSimpleHolding}
+                      isSimple={true}
+                    />
+                  ))}
+                  {/* Show new holding form if creating */}
+                  {isCreatingNew && expandedHoldingId === "new" && (
+                    <HoldingCard
+                      key="new-simple"
+                      holding={{ _id: undefined, portfolioId: portfolioId as Id<"portfolios">, name: "", value: 0, accountName: "", holdingType: "", notes: "" }}
+                      isExpanded={true}
+                      isCreating={true}
+                      onToggle={() => toggleHolding(null)}
+                      editedValues={editedSimpleValues}
+                      setEditedValues={setEditedSimpleValues}
+                      onSave={saveSimpleHolding}
+                      onDelete={() => {}}
+                      isSimple={true}
+                    />
+                  )}
+                </>
+              )
+            ) : (
+              portfolioHoldings.length === 0 && !isExpanded ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    No holdings yet. Click &quot;Add Holding&quot; to get started.
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {portfolioHoldings.map((holding) => {
+                    const marketValue = holding.shares * holding.currentPrice;
+                    const cost = holding.shares * holding.avgPrice;
+                    const gainLoss = marketValue - cost;
+                    const gainLossPercent = cost > 0 ? (gainLoss / cost) * 100 : 0;
 
-                        return (
-                          <TableRow key={holding._id || `new-${index}`} className="text-right">
-                            <TableCell>
-                              {isEditing ? (
-                                <Input
-                                  value={editedValues.symbol || ""}
-                                  onChange={(e) =>
-                                    setEditedValues({
-                                      ...editedValues,
-                                      symbol: e.target.value,
-                                    })
-                                  }
-                                  style={{ width: `${(editedValues.symbol?.length || 1) + 5}ch` }}
-                                  className="h-8 text-right"
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:underline"
-                                  onClick={() => startEditing(holding)}
-                                >
-                                  {holding.symbol || "-"}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {isEditing ? (
-                                <Input
-                                  value={editedValues.name || ""}
-                                  onChange={(e) =>
-                                    setEditedValues({
-                                      ...editedValues,
-                                      name: e.target.value,
-                                    })
-                                  }
-                                  style={{ width: `${(editedValues.name?.length || 1) + 5}ch` }}
-                                  className="h-8 text-right"
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:underline"
-                                  onClick={() => startEditing(holding)}
-                                >
-                                  {holding.name || "-"}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {isEditing ? (
-                                <Input
-                                  value={editedValues.accountName || ""}
-                                  onChange={(e) =>
-                                    setEditedValues({
-                                      ...editedValues,
-                                      accountName: e.target.value,
-                                    })
-                                  }
-                                  style={{ width: `${(editedValues.accountName?.length || 1) + 5}ch` }}
-                                  className="h-8 text-right"
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:underline"
-                                  onClick={() => startEditing(holding)}
-                                >
-                                  {holding.accountName || "-"}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {isEditing ? (
-                                <Input
-                                  value={editedValues.holdingType || ""}
-                                  onChange={(e) =>
-                                    setEditedValues({
-                                      ...editedValues,
-                                      holdingType: e.target.value,
-                                    })
-                                  }
-                                  style={{ width: `${(editedValues.holdingType?.length || 1) + 5}ch` }}
-                                  className="h-8 text-right"
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:underline"
-                                  onClick={() => startEditing(holding)}
-                                >
-                                  {holding.holdingType}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {isEditing ? (
-                                <Select
-                                  value={editedValues.currency || "GBP"}
-                                  onValueChange={(value) =>
-                                    setEditedValues({
-                                      ...editedValues,
-                                      currency: value,
-                                    })
-                                  }
-                                >
-                                  <SelectTrigger className="h-8 text-right">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="GBP">GBP</SelectItem>
-                                    <SelectItem value="GBp">GBp</SelectItem>
-                                    <SelectItem value="USD">USD</SelectItem>
-                                    <SelectItem value="EUR">EUR</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:underline"
-                                  onClick={() => startEditing(holding)}
-                                >
-                                  {holding.currency || "GBP"}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {isEditing ? (
-                                <Input
-                                  type="number"
-                                  value={editedValues.shares || 0}
-                                  step="0.001"
-                                  onChange={(e) =>
-                                    setEditedValues({
-                                      ...editedValues,
-                                      shares: Number.parseFloat(e.target.value),
-                                    })
-                                  }
-                                  style={{ width: `${(editedValues.shares?.toString()?.length || 1) + 8}ch` }}
-                                  className="h-8 text-right"
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:underline"
-                                  onClick={() => startEditing(holding)}
-                                >
-                                  {holding.shares}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {isEditing ? (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={editedValues.avgPrice || 0}
-                                  onChange={(e) =>
-                                    setEditedValues({
-                                      ...editedValues,
-                                      avgPrice: Number.parseFloat(e.target.value),
-                                    })
-                                  }
-                                  style={{ width: `${(editedValues.avgPrice?.toString()?.length || 1) + 8}ch` }}
-                                  className="h-8 text-right"
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:underline"
-                                  onClick={() => startEditing(holding)}
-                                >
-                                  £{holding.avgPrice.toFixed(2)}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {isEditing ? (
-                                <Input
-                                  type="number"
-                                  value={editedValues.currentPrice || 0}
-                                  disabled={true}
-                                  className="h-8 text-right"
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:underline"
-                                  onClick={() => startEditing(holding)}
-                                >
-                                  £{holding.currentPrice.toFixed(2)}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {isEditing ? (
-                                <Input
-                                  type="date"
-                                  value={editedValues.purchaseDate || ""}
-                                  onChange={(e) =>
-                                    setEditedValues({
-                                      ...editedValues,
-                                      purchaseDate: e.target.value,
-                                    })
-                                  }
-                                  className="h-8 text-right"
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:underline"
-                                  onClick={() => startEditing(holding)}
-                                >
-                                  {holding.purchaseDate}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              £{marketValue.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <span className={gainLoss >= 0 ? "text-green-600" : "text-red-600"}>
-                                £{gainLoss.toFixed(2)} ({gainLossPercent.toFixed(2)}%)
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                {isEditing ? (
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    onClick={saveHolding}
-                                    className="h-8 gap-1"
-                                  >
-                                    <Save className="h-3 w-3" />
-                                    Save
-                                  </Button>
-                                ) : (
-                                  <Button size="sm" variant="ghost" onClick={() => deleteHolding(holding._id)}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )
-              }
-            </CardContent>
-          </Card>
+                    return (
+                      <HoldingCard
+                        key={holding._id || "new"}
+                        holding={holding}
+                        isExpanded={expandedHoldingId === holding._id}
+                        isCreating={isCreatingNew && expandedHoldingId === "new"}
+                        onToggle={() => toggleHolding(holding._id || null)}
+                        editedValues={editedValues}
+                        setEditedValues={setEditedValues}
+                        onSave={saveHolding}
+                        onDelete={deleteHolding}
+                        isSimple={false}
+                        marketValue={marketValue}
+                        gainLoss={gainLoss}
+                        gainLossPercent={gainLossPercent}
+                      />
+                    );
+                  })}
+                  {/* Show new holding form if creating */}
+                  {isCreatingNew && expandedHoldingId === "new" && (
+                    <HoldingCard
+                      key="new-live"
+                      holding={{ _id: undefined, portfolioId: portfolioId as Id<"portfolios">, symbol: "", name: "", accountName: "", holdingType: "Stock", currency: "GBP", shares: 0, avgPrice: 0, currentPrice: 0, purchaseDate: "", lastUpdated: "" }}
+                      isExpanded={true}
+                      isCreating={true}
+                      onToggle={() => toggleHolding(null)}
+                      editedValues={editedValues}
+                      setEditedValues={setEditedValues}
+                      onSave={saveHolding}
+                      onDelete={() => {}}
+                      isSimple={false}
+                      marketValue={0}
+                      gainLoss={0}
+                      gainLossPercent={0}
+                    />
+                  )}
+                </>
+              )
+            )}
+          </div>
         </div>
       </main>
     </div>
+  );
+}
+
+// Holding Card Component
+function HoldingCard({
+  holding,
+  isExpanded,
+  isCreating,
+  onToggle,
+  editedValues,
+  setEditedValues,
+  onSave,
+  onDelete,
+  isSimple,
+  marketValue = 0,
+  gainLoss = 0,
+  gainLossPercent = 0,
+}: {
+  holding: Holding | SimpleHolding;
+  isExpanded: boolean;
+  isCreating: boolean;
+  onToggle: () => void;
+  editedValues: Partial<Holding> | Partial<SimpleHolding>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setEditedValues: (values: any) => void;
+  onSave: () => void;
+  onDelete: () => void;
+  isSimple: boolean;
+  marketValue?: number;
+  gainLoss?: number;
+  gainLossPercent?: number;
+}) {
+  const liveHolding = !isSimple && 'symbol' in holding ? holding : null;
+  const simpleHolding = isSimple && 'value' in holding ? holding : null;
+
+  if (isSimple && simpleHolding) {
+    // Cast for simple holdings form
+    const simpleEdited = editedValues as Partial<SimpleHolding>;
+    return (
+      <Collapsible open={isExpanded} onOpenChange={onToggle}>
+        <Card className={isExpanded ? "col-span-full" : ""}>
+          <CollapsibleTrigger asChild>
+            <CardContent className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{isCreating ? "New Holding" : (simpleHolding.name || "Unnamed")}</div>
+                  <div className="text-xs text-muted-foreground truncate">{simpleHolding.accountName || "No account"}</div>
+                </div>
+              </div>
+              {!isCreating && !isExpanded && (
+                <div className="text-right shrink-0">
+                  <div className="font-semibold">£{simpleHolding.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0 space-y-4 pb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="lg:col-span-2">
+                  <label className="text-sm text-muted-foreground">Name</label>
+                  <Input
+                    value={simpleEdited.name || ""}
+                    onChange={(e) => setEditedValues({ ...simpleEdited, name: e.target.value })}
+                    placeholder="e.g., Vanguard Global All Cap"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Value (£)</label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={simpleEdited.value ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || val === "-") {
+                        setEditedValues({ ...simpleEdited, value: undefined });
+                      } else {
+                        const parsed = parseFloat(val);
+                        if (!isNaN(parsed)) {
+                          setEditedValues({ ...simpleEdited, value: parsed });
+                        }
+                      }
+                    }}
+                    placeholder="Enter value"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Account</label>
+                  <Input
+                    value={simpleEdited.accountName || ""}
+                    onChange={(e) => setEditedValues({ ...simpleEdited, accountName: e.target.value })}
+                    placeholder="e.g., S&S ISA"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Type</label>
+                  <Input
+                    value={simpleEdited.holdingType || ""}
+                    onChange={(e) => setEditedValues({ ...simpleEdited, holdingType: e.target.value })}
+                    placeholder="e.g., Fund, Pension"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Notes</label>
+                <Input
+                  value={simpleEdited.notes || ""}
+                  onChange={(e) => setEditedValues({ ...simpleEdited, notes: e.target.value })}
+                  placeholder="Optional notes"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={onSave} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {isCreating ? "Create" : "Save"}
+                </Button>
+                {!isCreating && (
+                  <Button variant="destructive" onClick={onDelete} className="gap-2">
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+    );
+  }
+
+  // Live holding card
+  // Cast for live holdings form
+  const liveEdited = editedValues as Partial<Holding>;
+  return (
+    <Collapsible open={isExpanded} onOpenChange={onToggle}>
+      <Card className={isExpanded ? "col-span-full" : ""}>
+        <CollapsibleTrigger asChild>
+          <CardContent className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-3 min-w-0">
+              {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+              <div className="min-w-0">
+                <div className="font-medium truncate">{isCreating ? "New Holding" : (liveHolding?.symbol || "Unnamed")}</div>
+                <div className="text-xs text-muted-foreground truncate">{liveHolding?.name || "No name"}</div>
+              </div>
+            </div>
+            {!isCreating && !isExpanded && (
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="text-right hidden md:block">
+                  <div className="text-xs text-muted-foreground">{liveHolding?.shares} shares</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold text-sm">£{marketValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  {(gainLoss || 0) >= 0 ? (
+                    <div className="text-xs text-emerald-600 flex items-center gap-1 justify-end">
+                      <TrendingUp className="h-2.5 w-2.5" />
+                      +{(gainLossPercent || 0).toFixed(1)}%
+                    </div>
+                  ) : (
+                    <div className="text-xs text-red-600 flex items-center gap-1 justify-end">
+                      <TrendingDown className="h-2.5 w-2.5" />
+                      {(gainLossPercent || 0).toFixed(1)}%
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0 space-y-4 pb-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="lg:col-span-2">
+                <label className="text-sm text-muted-foreground">Ticker</label>
+                <Input
+                  value={liveEdited.symbol || ""}
+                  onChange={(e) => setEditedValues({ ...liveEdited, symbol: e.target.value })}
+                  placeholder="e.g., ACWI.LON"
+                  className="mt-1"
+                />
+              </div>
+              <div className="lg:col-span-2">
+                <label className="text-sm text-muted-foreground">Name</label>
+                <Input
+                  value={liveEdited.name || ""}
+                  onChange={(e) => setEditedValues({ ...liveEdited, name: e.target.value })}
+                  placeholder="e.g., iShares MSCI ACWI"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Account</label>
+                <Input
+                  value={liveEdited.accountName || ""}
+                  onChange={(e) => setEditedValues({ ...liveEdited, accountName: e.target.value })}
+                  placeholder="e.g., S&S ISA"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Currency</label>
+                <Select
+                  value={liveEdited.currency || "GBP"}
+                  onValueChange={(value) => setEditedValues({ ...liveEdited, currency: value })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                    <SelectItem value="GBp">GBp</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Shares</label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={liveEdited.shares ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || val === "-") {
+                      setEditedValues({ ...liveEdited, shares: undefined });
+                    } else {
+                      const parsed = parseFloat(val);
+                      if (!isNaN(parsed)) {
+                        setEditedValues({ ...liveEdited, shares: parsed });
+                      }
+                    }
+                  }}
+                  placeholder="e.g., 100.5"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Avg Price (£)</label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={liveEdited.avgPrice ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || val === "-") {
+                      setEditedValues({ ...liveEdited, avgPrice: undefined });
+                    } else {
+                      const parsed = parseFloat(val);
+                      if (!isNaN(parsed)) {
+                        setEditedValues({ ...liveEdited, avgPrice: parsed });
+                      }
+                    }
+                  }}
+                  placeholder="Enter price"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Current Price (£)</label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={liveEdited.currentPrice ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || val === "-") {
+                      setEditedValues({ ...liveEdited, currentPrice: undefined });
+                    } else {
+                      const parsed = parseFloat(val);
+                      if (!isNaN(parsed)) {
+                        setEditedValues({ ...liveEdited, currentPrice: parsed });
+                      }
+                    }
+                  }}
+                  placeholder="Enter price"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Purchase Date</label>
+                <Input
+                  type="date"
+                  value={liveEdited.purchaseDate || ""}
+                  onChange={(e) => setEditedValues({ ...liveEdited, purchaseDate: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={onSave} className="gap-2">
+                <Save className="h-4 w-4" />
+                {isCreating ? "Create" : "Save"}
+              </Button>
+              {!isCreating && (
+                <Button variant="destructive" onClick={onDelete} className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
