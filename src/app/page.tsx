@@ -16,7 +16,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts"
-import { calculatePortfolioSummary, generateMockPerformanceData, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
+import { calculatePortfolioSummary, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
 import { api } from "../../convex/_generated/api"
 import { useQuery } from "convex/react"
 import { isError, isPortfolioArray } from "@/types/portfolios"
@@ -42,14 +42,13 @@ export default function PortfolioOverview() {
   const portfolioAllocationData = getPortfolioAllocationData(portfolioSummary.portfolios)
 
   // Convert snapshots to performance chart data
-  // Fall back to mock data when no snapshots exist
   const hasSnapshots = getPortfolioSnapshots && Array.isArray(getPortfolioSnapshots) && getPortfolioSnapshots.length > 0;
   const performanceData = hasSnapshots
     ? getPortfolioSnapshots.map(snapshot => ({
         date: new Date(snapshot.snapshotDate).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
         value: snapshot.totalValue,
       }))
-    : generateMockPerformanceData(portfolioSummary.totalValue);
+    : [];
 
   const assetTypeData = calculateAssetTypeAllocation(portfolioSummary.portfolios)
   const accountAllocationData = getAccountAllocationData(portfolioSummary.portfolios)
@@ -165,43 +164,52 @@ export default function PortfolioOverview() {
           <Card className="lg:col-span-5">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Performance</CardTitle>
-              <CardDescription>12-month history</CardDescription>
+              <CardDescription>{hasSnapshots ? "12-month history" : "Track your portfolio over time"}</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={performanceData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#4F46E5" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis
-                    dataKey="date"
-                    stroke="hsl(var(--muted-foreground))"
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#4F46E5"
-                    strokeWidth={2.5}
-                    dot={false}
-                    fill="url(#valueGradient)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {hasSnapshots ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={performanceData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#4F46E5" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="date"
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
+                      tick={{ fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#4F46E5"
+                      strokeWidth={2.5}
+                      dot={false}
+                      fill="url(#valueGradient)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[280px] flex flex-col items-center justify-center text-center p-6">
+                  <p className="text-muted-foreground mb-4">
+                    No performance data yet. Refresh your prices to start tracking your portfolio value over time.
+                  </p>
+                  <RefreshButton label="Refresh Prices" />
+                </div>
+              )}
             </CardContent>
           </Card>
 

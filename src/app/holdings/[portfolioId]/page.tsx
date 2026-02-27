@@ -311,7 +311,7 @@ export default function PortfolioHoldingsPage() {
           </div>
 
           {/* Holdings List */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-3">
             {isManual ? (
               portfolioSimpleHoldings.length === 0 && !isExpanded ? (
                 <Card>
@@ -450,7 +450,7 @@ function HoldingCard({
     const simpleEdited = editedValues as Partial<SimpleHolding>;
     return (
       <Collapsible open={isExpanded} onOpenChange={onToggle}>
-        <Card className={isExpanded ? "col-span-full" : ""}>
+        <Card>
           <CollapsibleTrigger asChild>
             <CardContent className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors">
               <div className="flex items-center gap-3 min-w-0">
