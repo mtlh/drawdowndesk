@@ -83,9 +83,7 @@ export const updateAccount = mutation({
     const { id, ...updates } = args;
 
     // Add lastUpdated timestamp
-    updates.lastUpdated = new Date().toISOString();
-
-    await ctx.db.patch(id, updates);
+    await ctx.db.patch(id, { ...updates, lastUpdated: new Date().toISOString() });
 
     return { success: true };
   },
