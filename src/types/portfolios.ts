@@ -1,6 +1,7 @@
 import { Id } from "../../convex/_generated/dataModel";
 
 export interface Portfolio {
+  _id: Id<"portfolios">;
   name: string;                // e.g., "My Portfolio"
   portfolioType?: "live" | "manual";  // "live" for API-tracked, "manual" for pensions/OICS
   lastUpdated?: string;        // Optional ISO timestamp

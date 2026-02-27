@@ -35,12 +35,12 @@ interface TaxCalculation {
   netAmount: number
 }
 
+type TaxRatesData = (TaxRates & { taxYear: { taxYear: number } }) | { error: string } | undefined;
+
 
 export default function OneOffCashflow() {
   // Get current tax data
-  const TAX_RATES = useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, { taxYear: 2025 }) as (
-    { taxYear: number; personalAllowance: { amount: number }; bands: Array<{ bandStartAmount: number; bandEndAmount?: number; taxRatePercent: number }>; capitalGainsTax: { annualExemptAmount: number; basicRatePercent: number; higherRatePercent: number } } | { error: string }
-  ) & undefined;
+  const TAX_RATES = useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, { taxYear: 2025 }) as TaxRatesData;
   const isLoading = TAX_RATES === undefined;
 
   const [data, setData] = useState<WithdrawalData>({
@@ -131,8 +131,10 @@ export default function OneOffCashflow() {
 
   if (data.capitalGains &&
     data.currentIncome &&
-    TAX_RATES?.capitalGainsTax?.annualExemptAmount &&
-    TAX_RATES?.bands?.[0].bandEndAmount) {
+    TAX_RATES &&
+    !('error' in TAX_RATES) &&
+    TAX_RATES.capitalGainsTax?.annualExemptAmount &&
+    TAX_RATES.bands?.[0].bandEndAmount) {
 
     const taxableGains = data.capitalGains - TAX_RATES.capitalGainsTax.annualExemptAmount;
     if (taxableGains > 0) {
@@ -161,8 +163,10 @@ export default function OneOffCashflow() {
 
   if (data.capitalGains &&
     data.currentIncome &&
-    TAX_RATES?.capitalGainsTax?.annualExemptAmount &&
-    TAX_RATES?.bands?.[0].bandEndAmount) {
+    TAX_RATES &&
+    !('error' in TAX_RATES) &&
+    TAX_RATES.capitalGainsTax?.annualExemptAmount &&
+    TAX_RATES.bands?.[0].bandEndAmount) {
 
     const annualGains = data.capitalGains / data.yearsToSpread;
     const taxableGains = annualGains - TAX_RATES.capitalGainsTax.annualExemptAmount;
@@ -251,7 +255,7 @@ export default function OneOffCashflow() {
                           setData({ ...data, capitalGains: value === "" ? undefined : Number(value) });
                       }}
                     />
-                    {TAX_RATES?.capitalGainsTax && TAX_RATES.capitalGainsTax.annualExemptAmount > 0 &&
+                    {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.capitalGainsTax && TAX_RATES.capitalGainsTax.annualExemptAmount > 0 &&
                       <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                         <Info className="h-3 w-3" />
                         £{TAX_RATES.capitalGainsTax.annualExemptAmount.toLocaleString()} allowance
@@ -465,7 +469,7 @@ export default function OneOffCashflow() {
           </div>
 
           {/* Tax Information */}
-          {TAX_RATES && TAX_RATES.taxYear && TAX_RATES.personalAllowance && TAX_RATES.bands && TAX_RATES.capitalGainsTax && (
+          {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.taxYear && TAX_RATES.personalAllowance && TAX_RATES.bands && TAX_RATES.capitalGainsTax && (
             <Card>
               <CardHeader>
                 <CardTitle>UK Tax Information ({TAX_RATES.taxYear.taxYear})</CardTitle>

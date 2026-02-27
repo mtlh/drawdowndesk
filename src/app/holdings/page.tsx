@@ -24,7 +24,7 @@ function getPriceInPounds(price: number, currency: string | undefined): number {
 }
 
 type PortfolioExpanded = {
-  portfolio: Portfolio & { _id?: string; lastUpdated?: string }
+  portfolio: Portfolio
   id: string
 }
 
@@ -213,7 +213,8 @@ export default function HoldingsPage() {
 
       if (result && 'portfolioId' in result) {
         const newPortfolio: PortfolioExpanded = {
-          portfolio: {  
+          portfolio: {
+            _id: result.portfolioId as Id<"portfolios">,
             name: newPortfolioName,
             portfolioType: newPortfolioType,
             lastUpdated: new Date().toISOString()

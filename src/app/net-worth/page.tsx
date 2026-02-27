@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
 import { Plus, Trash2, X, Link as LinkIcon, RotateCcw } from "lucide-react"
-import { Account, AccountType, isError, Portfolio } from "@/types/portfolios"
+import { Account, AccountType, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
@@ -69,7 +69,7 @@ export default function NetWorthPage() {
   const [newAccountNotes, setNewAccountNotes] = useState("")
 
   useEffect(() => {
-    if (getAccountsData && !isError(getAccountsData) && accounts.length === 0) {
+    if (getAccountsData && !('error' in getAccountsData) && accounts.length === 0) {
       setAccounts(getAccountsData.accounts as AccountWithPortfolio[])
       setPortfolios(getAccountsData.portfolios as Portfolio[])
     }
@@ -91,7 +91,7 @@ export default function NetWorthPage() {
   const totalAccountsValue = accounts.reduce((sum, a) => sum + a.value, 0)
 
   // Get total investments from snapshots
-  const totalInvestments = getSnapshots && getSnapshots.length > 0
+  const totalInvestments = getSnapshots && !('error' in getSnapshots) && getSnapshots.length > 0
     ? getSnapshots[getSnapshots.length - 1]?.investmentsValue || 0
     : 0
 
@@ -228,7 +228,7 @@ export default function NetWorthPage() {
     return <div>Loading accounts…</div>
   }
 
-  if (isError(getAccountsData)) {
+  if ('error' in getAccountsData) {
     return <div>Error: {getAccountsData.error}</div>
   }
 
@@ -359,7 +359,7 @@ export default function NetWorthPage() {
           </Card>
 
           {/* Net Worth Over Time Chart */}
-          {getSnapshots && getSnapshots.length > 0 && (
+          {getSnapshots && !('error' in getSnapshots) && getSnapshots.length > 0 && (
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle className="text-lg">Net Worth Over Time</CardTitle>
@@ -390,10 +390,10 @@ export default function NetWorthPage() {
                             <div className="font-semibold mb-1">
                               {new Date(label).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
                             </div>
-                            {payload.map((entry: { dataKey: string; value: number }) => (
-                              <div key={entry.dataKey} className="flex justify-between gap-4">
+                            {payload.map((entry: { dataKey?: string | number; value?: number | string | (string | number)[] }) => (
+                              <div key={String(entry.dataKey)} className="flex justify-between gap-4">
                                 <span className="text-muted-foreground">{entry.dataKey === "netWorth" ? "Net Worth" : entry.dataKey === "investmentsValue" ? "Investments" : "Accounts"}:</span>
-                                <span className="font-medium">£{entry.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                                <span className="font-medium">£{(entry.value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
                               </div>
                             ))}
                           </div>
