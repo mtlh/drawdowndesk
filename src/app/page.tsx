@@ -16,7 +16,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts"
-import { calculatePortfolioSummary, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
+import { calculatePortfolioSummary, generateMockPerformanceData, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
 import { api } from "../../convex/_generated/api"
 import { useQuery } from "convex/react"
 import { isError, isPortfolioArray } from "@/types/portfolios"
@@ -42,14 +42,14 @@ export default function PortfolioOverview() {
   const portfolioAllocationData = getPortfolioAllocationData(portfolioSummary.portfolios)
 
   // Convert snapshots to performance chart data
-  // Only show actual data points - no mock/fake data
+  // Fall back to mock data when no snapshots exist
   const hasSnapshots = getPortfolioSnapshots && Array.isArray(getPortfolioSnapshots) && getPortfolioSnapshots.length > 0;
   const performanceData = hasSnapshots
     ? getPortfolioSnapshots.map(snapshot => ({
         date: new Date(snapshot.snapshotDate).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
         value: snapshot.totalValue,
       }))
-    : [{ date: new Date().toLocaleDateString("en-GB", { month: "short", day: "numeric" }), value: portfolioSummary.totalValue }];
+    : generateMockPerformanceData(portfolioSummary.totalValue);
 
   const assetTypeData = calculateAssetTypeAllocation(portfolioSummary.portfolios)
   const accountAllocationData = getAccountAllocationData(portfolioSummary.portfolios)
