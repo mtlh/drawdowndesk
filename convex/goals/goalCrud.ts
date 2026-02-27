@@ -1,15 +1,16 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const getGoals = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
 
     const goals = await ctx.db
       .query("goals")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
     return goals;
@@ -26,11 +27,11 @@ export const createGoal = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
 
     const goalId = await ctx.db.insert("goals", {
-      userId: identity.subject,
+      userId,
       name: args.name,
       targetAmount: args.targetAmount,
       currentAmount: args.currentAmount,
@@ -58,13 +59,13 @@ export const updateGoal = mutation({
     isCompleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
 
     const { goalId, ...updates } = args;
 
     const goal = await ctx.db.get(goalId);
-    if (!goal || goal.userId !== identity.subject) {
+    if (!goal || goal.userId !== userId) {
       throw new Error("Goal not found or unauthorized");
     }
 
@@ -95,11 +96,11 @@ export const deleteGoal = mutation({
     goalId: v.id("goals"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
 
     const goal = await ctx.db.get(args.goalId);
-    if (!goal || goal.userId !== identity.subject) {
+    if (!goal || goal.userId !== userId) {
       throw new Error("Goal not found or unauthorized");
     }
 
