@@ -9,10 +9,12 @@ export interface Portfolio {
 export interface Holding {
   _id: Id<"holdings"> | undefined;                 // Convex id("holdings")
   portfolioId?: Id<"portfolios"> | undefined;        // Foreign key to portfolio (optional)
-  symbol: string;              // e.g., "MSFT"
+  symbol: string;              // e.g., "MSFT" or "ACWI"
   name: string;                // e.g., "Microsoft Corporation"
   accountName?: string;        // e.g., "S&S ISA"
   holdingType: string;         // e.g., "Stock", "Bond", "Commodity"
+  dataType?: string;           // "stock" or "etf" for Twelve Data API
+  exchange?: string;           // e.g., "LON", "NASDAQ", "LSE" for Twelve Data API
   currency?: string;           // e.g., "GBP", "USD", "GBp"
   shares: number;              // e.g., 1000
   avgPrice: number;            // e.g., 120.5
@@ -51,6 +53,24 @@ export interface PortfolioWithHoldings {
   lastUpdated?: string;
   name: string;
   portfolioType?: "live" | "manual";
+}
+
+export type AccountType = "bank" | "savings" | "pension" | "crypto" | "cash" | "other";
+
+export interface Account {
+  _id: Id<"accounts">;
+  userId: Id<"users">;
+  name: string;
+  accountType: AccountType;
+  tag?: string;
+  value: number;
+  portfolioId?: Id<"portfolios">;
+  notes?: string;
+  lastUpdated?: string;
+}
+
+export interface AccountWithPortfolio extends Account {
+  portfolioName?: string;
 }
 
 type PortfolioData = | PortfolioWithHoldings[] | { error: string } | undefined; 

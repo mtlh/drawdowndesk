@@ -1,3 +1,11 @@
+// Helper to convert price from pence to pounds if needed
+function getPriceInPounds(price: number, currency: string | undefined): number {
+  if (currency === "GBp") {
+    return price / 100;
+  }
+  return price;
+}
+
 export interface CalculatedHolding extends Holding {
   marketValue: number
   costBasis: number
@@ -99,11 +107,11 @@ export function normalizePortfolios(
 }
 
 export function calculateHoldingMetrics(holding: Holding): CalculatedHolding {
-  // Use market price * shares directly (currency has already been normalized)
-  const marketValue = holding.shares * holding.currentPrice
-  const costBasis = holding.shares * holding.avgPrice
-  const gainLoss = marketValue - costBasis
-  const gainLossPercent = costBasis !== 0 ? (gainLoss / costBasis) * 100 : 0
+  const currency = holding.currency || "GBP";
+  const marketValue = getPriceInPounds(holding.shares * holding.currentPrice, currency);
+  const costBasis = getPriceInPounds(holding.shares * holding.avgPrice, currency);
+  const gainLoss = marketValue - costBasis;
+  const gainLossPercent = costBasis !== 0 ? (gainLoss / costBasis) * 100 : 0;
 
   return {
     ...holding,
@@ -111,7 +119,7 @@ export function calculateHoldingMetrics(holding: Holding): CalculatedHolding {
     costBasis,
     gainLoss,
     gainLossPercent,
-  }
+  };
 }
 
 export function calculatePortfolioMetrics(portfolio: Portfolio): CalculatedPortfolio {
@@ -179,7 +187,7 @@ export function calculateAssetTypeAllocation(portfolios: CalculatedPortfolio[]) 
       const type = holding.holdingType ?? "Other"
       const marketValue = typeof holding.marketValue === "number"
         ? holding.marketValue
-        : (holding.shares ?? 0) * (holding.currentPrice ?? 0)
+        : getPriceInPounds((holding.shares ?? 0) * (holding.currentPrice ?? 0), holding.currency || "GBP")
       allocationMap[type] = (allocationMap[type] ?? 0) + marketValue
     })
   })

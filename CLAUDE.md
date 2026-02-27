@@ -18,6 +18,7 @@ npm run lint     # Run ESLint + TypeScript type checking
 - Run `npm run lint` to verify changes compile and have no type errors
 - Do NOT run `npm run build` - it modifies the Next.js settings manifest and breaks the local dev server
 - If type checking is needed separately, use `npx tsc --noEmit`
+- After modifying convex functions, run `npx convex dev` to regenerate the API types
 
 ## Architecture
 

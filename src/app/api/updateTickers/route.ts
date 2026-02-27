@@ -5,133 +5,113 @@ const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL!
 );
 
-// AlphaVantage API keys configuration - rotate between keys to avoid rate limits
-const ALPHAVANTAGE_KEYS = [
-  process.env.ALPHAVANTAGE_API_KEY_1 || "",
-  process.env.ALPHAVANTAGE_API_KEY_2 || "",
-  process.env.ALPHAVANTAGE_API_KEY_3 || "",
-  process.env.ALPHAVANTAGE_API_KEY_4 || "",
-].filter(Boolean);
+// Yahoo Finance ticker suffix mapping for exchanges
+const EXCHANGE_SUFFIXES: Record<string, string> = {
+  LSE: ".L",    // London Stock Exchange
+  LON: ".L",    // London
+  NYSE: "",      // New York Stock Exchange
+  NASDAQ: "",    // NASDAQ
+  EURONEXT: ".AS", // Euronext (Amsterdam)
+  PARIS: ".PA",
+  FRANKFURT: ".F",
+  TOKYO: ".T",
+};
 
-let currentKeyIndex = 0;
-
-function getNextKey(): string {
-  if (ALPHAVANTAGE_KEYS.length === 0) {
-    throw new Error("No AlphaVantage API keys configured");
+// Convert symbol + exchange to Yahoo Finance format (e.g., "ACWI" + "LSE" → "ACWI.L")
+// Also handles legacy format where symbol already has suffix (e.g., "ACWI.LON" → "ACWI.L")
+function toYahooSymbol(symbol: string, exchange?: string): string {
+  // If symbol already has a suffix (e.g., "ACWI.LON"), convert to Yahoo format
+  if (symbol.includes(".")) {
+    const parts = symbol.split(".");
+    const suffix = parts[parts.length - 1].toUpperCase();
+    // Map common suffixes
+    if (suffix === "LON") return `${parts.slice(0, -1).join(".")}.L`;
+    if (suffix === "L") return symbol; // Already in Yahoo format
+    // For other suffixes, just use as-is
+    return symbol;
   }
-  const key = ALPHAVANTAGE_KEYS[currentKeyIndex];
-  currentKeyIndex = (currentKeyIndex + 1) % ALPHAVANTAGE_KEYS.length;
-  return key;
-}
 
-function removeCurrentKey(): void {
-  if (ALPHAVANTAGE_KEYS.length === 0) return;
-  
-  // Remove the key that was just used (one position back)
-  const indexToRemove = currentKeyIndex === 0 ? ALPHAVANTAGE_KEYS.length - 1 : currentKeyIndex - 1;
-  const removedKey = ALPHAVANTAGE_KEYS.splice(indexToRemove, 1)[0];
-  console.log(`Removed rate-limited API key: ${removedKey}`);
-  
-  // Adjust currentKeyIndex if needed
-  if (currentKeyIndex > indexToRemove) {
-    currentKeyIndex--;
+  // Use exchange field if provided
+  if (exchange) {
+    const suffix = EXCHANGE_SUFFIXES[exchange.toUpperCase()];
+    return suffix ? `${symbol}${suffix}` : symbol;
   }
-  currentKeyIndex = currentKeyIndex % Math.max(1, ALPHAVANTAGE_KEYS.length);
+
+  return symbol;
 }
 
-interface AlphaVantageQuote {
-  symbol: string;
-  price: number;
-}
+// Yahoo Finance module type
+type YahooFinanceInstance = {
+  quoteCombine(
+    query: string,
+    queryOptions?: { fields?: string[] }
+  ): Promise<{
+    symbol?: string;
+    regularMarketPrice?: number;
+    currency?: string;
+  }>;
+};
 
-class SkipTickerError extends Error {
-  skip = true;
-  
-  constructor(message: string) {
-    super(message);
-    this.name = "SkipTickerError";
+// Import Yahoo Finance and create instance
+let yahooFinance: YahooFinanceInstance | null = null;
+async function getYahooFinance(): Promise<YahooFinanceInstance> {
+  if (!yahooFinance) {
+    const YahooFinance = (await import("yahoo-finance2")).default;
+    // Suppress the survey notice
+    yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] }) as YahooFinanceInstance;
   }
+  return yahooFinance;
 }
 
-async function fetchQuoteWithRetry(
-  symbol: string,
-  retries = ALPHAVANTAGE_KEYS.length
-): Promise<AlphaVantageQuote> {
-  for (let attempt = 0; attempt <= retries; attempt++) {
+interface SymbolWithExchange {
+  original: string;
+  yahooSymbol: string;
+}
+
+async function fetchQuotesBatch(
+  symbols: SymbolWithExchange[]
+): Promise<Map<string, { price: number; currency: string }>> {
+  const yf = await getYahooFinance();
+
+  console.log(`Fetching quotes for ${symbols.length} symbols with quoteCombine...`);
+
+  const prices = new Map<string, { price: number; currency: string }>();
+
+  // quoteCombine automatically batches multiple calls into a single HTTP request
+  // Call each symbol - they'll be grouped automatically
+  const promises = symbols.map(async (symbol) => {
     try {
-      const apiKey = getNextKey();
+      const result = await yf.quoteCombine(symbol.yahooSymbol, {
+        fields: ["regularMarketPrice", "currency"],
+      });
 
-      // add 250ms delay between requests to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 250));
-
-      const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Check for API errors
-      if (data["Error Message"]) {
-        const errorMsg = `API Error: ${data["Error Message"]}`;
-        console.warn(
-          `[Retry ${attempt}/${retries}] ${errorMsg}\nURL: ${url}\n`,
-        );
-        throw new Error(errorMsg);
-      }
-
-      // Check for rate limit or info messages
-      if (data["Note"] || data["Information"]) {
-        const msg = data["Note"] || data["Information"];
-        const errorMsg = `Rate limit/Info: ${msg}`;
-        console.warn(
-          `[Retry ${attempt}/${retries}] ${errorMsg}\nURL: ${url}\n`
-        );
-        // Remove this key from the pool as it's rate limited
-        removeCurrentKey();
-        throw new Error(errorMsg);
-      }
-
-      const quote = data["Global Quote"];
-      // Check if quote is empty (no properties)
-      if (!quote || Object.keys(quote).length === 0) {
-        const errorMsg = `Empty response for symbol ${symbol} - skipping this ticker for now`;
-        console.log(errorMsg);
-        // Throw a specific error that indicates we should skip this ticker
-        throw new SkipTickerError(errorMsg);
-      }
-      
-      if (!quote["05. price"]) {
-        const errorMsg = `No price data found for symbol ${symbol}`;
-        console.warn(
-          `[Attempt ${attempt}/${retries}] ${errorMsg}\nURL: ${url}\n`,
-        );
-        throw new Error(errorMsg);
+      if (!result || !result.regularMarketPrice) {
+        console.warn(`No data for symbol ${symbol.yahooSymbol}`);
+        return { original: symbol.original, price: null, currency: null };
       }
 
       return {
-        symbol: quote["01. symbol"] || symbol,
-        price: parseFloat(quote["05. price"]),
+        original: symbol.original,
+        price: result.regularMarketPrice,
+        currency: result.currency || "USD",
       };
-    } catch (error) {
-      // If this is a skip error (empty response), don't retry - just skip this ticker
-      if (error instanceof SkipTickerError) {
-        throw error;
-      }
-      
-      if (attempt === retries) {
-        console.error(`Failed to fetch quote for ${symbol} after ${retries} retries`);
-        throw error;
-      }
-      // Wait before retrying with different key
-      console.log(`Retrying ${symbol} (attempt ${attempt + 1}/${retries})...`);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } catch (err) {
+      console.warn(`Failed to fetch ${symbol.yahooSymbol}:`, err);
+      return { original: symbol.original, price: null, currency: null };
+    }
+  });
+
+  // Wait for all promises to resolve - they batch automatically
+  const results = await Promise.all(promises);
+
+  for (const r of results) {
+    if (r.price !== null) {
+      prices.set(r.original, { price: r.price, currency: r.currency || "USD" });
     }
   }
 
-  throw new Error(`Failed to fetch quote for ${symbol} after retries`);
+  console.log(`Got prices for ${prices.size} symbols`);
+  return prices;
 }
 
 export async function GET() {
@@ -140,44 +120,66 @@ export async function GET() {
     {}
   );
 
+  console.log("Holdings received:", holdings);
+
+  // Filter out any holdings with empty/invalid symbols
+  const validHoldings = holdings.filter((h) => h.symbol && h.symbol.trim().length > 0);
+
+  if (validHoldings.length !== holdings.length) {
+    console.warn(`Filtered out ${holdings.length - validHoldings.length} holdings with invalid symbols`);
+  }
+
   // Deduplicate symbols to avoid redundant API calls
   const uniqueHoldings = Array.from(
-    new Map(holdings.map((h) => [h.symbol, h])).values()
+    new Map(validHoldings.map((h) => [h.symbol, h])).values()
   );
 
+  console.log(`Processing ${uniqueHoldings.length} unique symbols`);
+
+  // Convert symbols to Yahoo Finance format
+  const symbolsToFetch = uniqueHoldings.map((h) => ({
+    original: h.symbol,
+    yahooSymbol: toYahooSymbol(h.symbol, h.exchange),
+  }));
+
+  // Fetch all quotes in a single batch request
+  const prices = await fetchQuotesBatch(symbolsToFetch);
+
+  // Update holdings with prices
   const results: Array<{ symbol: string; price: number; currency: string }> = [];
   for (const holding of uniqueHoldings) {
-    try {
-      const quote = await fetchQuoteWithRetry(holding.symbol);
-      results.push({
-        symbol: quote.symbol,
-        price: quote.price,
-        currency: holding.currency,
-      });
-    } catch (error) {
-      // If it's a skip error, just log and move to next ticker
-      if (error instanceof SkipTickerError) {
-        console.log(`Skipping ${holding.symbol} - will retry on next refresh`);
-      } else {
-        // For other errors, re-throw or log as needed
-        console.error(`Error processing ${holding.symbol}:`, error);
-      }
+    const priceData = prices.get(holding.symbol);
+
+    if (!priceData) {
+      console.warn(`Skipping ${holding.symbol} - no price data`);
+      continue;
     }
+
+    // Always use Yahoo's currency and convert GBX to GBP
+    // Yahoo returns "GBX" for pence (GBp), "GBP" for pounds
+    let currency = priceData.currency;
+    let price = priceData.price;
+
+    // Convert GBX (pence) to GBP (pounds)
+    if (currency === "GBX") {
+      price = price / 100;
+      currency = "GBP";
+    }
+
+    results.push({
+      symbol: holding.symbol,
+      price,
+      currency,
+    });
   }
 
   for (const q of results) {
-    // Use the user-defined currency to determine if we need to convert
-    // If it's GBp (pence), divide by 100 to get GBP
-    let price = q.price;
-    if (q.currency === "GBp") {
-      price = price / 100;
-    }
-
     await convex.mutation(
       api.portfolio.currentPriceUpdates.updateHoldingWithTicker.updateHoldingWithTicker,
       {
         symbol: q.symbol,
-        currentPrice: price,
+        currentPrice: q.price,
+        currency: q.currency,
       }
     );
   }
@@ -194,6 +196,20 @@ export async function GET() {
     }
   } catch (snapshotError) {
     console.error("Failed to save portfolio snapshot:", snapshotError);
+  }
+
+  // Also save a net worth snapshot (includes all accounts)
+  try {
+    const netWorthResult = await convex.mutation(
+      api.netWorth.netWorthSnapshots.calculateAndSaveNetWorthSnapshot,
+      {}
+    );
+
+    if (netWorthResult && !netWorthResult.error) {
+      console.log(`Net worth snapshot saved: £${netWorthResult.netWorth?.toLocaleString()}`);
+    }
+  } catch (netWorthError) {
+    console.error("Failed to save net worth snapshot:", netWorthError);
   }
 
   return new Response("Success");

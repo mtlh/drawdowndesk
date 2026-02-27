@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie } from "lucide-react"
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet } from "lucide-react"
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 
 import {
@@ -24,7 +24,12 @@ const menuSections = [
     section: "Portfolio",
     items: [
       {
-        title: "Overview",
+        title: "Net Worth",
+        url: "/net-worth",
+        icon: Wallet,
+      },
+      {
+        title: "Holdings Overview",
         url: "/",
         icon: Home,
       },

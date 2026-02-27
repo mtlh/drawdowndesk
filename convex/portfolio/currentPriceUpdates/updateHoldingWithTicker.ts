@@ -15,6 +15,7 @@ export const getAllHoldings = query({
 
     return holdings.map((h) => ({
       symbol: h.symbol,
+      exchange: h.exchange,
       currency: h.currency || "GBP",
     }));
   },
@@ -24,6 +25,7 @@ export const updateHoldingWithTicker = mutation({
   args: {
     symbol: v.string(),
     currentPrice: v.float64(),
+    currency: v.optional(v.string()),
   },
 
   handler: async (ctx, args) => {
@@ -38,6 +40,7 @@ export const updateHoldingWithTicker = mutation({
         await ctx.db.replace(holding._id, {
             ...holding,
             currentPrice: args.currentPrice,
+            currency: args.currency || holding.currency,
         });
       }
     }

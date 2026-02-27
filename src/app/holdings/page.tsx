@@ -15,6 +15,14 @@ import { RefreshButton } from "@/components/RefreshHoldingsButton"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { CHART_COLORS, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 
+// Helper to convert price from pence to pounds if needed
+function getPriceInPounds(price: number, currency: string | undefined): number {
+  if (currency === "GBp") {
+    return price / 100;
+  }
+  return price;
+}
+
 type PortfolioExpanded = {
   portfolio: Portfolio & { _id?: string; lastUpdated?: string }
   id: string
@@ -53,6 +61,18 @@ export default function HoldingsPage() {
     }
   }, [getPortfolioData, portfolios.length, holdings.length]);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showNewPortfolioForm) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = "unset"
+    }
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [showNewPortfolioForm])
+
   // Calculate portfolio totals
   const getPortfolioStats = (portfolioId: string, portfolioType?: "live" | "manual") => {
     if (portfolioType === "manual") {
@@ -61,8 +81,8 @@ export default function HoldingsPage() {
       return { totalValue, totalCost: 0, totalGain: 0, totalGainPercent: 0 }
     } else {
       const portfolioHoldings = holdings.filter((h) => h.portfolioId === portfolioId)
-      const totalValue = portfolioHoldings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0)
-      const totalCost = portfolioHoldings.reduce((sum, h) => sum + h.shares * h.avgPrice, 0)
+      const totalValue = portfolioHoldings.reduce((sum, h) => sum + getPriceInPounds(h.shares * h.currentPrice, h.currency || "GBP"), 0)
+      const totalCost = portfolioHoldings.reduce((sum, h) => sum + getPriceInPounds(h.shares * h.avgPrice, h.currency || "GBP"), 0)
       const totalGain = totalValue - totalCost
       const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
       return { totalValue, totalCost, totalGain, totalGainPercent }
@@ -92,7 +112,8 @@ export default function HoldingsPage() {
     } else {
       const portfolioHoldings = holdings.filter((h) => h.portfolioId === portfolioId)
       const rawData = portfolioHoldings.map((holding) => {
-        const marketValue = holding.shares * holding.currentPrice
+        const currency = holding.currency || "GBP";
+        const marketValue = getPriceInPounds(holding.shares * holding.currentPrice, currency);
         return {
           name: holding.symbol || holding.name || "Unknown",
           value: marketValue,
@@ -379,7 +400,7 @@ export default function HoldingsPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedAndFilteredPortfolios.length === 0 ? (
               <Card className="col-span-2">
                 <CardContent className="flex flex-col items-center justify-center py-16">
@@ -405,28 +426,47 @@ export default function HoldingsPage() {
 
                 return (
                   <Card key={portfolioExpanded.id} className="flex flex-col">
-                    <CardHeader>
+                    <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <Input
                             value={portfolioExpanded.portfolio.name}
                             onChange={(e) => updatePortfolioName(portfolioExpanded.id, e.target.value)}
-                            className="mb-1 border-none p-0 text-xl font-semibold shadow-none focus-visible:ring-0"
+                            className="mb-1 border-none p-0 text-lg font-semibold shadow-none focus-visible:ring-0"
                           />
                           <CardDescription>
                             {isManual ? "Total Value" : "Market Value"}: <span className="font-semibold text-foreground">£{portfolioExpanded.stats.totalValue.toFixed(2)}</span>
                           </CardDescription>
                           {!isManual && (
-                            <CardDescription className="mt-1">
-                              Gain:{" "}
-                              <span className={portfolioExpanded.stats.totalGain >= 0 ? "text-green-600" : "text-red-600"}>
-                                £{portfolioExpanded.stats.totalGain.toFixed(2)} ({portfolioExpanded.stats.totalGainPercent.toFixed(2)}%)
-                              </span>
-                            </CardDescription>
+                            <>
+                              <CardDescription className="mt-0.5">
+                                Cost: <span className="text-foreground">£{portfolioExpanded.stats.totalCost.toFixed(2)}</span>
+                                <span className="mx-1">•</span>
+                                Gain:{" "}
+                                <span className={portfolioExpanded.stats.totalGain >= 0 ? "text-green-600" : "text-red-600"}>
+                                  £{portfolioExpanded.stats.totalGain.toFixed(2)} ({portfolioExpanded.stats.totalGainPercent.toFixed(2)}%)
+                                </span>
+                              </CardDescription>
+                              <CardDescription className="mt-0.5">
+                                {portfolioHoldings.length} {portfolioHoldings.length === 1 ? "holding" : "holdings"}
+                                {allocationData.length > 0 && (
+                                  <>
+                                    <span className="mx-1">•</span>
+                                    Top: <span className="text-foreground">{allocationData[0].name}</span> ({((allocationData[0].value / portfolioExpanded.stats.totalValue) * 100).toFixed(1)}%)
+                                  </>
+                                )}
+                              </CardDescription>
+                            </>
                           )}
                           {isManual && (
-                            <CardDescription className="mt-1 text-xs">
-                              Manual Portfolio • {portfolioSimpleHoldings.length} {portfolioSimpleHoldings.length === 1 ? "holding" : "holdings"}
+                            <CardDescription className="mt-0.5">
+                              {portfolioSimpleHoldings.length} {portfolioSimpleHoldings.length === 1 ? "holding" : "holdings"}
+                              {allocationData.length > 0 && (
+                                <>
+                                  <span className="mx-1">•</span>
+                                  Top: <span className="text-foreground">{allocationData[0].name}</span> ({((allocationData[0].value / portfolioExpanded.stats.totalValue) * 100).toFixed(1)}%)
+                                </>
+                              )}
                             </CardDescription>
                           )}
                         </div>
@@ -463,7 +503,7 @@ export default function HoldingsPage() {
                             href={`/holdings/${portfolioExpanded.id}`}
                             className="w-full cursor-pointer hover:opacity-80 transition-opacity"
                           >
-                            <ResponsiveContainer width="100%" height={220}>
+                            <ResponsiveContainer width="100%" height={180}>
                               <PieChart>
                                 <Pie
                                   data={allocationData}
@@ -528,7 +568,7 @@ export default function HoldingsPage() {
                           href={`/holdings/${portfolioExpanded.id}`}
                           className="w-full cursor-pointer hover:opacity-80 transition-opacity"
                         >
-                          <ResponsiveContainer width="100%" height={220}>
+                          <ResponsiveContainer width="100%" height={180}>
                             <PieChart>
                               <Pie
                                 data={allocationData}
