@@ -72,7 +72,7 @@ export default function PortfolioHoldingsPage() {
                 Back to Holdings
               </Button>
             </div>
-            <Card>
+            <Card className={isExpanded ? "col-span-full" : ""}>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <p className="text-muted-foreground">Portfolio not found.</p>
               </CardContent>
@@ -311,10 +311,10 @@ export default function PortfolioHoldingsPage() {
           </div>
 
           {/* Holdings List */}
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {isManual ? (
               portfolioSimpleHoldings.length === 0 && !isExpanded ? (
-                <Card>
+                <Card className={isExpanded ? "col-span-full" : ""}>
                   <CardContent className="py-12 text-center text-muted-foreground">
                     No holdings yet. Click &quot;Add Holding&quot; to get started.
                   </CardContent>
@@ -354,7 +354,7 @@ export default function PortfolioHoldingsPage() {
               )
             ) : (
               portfolioHoldings.length === 0 && !isExpanded ? (
-                <Card>
+                <Card className={isExpanded ? "col-span-full" : ""}>
                   <CardContent className="py-12 text-center text-muted-foreground">
                     No holdings yet. Click &quot;Add Holding&quot; to get started.
                   </CardContent>
@@ -450,7 +450,7 @@ function HoldingCard({
     const simpleEdited = editedValues as Partial<SimpleHolding>;
     return (
       <Collapsible open={isExpanded} onOpenChange={onToggle}>
-        <Card>
+        <Card className={isExpanded ? "col-span-full" : ""}>
           <CollapsibleTrigger asChild>
             <CardContent className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors">
               <div className="flex items-center gap-3 min-w-0">
