@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
-import { Plus, Trash2, X, Link as LinkIcon, RotateCcw } from "lucide-react"
+import { Plus, Trash2, X, Link as LinkIcon } from "lucide-react"
+import { StatCard } from "@/components/ui/stat-card"
 import { Account, AccountType, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -43,8 +44,10 @@ const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
 type AccountWithPortfolio = Account & { portfolioName?: string }
 
 export default function NetWorthPage() {
+  // @ts-expect-error - Convex API type instantiation is excessively deep
   const getAccountsData = useQuery(api.accounts.accountCrud.getUserAccounts)
   const getSnapshots = useQuery(api.netWorth.netWorthSnapshots.getNetWorthSnapshots, { months: 12 })
+  const getUserPortfolio = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio)
   const createAccountMutation = useMutation(api.accounts.accountCrud.createAccount)
   const updateAccountMutation = useMutation(api.accounts.accountCrud.updateAccount)
   const deleteAccountMutation = useMutation(api.accounts.accountCrud.deleteAccount)
@@ -52,7 +55,9 @@ export default function NetWorthPage() {
 
   const [accounts, setAccounts] = useState<AccountWithPortfolio[]>([])
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
+  const [portfolioHoldings, setPortfolioHoldings] = useState<{portfolioId: string, portfolioName: string, value: number}[]>([])
   const [showNewAccountForm, setShowNewAccountForm] = useState(false)
+  const [showInvestments, setShowInvestments] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [filterType, setFilterType] = useState<AccountType | "all">("all")
@@ -90,12 +95,77 @@ export default function NetWorthPage() {
   // Calculate totals by account type
   const totalAccountsValue = accounts.reduce((sum, a) => sum + a.value, 0)
 
-  // Get total investments from snapshots
-  const totalInvestments = getSnapshots && !('error' in getSnapshots) && getSnapshots.length > 0
-    ? getSnapshots[getSnapshots.length - 1]?.investmentsValue || 0
-    : 0
+  // Calculate total investments from portfolio holdings
+  const totalInvestments = portfolioHoldings.reduce((sum, p) => sum + p.value, 0)
 
   const totalNetWorth = totalAccountsValue + totalInvestments
+
+  // Calculate investment values from portfolio holdings
+  useEffect(() => {
+    if (getUserPortfolio && !('error' in getUserPortfolio)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const holdingsByPortfolio = getUserPortfolio.map((portfolio: any) => {
+        let totalValue = 0
+
+        // Add live holdings value (shares * currentPrice), converted to GBP
+        if (portfolio.holdings) {
+          for (const holding of portfolio.holdings) {
+            const currency = holding.currency || "GBP"
+            // Use getPriceInPounds logic: convert GBp (pence) to GBP (pounds)
+            const holdingValue = (holding.shares || 0) * (holding.currentPrice || 0)
+            const gbpValue = currency === 'GBp' ? holdingValue / 100 : holdingValue
+            totalValue += gbpValue
+          }
+        }
+
+        // Add simple holdings value (already in GBP per schema)
+        if (portfolio.simpleHoldings) {
+          for (const holding of portfolio.simpleHoldings) {
+            totalValue += holding.value || 0
+          }
+        }
+
+        return {
+          portfolioId: portfolio._id,
+          portfolioName: portfolio.name,
+          value: totalValue
+        }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }).filter((p: any) => p.value > 0)
+
+      setPortfolioHoldings(holdingsByPortfolio)
+    }
+  }, [getUserPortfolio])
+
+  // Calculate growth and YTD from snapshots
+  const getGrowthAndYTD = () => {
+    if (!getSnapshots || !Array.isArray(getSnapshots) || getSnapshots.length === 0) {
+      return { growth: 0, growthPercent: 0, ytd: 0, ytdPercent: 0 }
+    }
+
+    // Sort snapshots by date
+    const sortedSnapshots = [...getSnapshots].sort((a, b) =>
+      new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime()
+    )
+
+    const currentNetWorth = totalNetWorth
+    const oldestSnapshot = sortedSnapshots[0]
+
+    // Growth - from oldest snapshot to now
+    const growth = currentNetWorth - (oldestSnapshot?.netWorth || 0)
+    const growthPercent = oldestSnapshot?.netWorth ? (growth / oldestSnapshot.netWorth) * 100 : 0
+
+    // YTD - find January 1st of current year
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]
+    const ytdSnapshot = sortedSnapshots.find(s => s.snapshotDate >= startOfYear)
+    const ytdStartValue = ytdSnapshot?.netWorth || currentNetWorth
+    const ytd = currentNetWorth - ytdStartValue
+    const ytdPercent = ytdStartValue ? (ytd / ytdStartValue) * 100 : 0
+
+    return { growth, growthPercent, ytd, ytdPercent }
+  }
+
+  const { growth, growthPercent, ytd, ytdPercent } = getGrowthAndYTD()
 
   // Get unique tags
   const uniqueTags = [...new Set(accounts.map(a => a.tag).filter(Boolean))] as string[]
@@ -236,13 +306,65 @@ export default function NetWorthPage() {
     <div className="flex h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
-          <div className="mb-8 flex items-center justify-between">
+          <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+            {/* Net Worth - Left */}
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Net Worth</h1>
-              <p className="text-muted-foreground">
-                Track all your accounts and assets
-              </p>
+              <div className="text-sm text-muted-foreground">Net Worth</div>
+              <div className="text-3xl font-bold">
+                £{totalNetWorth.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </div>
             </div>
+
+            {/* Quick Stats Cards */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[120px] bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+                <span className="text-lg">🏦</span>
+                <div>
+                  <div className="text-xs text-muted-foreground">Accounts</div>
+                  <div className="text-2xl font-bold">{accounts.length}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[140px] bg-gradient-to-br from-emerald-500/5 to-transparent border-emerald-500/20">
+                <span className="text-lg">📈</span>
+                <div>
+                  <div className="text-xs text-muted-foreground">Investments</div>
+                  <div className="text-2xl font-bold">£{totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[120px] bg-gradient-to-br from-blue-500/5 to-transparent border-blue-500/20">
+                <span className="text-lg">💰</span>
+                <div>
+                  <div className="text-xs text-muted-foreground">Cash</div>
+                  <div className="text-2xl font-bold">£{totalAccountsValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[140px] bg-gradient-to-br from-amber-500/5 to-transparent border-amber-500/20">
+                <span className="text-lg">📊</span>
+                <div>
+                  <div className="text-xs text-muted-foreground">Growth</div>
+                  <div className={`text-xl font-bold ${growth >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {growth >= 0 ? "+" : ""}£{growth.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </div>
+                  <div className={`text-xs ${growthPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    ({growthPercent >= 0 ? "+" : ""}{growthPercent.toFixed(1)}%)
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[140px] bg-gradient-to-br from-purple-500/5 to-transparent border-purple-500/20">
+                <span className="text-lg">📅</span>
+                <div>
+                  <div className="text-xs text-muted-foreground">YTD</div>
+                  <div className={`text-xl font-bold ${ytd >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {ytd >= 0 ? "+" : ""}£{ytd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </div>
+                  <div className={`text-xs ${ytdPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    ({ytdPercent >= 0 ? "+" : ""}{ytdPercent.toFixed(1)}%)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
             <div className="flex gap-2">
               <Button variant="outline" onClick={refreshNetWorth} disabled={isRefreshing} className="gap-2">
                 <RotateCcw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
@@ -334,6 +456,51 @@ export default function NetWorthPage() {
                           </td>
                         </tr>
                       ))
+                    )}
+
+                    {/* Investment rows - automatically managed from holdings */}
+                    {portfolioHoldings.length > 0 && (
+                      <>
+                        <tr
+                          className="border-t cursor-pointer hover:bg-muted/50"
+                          onClick={() => setShowInvestments(!showInvestments)}
+                        >
+                          <td colSpan={6} className="p-2 text-sm font-semibold text-muted-foreground bg-muted/30">
+                            <div className="flex items-center justify-between">
+                              <span>{showInvestments ? "▼" : "▶"} Investments ({portfolioHoldings.length}) - £{totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                            </div>
+                          </td>
+                        </tr>
+                        {showInvestments && portfolioHoldings.map(portfolio => (
+                          <tr key={portfolio.portfolioId} className="border-b hover:bg-muted/30">
+                            <td className="p-3">
+                              <div>{portfolio.portfolioName}</div>
+                              <div className="text-xs text-muted-foreground">Investment portfolio</div>
+                            </td>
+                            <td className="p-3">
+                              <span className="inline-flex items-center gap-1">
+                                📈 Investment
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <span className="text-muted-foreground">-</span>
+                            </td>
+                            <td className="p-3 text-right font-medium">
+                              £{portfolio.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="p-3">
+                              <a
+                                href={`/holdings/${portfolio.portfolioId}`}
+                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                              >
+                                <LinkIcon className="h-3 w-3" />
+                                View Holdings
+                              </a>
+                            </td>
+                            <td className="p-3"></td>
+                          </tr>
+                        ))}
+                      </>
                     )}
                   </tbody>
                   <tfoot className="border-t bg-muted/80 font-semibold">

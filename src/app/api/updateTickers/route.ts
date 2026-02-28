@@ -58,7 +58,7 @@ async function getYahooFinance(): Promise<YahooFinanceInstance> {
   if (!yahooFinance) {
     const YahooFinance = (await import("yahoo-finance2")).default;
     // Suppress the survey notice
-    yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] }) as YahooFinanceInstance;
+    yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] }) as unknown as YahooFinanceInstance;
   }
   return yahooFinance;
 }
@@ -73,7 +73,6 @@ async function fetchQuotesBatch(
 ): Promise<Map<string, { price: number; currency: string }>> {
   const yf = await getYahooFinance();
 
-  console.log(`Fetching quotes for ${symbols.length} symbols with quoteCombine...`);
 
   const prices = new Map<string, { price: number; currency: string }>();
 
@@ -110,17 +109,19 @@ async function fetchQuotesBatch(
     }
   }
 
-  console.log(`Got prices for ${prices.size} symbols`);
   return prices;
 }
 
-export async function GET() {
-  const holdings = await convex.query(
-    api.portfolio.currentPriceUpdates.updateHoldingWithTicker.getAllHoldings,
-    {}
-  );
+interface HoldingPriceInfo {
+  symbol: string;
+  exchange?: string;
+  currency?: string;
+}
 
-  console.log("Holdings received:", holdings);
+export async function GET() {
+  // @ts-expect-error - Convex API type instantiation is excessively deep
+  const getAllHoldings = api.portfolio.currentPriceUpdates.updateHoldingWithTicker.getAllHoldings;
+  const holdings: HoldingPriceInfo[] = await convex.query(getAllHoldings, {});
 
   // Filter out any holdings with empty/invalid symbols
   const validHoldings = holdings.filter((h) => h.symbol && h.symbol.trim().length > 0);
@@ -133,8 +134,6 @@ export async function GET() {
   const uniqueHoldings = Array.from(
     new Map(validHoldings.map((h) => [h.symbol, h])).values()
   );
-
-  console.log(`Processing ${uniqueHoldings.length} unique symbols`);
 
   // Convert symbols to Yahoo Finance format
   const symbolsToFetch = uniqueHoldings.map((h) => ({
@@ -192,7 +191,7 @@ export async function GET() {
     );
 
     if (result && !result.error) {
-      console.log(`Portfolio snapshot saved: £${result.totalValue?.toLocaleString()}`);
+      console.debug(`Portfolio snapshot saved: £${result.totalValue?.toLocaleString()}`);
     }
   } catch (snapshotError) {
     console.error("Failed to save portfolio snapshot:", snapshotError);
@@ -206,7 +205,7 @@ export async function GET() {
     );
 
     if (netWorthResult && !netWorthResult.error) {
-      console.log(`Net worth snapshot saved: £${netWorthResult.netWorth?.toLocaleString()}`);
+      console.debug(`Net worth snapshot saved: £${netWorthResult.netWorth?.toLocaleString()}`);
     }
   } catch (netWorthError) {
     console.error("Failed to save net worth snapshot:", netWorthError);

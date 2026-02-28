@@ -32,6 +32,41 @@ export const getUserAccounts = query({
   },
 });
 
+// Simplified query for pages that don't need full portfolio data
+export const getAccountsForNetWorth = query({
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { error: "User not found." };
+    }
+
+    const accounts = await ctx.db
+      .query("accounts")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    // Get only portfolio names for linking (not full portfolio objects)
+    const portfolios = await ctx.db
+      .query("portfolios")
+      .withIndex("by_userPorfolio", q => q.eq("userId", userId))
+      .collect();
+
+    const portfolioMap = new Map(portfolios.map(p => [p._id, p.name]));
+    return accounts.map(account => ({
+      _id: account._id,
+      userId: account.userId,
+      name: account.name,
+      accountType: account.accountType,
+      tag: account.tag,
+      value: account.value,
+      portfolioId: account.portfolioId,
+      notes: account.notes,
+      lastUpdated: account.lastUpdated,
+      portfolioName: account.portfolioId ? portfolioMap.get(account.portfolioId) : undefined,
+    }));
+  },
+});
+
 // Create a new account
 export const createAccount = mutation({
   args: {

@@ -10,9 +10,12 @@
 
 import type * as accounts_accountCrud from "../accounts/accountCrud.js";
 import type * as auth from "../auth.js";
+import type * as auth_getUser from "../auth/getUser.js";
 import type * as calculators_getTaxYearInfo from "../calculators/getTaxYearInfo.js";
 import type * as calculators_runMonteCarlo from "../calculators/runMonteCarlo.js";
 import type * as calculators_seedHistoricalReturns from "../calculators/seedHistoricalReturns.js";
+import type * as currentUser_getCurrentUser from "../currentUser/getCurrentUser.js";
+import type * as financeNotes_financeNotesCrud from "../financeNotes/financeNotesCrud.js";
 import type * as goals_goalCrud from "../goals/goalCrud.js";
 import type * as http from "../http.js";
 import type * as netWorth_netWorthSnapshots from "../netWorth/netWorthSnapshots.js";
@@ -26,6 +29,7 @@ import type * as portfolio_updateUserHoldings from "../portfolio/updateUserHoldi
 import type * as portfolio_updateUserPortfolio from "../portfolio/updateUserPortfolio.js";
 import type * as tax_runTaxQuery from "../tax/runTaxQuery.js";
 import type * as tax_seedTaxYear from "../tax/seedTaxYear.js";
+import type * as tax_userTaxOverrides from "../tax/userTaxOverrides.js";
 
 import type {
   ApiFromModules,
@@ -36,9 +40,12 @@ import type {
 declare const fullApi: ApiFromModules<{
   "accounts/accountCrud": typeof accounts_accountCrud;
   auth: typeof auth;
+  "auth/getUser": typeof auth_getUser;
   "calculators/getTaxYearInfo": typeof calculators_getTaxYearInfo;
   "calculators/runMonteCarlo": typeof calculators_runMonteCarlo;
   "calculators/seedHistoricalReturns": typeof calculators_seedHistoricalReturns;
+  "currentUser/getCurrentUser": typeof currentUser_getCurrentUser;
+  "financeNotes/financeNotesCrud": typeof financeNotes_financeNotesCrud;
   "goals/goalCrud": typeof goals_goalCrud;
   http: typeof http;
   "netWorth/netWorthSnapshots": typeof netWorth_netWorthSnapshots;
@@ -52,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   "portfolio/updateUserPortfolio": typeof portfolio_updateUserPortfolio;
   "tax/runTaxQuery": typeof tax_runTaxQuery;
   "tax/seedTaxYear": typeof tax_seedTaxYear;
+  "tax/userTaxOverrides": typeof tax_userTaxOverrides;
 }>;
 
 /**
