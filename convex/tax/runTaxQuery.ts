@@ -5,8 +5,12 @@ export const getTaxInfoForIncome = query({
   args: {
     taxYear: v.number(),     // e.g., 2025
     userId: v.optional(v.id("users")),  // Optional userId for custom overrides
+    incomeType: v.optional(v.string()), // "Employment" or "Pension" - defaults to "Employment"
   },
   handler: async (ctx, args) => {
+
+    // Default to Employment if not specified
+    const incomeType = args.incomeType || "Employment";
 
     // Get the taxYear document
     const year = await ctx.db
@@ -48,11 +52,11 @@ export const getTaxInfoForIncome = query({
       }
     }
 
-    // Fall back to defaults if no overrides
+    // Fall back to defaults if no overrides - use the incomeType parameter
     if (!bands || bands.length === 0) {
       bands = await ctx.db
         .query("taxBands")
-        .withIndex("by_band", (q) => q.eq("taxYearId", taxYearId).eq("incomeType", "Employment"))
+        .withIndex("by_band", (q) => q.eq("taxYearId", taxYearId).eq("incomeType", incomeType))
         .collect();
       if (!bands || bands.length === 0) return { error: "No tax bands found for this year." };
     }
@@ -81,6 +85,7 @@ export const getTaxInfoForIncome = query({
 
     return {
       taxYear: args.taxYear,
+      incomeType: incomeType,
       personalAllowance: allowance,
       bands: bands,
       capitalGainsTax: capitalGainsTax,

@@ -83,21 +83,27 @@ export function calculateIncomeTax(
   let tax = 0;
 
   // Calculate tax across bands (assumes bands are ordered: basic, higher, additional)
+  // UK bands start at £0, but the bands in DB start at personal allowance level
+  // So we track previous band end starting from 0
+  let previousBandEnd = 0;
+
   for (let i = 0; i < bands.length; i++) {
     const band = bands[i];
     const nextBand = bands[i + 1];
-    const bandStart = band.bandStartAmount;
     const bandEnd = nextBand ? nextBand.bandStartAmount : Infinity;
 
     // How much of this band applies to our taxable amount
+    // Amount is from where previous band ended to min(taxableAmount, bandEnd)
     const taxableInThisBand = Math.max(
       0,
-      Math.min(taxableAmount, bandEnd) - bandStart
+      Math.min(taxableAmount, bandEnd) - previousBandEnd
     );
 
     if (taxableInThisBand > 0) {
       tax += taxableInThisBand * (band.taxRatePercent / 100);
     }
+
+    previousBandEnd = bandEnd;
   }
 
   return tax;
@@ -147,6 +153,26 @@ export function calculateTakeHomePay(
     takeHomePay,
     personalAllowance,
   };
+}
+
+/**
+ * Calculate National Insurance for employment income.
+ * Note: Pension income does not attract NI.
+ * Uses 2024/25 rates: threshold £12,570, upper limit £50,270
+ * Main rate 8% between threshold and upper limit, 2% above
+ */
+export function calculateNationalInsurance(grossIncome: number): number {
+  const niThreshold = 12570;
+  const niUpperLimit = 50270;
+
+  if (grossIncome <= niThreshold) {
+    return 0;
+  }
+
+  const niTaxableAtMainRate = Math.min(grossIncome, niUpperLimit) - niThreshold;
+  const niTaxableAtAdditionalRate = Math.max(0, grossIncome - niUpperLimit);
+
+  return niTaxableAtMainRate * 0.08 + niTaxableAtAdditionalRate * 0.02;
 }
 
 // ============================================================================

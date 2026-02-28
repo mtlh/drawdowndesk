@@ -9,17 +9,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Calendar, Info } from "lucide-react"
+import { TrendingUp, Info, AlertCircle } from "lucide-react"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 
 import {
   calculateIncomeTax,
+  calculateNationalInsurance,
   calculateCapitalGainsTax,
   type TaxRates,
 } from "@/lib/taxCalculations"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { type TaxInfo } from "@/lib/createTakeHome"
 
 interface WithdrawalData {
   pension: number | undefined
@@ -33,23 +35,67 @@ interface TaxCalculation {
   totalWithdrawal: number
   taxableAmount: number
   incomeTax: number
+  nationalInsurance: number
   capitalGainsTax: number
   totalTax: number
   netAmount: number
 }
 
-type TaxRatesData = (TaxRates & { taxYear: { taxYear: number } }) | { error: string } | undefined;
+// Convert Convex TaxInfo to TaxRates for the calculation functions
+function toTaxRates(taxInfo: TaxInfo): TaxRates | null {
+  if (!taxInfo || 'error' in taxInfo || !taxInfo.bands || !taxInfo.personalAllowance) {
+    return null;
+  }
+
+  // Find CGT from the taxInfo - it's an array
+  const cgt = taxInfo.capitalGainsTax?.[0];
+
+  return {
+    personalAllowance: {
+      amount: taxInfo.personalAllowance.amount,
+      taperThreshold: taxInfo.personalAllowance.taperThreshold,
+      taperRatePercent: taxInfo.personalAllowance.taperRatePercent,
+    },
+    bands: taxInfo.bands.map(band => ({
+      bandName: band.bandName,
+      bandStartAmount: band.bandStartAmount,
+      bandEndAmount: band.bandEndAmount,
+      taxRatePercent: band.taxRatePercent,
+    })),
+    capitalGainsTax: cgt ? {
+      annualExemptAmount: cgt.annualExemptAmount,
+      basicRatePercent: cgt.basicRatePercent,
+      higherRatePercent: cgt.higherRatePercent,
+    } : {
+      annualExemptAmount: 12300, // Default for 2024/25
+      basicRatePercent: 10,
+      higherRatePercent: 20,
+    },
+  };
+}
 
 
 export default function OneOffCashflow() {
   // Get user for custom tax overrides
   const user = useQuery(api.currentUser.getCurrentUser.getCurrentUser)
 
+  // Get user settings (to check if retired)
+  const userSettings = useQuery(
+    api.tax.userSettings.getUserSettings,
+    user ? { userId: user._id as Id<"users"> } : "skip"
+  )
+
+  // Determine income type based on retirement status
+  const isRetired = userSettings?.isRetired ?? false;
+  const incomeType = isRetired ? "Pension" : "Employment";
+
   // Get current tax data - passes userId for custom overrides
   const TAX_RATES = useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, {
     taxYear: 2025,
-    userId: user?._id as Id<"users"> | undefined
-  }) as TaxRatesData;
+    userId: user?._id as Id<"users"> | undefined,
+    incomeType: incomeType,
+  }) as TaxInfo | undefined;
+
   const isLoading = TAX_RATES === undefined;
 
   const [data, setData] = useState<WithdrawalData>({
@@ -80,13 +126,17 @@ export default function OneOffCashflow() {
 
 
   useEffect(() => {
+    // Convert to TaxRates inside effect to use stable TAX_RATES reference
+    const rates = TAX_RATES && !('error' in TAX_RATES) ? toTaxRates(TAX_RATES) : null;
+
     const calculateTax = (years: number): TaxCalculation => {
 
-      if (!TAX_RATES || "error" in TAX_RATES || !TAX_RATES.personalAllowance || !TAX_RATES.bands || !TAX_RATES.capitalGainsTax) {
+      if (!rates) {
         return {
           totalWithdrawal: 0,
           taxableAmount: 0,
           incomeTax: 0,
+          nationalInsurance: 0,
           capitalGainsTax: 0,
           totalTax: 0,
           netAmount: 0,
@@ -100,30 +150,35 @@ export default function OneOffCashflow() {
           currentIncome = 0,
       } = data;
 
-      const pensionPerYear = pension / years;
-      const capitalGainsPerYear = capitalGains / years;
+      const pensionPerYear = (pension ?? 0) / years;
+      const capitalGainsPerYear = (capitalGains ?? 0) / years;
 
       const pensionTaxable = pensionPerYear * 0.75;
 
-      const totalIncomePerYear = currentIncome + pensionTaxable;
+      const totalIncomePerYear = (currentIncome ?? 0) + pensionTaxable;
 
-      const incomeTaxPerYear = calculateIncomeTax(totalIncomePerYear, TAX_RATES as TaxRates);
+      const incomeTaxPerYear = calculateIncomeTax(totalIncomePerYear, rates);
 
-      const capitalGainsTaxPerYear = calculateCapitalGainsTax(capitalGainsPerYear, totalIncomePerYear, TAX_RATES as TaxRates);
+      // NI only applies to employment income, not pension
+      const nationalInsurancePerYear = isRetired ? 0 : calculateNationalInsurance(currentIncome ?? 0);
+
+      const capitalGainsTaxPerYear = calculateCapitalGainsTax(capitalGainsPerYear, totalIncomePerYear, rates);
 
       const totalIncomeTax = incomeTaxPerYear * years;
+      const totalNationalInsurance = nationalInsurancePerYear * years;
       const totalCapitalGainsTax = capitalGainsTaxPerYear * years;
-      const totalTax = totalIncomeTax + totalCapitalGainsTax;
+      const totalTax = totalIncomeTax + totalNationalInsurance + totalCapitalGainsTax;
 
-      const totalWithdrawal = pension + capitalGains + inheritance + currentIncome;
+      const totalWithdrawal = (pension ?? 0) + (capitalGains ?? 0) + (inheritance ?? 0) + (currentIncome ?? 0);
 
       const taxableAmount =
-          pensionTaxable * years + Math.max(0, capitalGains - (TAX_RATES as TaxRates).capitalGainsTax.annualExemptAmount * years);
+          pensionTaxable * years + Math.max(0, (capitalGains ?? 0) - (rates.capitalGainsTax?.annualExemptAmount ?? 0) * years);
 
       return {
               totalWithdrawal,
               taxableAmount,
               incomeTax: totalIncomeTax,
+              nationalInsurance: totalNationalInsurance,
               capitalGainsTax: totalCapitalGainsTax,
               totalTax,
               netAmount: totalWithdrawal - totalTax,
@@ -132,80 +187,127 @@ export default function OneOffCashflow() {
 
     setSingleYearCalc(calculateTax(1))
     setMultiYearCalc(calculateTax(data.yearsToSpread))
-  }, [data, TAX_RATES])
+  }, [data, TAX_RATES, isRetired])
 
   const savings = singleYearCalc.capitalGainsTax - multiYearCalc.capitalGainsTax
 
   let singleyearcapitalGainsBreakdown = null;
 
-  if (data.capitalGains &&
-    data.currentIncome &&
-    TAX_RATES &&
-    !('error' in TAX_RATES) &&
-    TAX_RATES.capitalGainsTax?.annualExemptAmount &&
-    TAX_RATES.bands?.[0].bandEndAmount) {
+  // Full CGT workings for single year
+  if ((data.capitalGains ?? 0) > 0 && TAX_RATES && !('error' in TAX_RATES)) {
+    const cgt = TAX_RATES.capitalGainsTax?.[0];
+    const annualExempt = cgt?.annualExemptAmount ?? 0;
+    const basicRate = cgt?.basicRatePercent ?? 10;
+    const higherRate = cgt?.higherRatePercent ?? 20;
+    const gains = data.capitalGains ?? 0;
+    const taxableGains = Math.max(0, gains - annualExempt);
 
-    const taxableGains = data.capitalGains - TAX_RATES.capitalGainsTax.annualExemptAmount;
-    if (taxableGains > 0) {
-      const basicBandEnd = TAX_RATES.bands[0].bandEndAmount;
-      const remainingBasicBand = Math.max(0, basicBandEnd - data.currentIncome);
+    // Get remaining basic band from TOTAL income (employment + 75% pension)
+    const totalIncome = (data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75);
+    const basicBandEnd = TAX_RATES.bands?.[0]?.bandEndAmount ?? 37700;
+    const remainingBasicBand = Math.max(0, basicBandEnd - totalIncome);
 
-      const basicRateGains = Math.min(taxableGains, remainingBasicBand);
-      const higherRateGains = taxableGains - basicRateGains;
+    const basicRateAmount = Math.min(taxableGains, remainingBasicBand);
+    const higherRateAmount = Math.max(0, taxableGains - remainingBasicBand);
 
-      singleyearcapitalGainsBreakdown = (
-        <>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Basic rate ({TAX_RATES.capitalGainsTax.basicRatePercent}%):</span>
-            <span>£{basicRateGains.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+    const basicTax = basicRateAmount * (basicRate / 100);
+    const higherTax = higherRateAmount * (higherRate / 100);
+
+    singleyearcapitalGainsBreakdown = (
+      <div className="space-y-1 text-xs text-muted-foreground">
+        <div className="flex justify-between">
+          <span>Capital Gains:</span>
+          <span>£{gains.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Less Annual Exempt:</span>
+          <span>-£{annualExempt.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between font-medium">
+          <span>Taxable Gains:</span>
+          <span>£{taxableGains.toLocaleString()}</span>
+        </div>
+        <Separator className="my-1" />
+        {basicRateAmount > 0 && (
+          <div className="flex justify-between">
+            <span>Basic rate ({basicRate}%):</span>
+            <span>£{basicRateAmount.toLocaleString()} = £{basicTax.toLocaleString()}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Higher rate ({TAX_RATES.capitalGainsTax.higherRatePercent}%):</span>
-            <span>£{higherRateGains.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+        )}
+        {higherRateAmount > 0 && (
+          <div className="flex justify-between">
+            <span>Higher rate ({higherRate}%):</span>
+            <span>£{higherRateAmount.toLocaleString()} = £{higherTax.toLocaleString()}</span>
           </div>
-        </>
-      );
-    }
+        )}
+      </div>
+    );
   }
 
   let multicapitalGainsBreakdown = null;
 
-  if (data.capitalGains &&
-    data.currentIncome &&
-    TAX_RATES &&
-    !('error' in TAX_RATES) &&
-    TAX_RATES.capitalGainsTax?.annualExemptAmount &&
-    TAX_RATES.bands?.[0].bandEndAmount) {
+  // Full CGT workings for multi-year
+  if ((data.capitalGains ?? 0) > 0 && TAX_RATES && !('error' in TAX_RATES)) {
+    const cgt = TAX_RATES.capitalGainsTax?.[0];
+    const annualExempt = cgt?.annualExemptAmount ?? 0;
+    const basicRate = cgt?.basicRatePercent ?? 10;
+    const higherRate = cgt?.higherRatePercent ?? 20;
+    const years = data.yearsToSpread;
+    const totalGains = data.capitalGains ?? 0;
+    const annualGains = totalGains / years;
+    const taxableGainsPerYear = Math.max(0, annualGains - annualExempt);
 
-    const annualGains = data.capitalGains / data.yearsToSpread;
-    const taxableGains = annualGains - TAX_RATES.capitalGainsTax.annualExemptAmount;
+    // Get remaining basic band from income (per year)
+    const totalIncome = (data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75);
+    const basicBandEnd = TAX_RATES.bands?.[0]?.bandEndAmount ?? 37700;
+    const remainingBasicBand = Math.max(0, basicBandEnd - totalIncome);
 
-    if (taxableGains > 0) {
-      const basicBandEnd = TAX_RATES.bands[0].bandEndAmount;
-      const remainingBasicBand = Math.max(0, basicBandEnd - data.currentIncome);
+    const basicRateAmount = Math.min(taxableGainsPerYear, remainingBasicBand);
+    const higherRateAmount = Math.max(0, taxableGainsPerYear - remainingBasicBand);
 
-      const basicRateGains = Math.min(taxableGains, remainingBasicBand);
-      const higherRateGains = taxableGains - basicRateGains;
+    const basicTaxPerYear = basicRateAmount * (basicRate / 100);
+    const higherTaxPerYear = higherRateAmount * (higherRate / 100);
+    const totalBasicTax = basicTaxPerYear * years;
+    const totalHigherTax = higherTaxPerYear * years;
 
-      multicapitalGainsBreakdown = (
-        <>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Total Basic rate ({TAX_RATES.capitalGainsTax.basicRatePercent}%):</span>
-            <span>
-              £{(basicRateGains * data.yearsToSpread).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            </span>
+    multicapitalGainsBreakdown = (
+      <div className="space-y-1 text-xs text-muted-foreground">
+        <div className="flex justify-between">
+          <span>Total Capital Gains:</span>
+          <span>£{totalGains.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Per Year:</span>
+          <span>£{annualGains.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Less Annual Exempt (per year):</span>
+          <span>-£{annualExempt.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between font-medium">
+          <span>Taxable Gains Per Year:</span>
+          <span>£{taxableGainsPerYear.toLocaleString()}</span>
+        </div>
+        <Separator className="my-1" />
+        {basicRateAmount > 0 && (
+          <div className="flex justify-between">
+            <span>Basic rate ({basicRate}%):</span>
+            <span>£{basicRateAmount.toLocaleString()}/yr = £{basicTaxPerYear.toLocaleString()}/yr</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Total Higher rate ({TAX_RATES.capitalGainsTax.higherRatePercent}%):</span>
-            <span>
-              £{(higherRateGains * data.yearsToSpread).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            </span>
+        )}
+        {higherRateAmount > 0 && (
+          <div className="flex justify-between">
+            <span>Higher rate ({higherRate}%):</span>
+            <span>£{higherRateAmount.toLocaleString()}/yr = £{higherTaxPerYear.toLocaleString()}/yr</span>
           </div>
-        </>
-      );
-    } else {
-      multicapitalGainsBreakdown = <span className="text-sm text-muted-foreground">No taxable gains</span>;
-    }
+        )}
+        <Separator className="my-1" />
+        <div className="flex justify-between font-medium">
+          <span>Total CGT:</span>
+          <span>£{(totalBasicTax + totalHigherTax).toLocaleString()}</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -255,10 +357,10 @@ export default function OneOffCashflow() {
                           setData({ ...data, capitalGains: value === "" ? undefined : Number(value) });
                       }}
                     />
-                    {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.capitalGainsTax && (TAX_RATES.capitalGainsTax.annualExemptAmount ?? 0) > 0 &&
+                    {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.capitalGainsTax && ((TAX_RATES.capitalGainsTax.annualExemptAmount ?? 0) > 0) &&
                       <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        £{(TAX_RATES.capitalGainsTax.annualExemptAmount ?? 0).toLocaleString()} allowance
+                        £{(TAX_RATES.capitalGainsTax?.annualExemptAmount ?? 0).toLocaleString()} allowance
                       </p>
                     }
                   </div>
@@ -312,6 +414,18 @@ export default function OneOffCashflow() {
                 </CardHeader>
                 <CardContent>
                   <LoadingSpinner message="Loading tax rates..." />
+                </CardContent>
+              </Card>
+            ) : TAX_RATES && 'error' in TAX_RATES && TAX_RATES.error ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-destructive">
+                    <AlertCircle className="h-5 w-5" />
+                    Error Loading Tax Data
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{TAX_RATES.error}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -381,78 +495,257 @@ export default function OneOffCashflow() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="single" className="space-y-4 mt-6">
-                    <div className="space-y-4">
-                      <h4 className="font-semibold">Single Year Withdrawal</h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between">
+                  <TabsContent value="single" className="mt-6">
+                    <div className="grid md:grid-cols-2 gap-8">
+                      {/* Income Tax Breakdown */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-lg">Income Tax ({isRetired ? "Pension" : "Employment"} Rates)</h4>
+                        <div className="space-y-2 text-sm border rounded-lg p-4">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Current Income:</span>
+                            <span>£{(data.currentIncome ?? 0).toLocaleString()}</span>
+                          </div>
+                          {(data.pension ?? 0) > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Pension (75% taxable):</span>
+                              <span>£{((data.pension ?? 0) * 0.75).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {TAX_RATES && !('error' in TAX_RATES) && (
+                            <>
+                              {((data.pension ?? 0) > 0 || (data.currentIncome ?? 0) > 0) && (
+                                <>
+                                  <div className="flex justify-between font-medium">
+                                    <span>Total Taxable Income:</span>
+                                    <span>£{((data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75)).toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Personal Allowance:</span>
+                                    <span>-£{(TAX_RATES.personalAllowance?.amount ?? 0).toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between font-medium">
+                                    <span>Tax After Allowance:</span>
+                                    <span>£{Math.max(0, ((data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75)) - (TAX_RATES.personalAllowance?.amount ?? 0)).toLocaleString()}</span>
+                                  </div>
+                                </>
+                              )}
+                              {(() => {
+                                const totalIncome = (data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75);
+                                const personalAllowance = TAX_RATES.personalAllowance?.amount ?? 0;
+                                const taxableIncome = Math.max(0, totalIncome - personalAllowance);
+
+                                // UK tax bands start at £0 - calculate amount in each band sequentially
+                                let previousBandEnd = 0;
+
+                                return [...(TAX_RATES.bands || [])]
+                                  .sort((a, b) => (a.bandStartAmount || 0) - (b.bandStartAmount || 0))
+                                  .slice(0, 3)
+                                  .map((band, idx) => {
+                                  const bandEnd = band.bandEndAmount ?? Infinity;
+                                  const rate = band.taxRatePercent;
+
+                                  // Amount in this band is from where previous band ended to min(taxable, band end)
+                                  const taxableInBand = Math.max(0, Math.min(taxableIncome, bandEnd) - previousBandEnd);
+                                  previousBandEnd = bandEnd;
+
+                                  if (taxableInBand <= 0) return null;
+
+                                  const taxInBand = taxableInBand * (rate / 100);
+
+                                  return (
+                                    <div key={idx} className="flex justify-between">
+                                      <span className="text-muted-foreground">
+                                        {band.bandName} ({rate}%):
+                                      </span>
+                                      <span>£{taxableInBand.toLocaleString()} = £{taxInBand.toLocaleString()}</span>
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </>
+                          )}
+                          <Separator />
+                          <div className="flex justify-between font-semibold">
+                            <span>Total Income Tax:</span>
+                            <span className="text-destructive">£{(singleYearCalc?.incomeTax ?? 0).toLocaleString()}</span>
+                          </div>
+                          {!isRetired && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">National Insurance:</span>
+                              <span className="text-destructive">£{(singleYearCalc?.nationalInsurance ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {(() => {
+                            const totalIncome = (data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75);
+                            const totalTax = (singleYearCalc?.incomeTax ?? 0) + (singleYearCalc?.nationalInsurance ?? 0);
+                            const taxRate = totalIncome > 0 ? (totalTax / totalIncome * 100) : 0;
+                            return (
+                              <div className="flex justify-between text-sm text-muted-foreground">
+                                <span>Effective Tax Rate:</span>
+                                <span>{taxRate.toFixed(1)}%</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Capital Gains Tax Breakdown */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-lg">Capital Gains Tax</h4>
+                        <div className="space-y-2 text-sm border rounded-lg p-4">
+                          {singleyearcapitalGainsBreakdown}
+                          <Separator />
+                          <div className="flex justify-between font-semibold">
+                            <span>Total CGT:</span>
+                            <span className="text-destructive">£{(singleYearCalc?.capitalGainsTax ?? 0).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="mt-8 border-t pt-6">
+                      <div className="grid md:grid-cols-3 gap-6 text-lg">
+                        <div className="flex justify-between md:block">
                           <span className="text-muted-foreground">Total Withdrawal:</span>
-                          <span className="font-medium">£{(singleYearCalc?.totalWithdrawal ?? 0).toLocaleString()}</span>
+                          <span className="font-medium md:block">£{(singleYearCalc?.totalWithdrawal ?? 0).toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Income Tax:</span>
-                          <span>£{(singleYearCalc?.incomeTax ?? 0).toLocaleString()}</span>
+                        <div className="flex justify-between md:block">
+                          <span className="text-muted-foreground">Total Tax:</span>
+                          <span className="text-destructive font-semibold md:block">£{(singleYearCalc?.totalTax ?? 0).toLocaleString()}</span>
                         </div>
-                        <Separator />
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Capital Gain:</span>
-                          <span>£{data.capitalGains?.toLocaleString() || 0}</span>
-                        </div>
-                        {singleyearcapitalGainsBreakdown}
-                        <div className="flex justify-between font-medium">
-                          <span>Capital Gains Tax:</span>
-                          <span className="text-destructive">£{(singleYearCalc?.capitalGainsTax ?? 0).toLocaleString()}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between font-semibold">
-                          <span>Total Tax:</span>
-                          <span className="text-destructive">£{(singleYearCalc?.totalTax ?? 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between font-semibold text-lg">
-                          <span>Net Amount:</span>
-                          <span className="text-emerald-600">£{(singleYearCalc?.netAmount ?? 0).toLocaleString()}</span>
+                        <div className="flex justify-between md:block">
+                          <span className="text-muted-foreground">Net Amount:</span>
+                          <span className="text-emerald-600 font-bold md:block">£{(singleYearCalc?.netAmount ?? 0).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="multi" className="space-y-4 mt-6">
-                    <div className="space-y-4">
-                      <h4 className="font-semibold flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        {data.yearsToSpread}-Year Strategy
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Total Over {data.yearsToSpread} Years:</span>
-                          <span className="font-medium">
-                            £{(((data.currentIncome || 0) * data.yearsToSpread) + (data.capitalGains || 0)).toLocaleString()}
-                          </span>
+                  <TabsContent value="multi" className="mt-6">
+                    <div className="grid md:grid-cols-2 gap-8">
+                      {/* Income Tax Breakdown */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-lg">Income Tax ({isRetired ? "Pension" : "Employment"} Rates) - {data.yearsToSpread} years</h4>
+                        <div className="space-y-2 text-sm border rounded-lg p-4">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Annual Income:</span>
+                            <span>£{(data.currentIncome ?? 0).toLocaleString()}</span>
+                          </div>
+                          {(data.pension ?? 0) > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Pension (75% taxable):</span>
+                              <span>£{(((data.pension ?? 0) * 0.75) / data.yearsToSpread).toLocaleString()}/yr</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between font-medium">
+                            <span>Total Income/yr (before allowance):</span>
+                            <span>£{((data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75)).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between font-medium">
+                            <span>Total Over {data.yearsToSpread} Years:</span>
+                            <span>£{(((data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75)) * data.yearsToSpread).toLocaleString()}</span>
+                          </div>
+                          {TAX_RATES && !('error' in TAX_RATES) && (
+                            <>
+                              <Separator />
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Personal Allowance (yr):</span>
+                                <span>-£{(TAX_RATES.personalAllowance?.amount ?? 0).toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between font-medium">
+                                <span>Tax After Allowance (yr):</span>
+                                <span>£{Math.max(0, (((data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75)) / data.yearsToSpread) - (TAX_RATES.personalAllowance?.amount ?? 0)).toLocaleString()}</span>
+                              </div>
+                              {(() => {
+                                const years = data.yearsToSpread;
+                                const totalAnnualIncome = ((data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75)) / years;
+                                const personalAllowance = TAX_RATES.personalAllowance?.amount ?? 0;
+                                const taxableIncomePerYear = Math.max(0, totalAnnualIncome - personalAllowance);
+
+                                // UK tax bands start at £0 - calculate amount in each band sequentially
+                                let previousBandEnd = 0;
+
+                                return [...(TAX_RATES.bands || [])]
+                                  .sort((a, b) => (a.bandStartAmount || 0) - (b.bandStartAmount || 0))
+                                  .slice(0, 3)
+                                  .map((band, idx) => {
+                                  const bandEnd = band.bandEndAmount ?? Infinity;
+                                  const rate = band.taxRatePercent;
+
+                                  // Amount in this band is from where previous band ended to min(taxable, band end)
+                                  const taxableInBand = Math.max(0, Math.min(taxableIncomePerYear, bandEnd) - previousBandEnd);
+                                  previousBandEnd = bandEnd;
+
+                                  if (taxableInBand <= 0) return null;
+
+                                  const taxInBandPerYear = taxableInBand * (rate / 100);
+
+                                  return (
+                                    <div key={idx} className="flex justify-between">
+                                      <span className="text-muted-foreground">
+                                        {band.bandName} ({rate}%):
+                                      </span>
+                                      <span>£{taxableInBand.toLocaleString()}/yr = £{taxInBandPerYear.toLocaleString()}/yr</span>
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </>
+                          )}
+                          <Separator />
+                          <div className="flex justify-between font-semibold">
+                            <span>Total Income Tax:</span>
+                            <span className="text-destructive">£{(multiYearCalc?.incomeTax ?? 0).toLocaleString()}</span>
+                          </div>
+                          {!isRetired && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">National Insurance:</span>
+                              <span className="text-destructive">£{(multiYearCalc?.nationalInsurance ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {(() => {
+                            const totalIncome = ((data.currentIncome ?? 0) + ((data.pension ?? 0) * 0.75)) * data.yearsToSpread;
+                            const totalTax = (multiYearCalc?.incomeTax ?? 0) + (multiYearCalc?.nationalInsurance ?? 0);
+                            const taxRate = totalIncome > 0 ? (totalTax / totalIncome * 100) : 0;
+                            return (
+                              <div className="flex justify-between text-sm text-muted-foreground">
+                                <span>Effective Tax Rate:</span>
+                                <span>{taxRate.toFixed(1)}%</span>
+                              </div>
+                            );
+                          })()}
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Annual Capital Gains:</span>
-                          <span>£{((data.capitalGains || 0) / data.yearsToSpread).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      </div>
+
+                      {/* Capital Gains Tax Breakdown */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-lg">Capital Gains Tax</h4>
+                        <div className="space-y-2 text-sm border rounded-lg p-4">
+                          {multicapitalGainsBreakdown}
+                          <Separator />
+                          <div className="flex justify-between font-semibold">
+                            <span>Total CGT:</span>
+                            <span className="text-destructive">£{(multiYearCalc?.capitalGainsTax ?? 0).toLocaleString()}</span>
+                          </div>
                         </div>
-                        {multicapitalGainsBreakdown}
-                        <Separator />
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Total CGT:</span>
-                          <span>£{(multiYearCalc?.capitalGainsTax ?? 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="mt-8 border-t pt-6">
+                      <div className="grid md:grid-cols-3 gap-6 text-lg">
+                        <div className="flex justify-between md:block">
+                          <span className="text-muted-foreground">Total Withdrawal:</span>
+                          <span className="font-medium md:block">£{(((data.currentIncome ?? 0) * data.yearsToSpread) + (data.capitalGains ?? 0)).toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Total Income Tax:</span>
-                          <span>£{(multiYearCalc?.incomeTax ?? 0).toLocaleString()}</span>
+                        <div className="flex justify-between md:block">
+                          <span className="text-muted-foreground">Total Tax:</span>
+                          <span className="text-destructive font-semibold md:block">£{(multiYearCalc?.totalTax ?? 0).toLocaleString()}</span>
                         </div>
-                        <Separator />
-                        <div className="flex justify-between font-semibold">
-                          <span>Total Tax:</span>
-                          <span className="text-destructive">£{(multiYearCalc?.totalTax ?? 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between font-semibold text-lg">
-                          <span>Net Amount:</span>
-                          <span className="text-emerald-600">
-                            £{((((data.currentIncome || 0) * data.yearsToSpread) + (data.capitalGains || 0) - (multiYearCalc?.totalTax ?? 0))).toLocaleString()}
-                          </span>
+                        <div className="flex justify-between md:block">
+                          <span className="text-muted-foreground">Net Amount:</span>
+                          <span className="text-emerald-600 font-bold md:block">£{(((data.currentIncome ?? 0) * data.yearsToSpread) + (data.capitalGains ?? 0) - (multiYearCalc?.totalTax ?? 0)).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -462,58 +755,6 @@ export default function OneOffCashflow() {
             </Card>
             )}
           </div>
-
-          {/* Tax Information */}
-          {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.taxYear && TAX_RATES.personalAllowance && TAX_RATES.bands && TAX_RATES.capitalGainsTax && (
-            <Card>
-              <CardHeader>
-                <CardTitle>UK Tax Information ({TAX_RATES.taxYear.taxYear})</CardTitle>
-                <CardDescription>Current tax rates and allowances used in calculations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div>
-                    <h4 className="font-semibold mb-3">Income Tax</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Personal Allowance:</span>
-                        <span>£{TAX_RATES.personalAllowance.amount.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Basic Rate ({TAX_RATES.bands[0].taxRatePercent}%):</span>
-                        <span>£{TAX_RATES.bands[0].bandStartAmount.toLocaleString()} - £{TAX_RATES.bands[0].bandEndAmount?.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Higher Rate ({TAX_RATES.bands[1].taxRatePercent}%):</span>
-                        <span>£{TAX_RATES.bands[1].bandStartAmount.toLocaleString()} - £{TAX_RATES.bands[1].bandEndAmount?.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Additional Rate ({TAX_RATES.bands[2].taxRatePercent}%):</span>
-                        <span>Over £{TAX_RATES.bands[2].bandStartAmount.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-3">Capital Gains Tax</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Annual Exempt Amount:</span>
-                        <span>£{TAX_RATES.capitalGainsTax.annualExemptAmount.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Basic Rate:</span>
-                        <span>{TAX_RATES.capitalGainsTax.basicRatePercent}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Higher Rate:</span>
-                        <span>{TAX_RATES.capitalGainsTax.higherRatePercent}%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </main>
     </div>

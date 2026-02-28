@@ -41,6 +41,15 @@ export default defineSchema({
         lastUpdated: v.optional(v.string()),
     }).index("by_taxYear", ["taxYearId"]),
 
+    // User Settings - State Pension and other preferences
+    userSettings: defineTable({
+        userId: v.id("users"),
+        statePensionAmount: v.float64(),                 // Annual state pension amount
+        statePensionAge: v.number(),                    // State pension age
+        isRetired: v.optional(v.boolean()),             // Whether user is retired (affects tax bands)
+        lastUpdated: v.optional(v.string()),
+    }).index("by_user", ["userId"]),
+
     // User Tax Overrides - Personal Allowance
     userTaxAllowances: defineTable({
         userId: v.id("users"),

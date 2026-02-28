@@ -63,13 +63,25 @@ function SettingsContent() {
   const setCgt = useMutation(api.tax.userTaxOverrides.setUserCapitalGainsTax)
   const deleteCgt = useMutation(api.tax.userTaxOverrides.deleteUserCapitalGainsTax)
 
+  // State pension settings
+  const userSettings = useQuery(
+    api.tax.userSettings.getUserSettings,
+    user ? { userId: user._id as Id<"users"> } : "skip"
+  )
+  const saveUserSettings = useMutation(api.tax.userSettings.saveUserSettings)
+
   const [allowance, setAllowanceState] = useState(DEFAULT_ALLOWANCE)
   const [bands, setBands] = useState<TaxBand[]>(DEFAULT_BANDS)
   const [cgt, setCgtState] = useState<CgtRate[]>(DEFAULT_CGT)
   const [editingAllowance, setEditingAllowance] = useState(false)
   const [editingBandIndex, setEditingBandIndex] = useState<number | null>(null)
   const [editingCgtIndex, setEditingCgtIndex] = useState<number | null>(null)
+  const [editingStatePension, setEditingStatePension] = useState(false)
   const [savedMessage, setSavedMessage] = useState("")
+
+  // State pension settings
+  const [statePension, setStatePension] = useState({ amount: 11000, age: 67 })
+  const [isRetired, setIsRetired] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   // Load user overrides when they load
@@ -102,6 +114,17 @@ function SettingsContent() {
       }
     }
   }, [userOverrides])
+
+  // Load user state pension settings
+  useEffect(() => {
+    if (userSettings) {
+      setStatePension({
+        amount: userSettings.statePensionAmount,
+        age: userSettings.statePensionAge,
+      })
+      setIsRetired(userSettings.isRetired ?? false)
+    }
+  }, [userSettings])
 
   const hasAllowanceOverride = userOverrides?.hasAllowanceOverride
   const hasBandOverrides = userOverrides?.hasBandOverrides
@@ -241,6 +264,25 @@ function SettingsContent() {
     setTimeout(() => setSavedMessage(""), 3000)
   }
 
+  const handleSaveStatePension = async () => {
+    if (!user) return
+    setIsSaving(true)
+    try {
+      await saveUserSettings({
+        userId: user._id as Id<"users">,
+        statePensionAmount: statePension.amount,
+        statePensionAge: statePension.age,
+        isRetired: isRetired,
+      })
+      setSavedMessage("State pension settings saved!")
+      setEditingStatePension(false)
+    } catch {
+      setSavedMessage("Error saving state pension settings")
+    }
+    setIsSaving(false)
+    setTimeout(() => setSavedMessage(""), 3000)
+  }
+
   if (!user) {
     return <LoadingSpinner fullScreen message="Loading..." />
   }
@@ -267,10 +309,11 @@ function SettingsContent() {
           )}
 
           <Tabs defaultValue="allowance" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="allowance">Personal Allowance</TabsTrigger>
               <TabsTrigger value="bands">Tax Bands</TabsTrigger>
               <TabsTrigger value="cgt">Capital Gains Tax</TabsTrigger>
+              <TabsTrigger value="statePension">State Pension</TabsTrigger>
             </TabsList>
 
             {/* Personal Allowance Tab */}
@@ -550,6 +593,95 @@ function SettingsContent() {
                       )}
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* State Pension Tab */}
+            <TabsContent value="statePension">
+              <Card>
+                <CardHeader>
+                  <CardTitle>State Pension</CardTitle>
+                  <CardDescription>
+                    Your expected UK state pension amount and when you plan to receive it.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Retired Toggle */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base">Retirement Status</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Determines which tax bands to use in calculations
+                      </p>
+                    </div>
+                    <div className="flex gap-1 bg-muted p-1 rounded-lg">
+                      <Button
+                        variant={!isRetired ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setIsRetired(false)}
+                      >
+                        Working
+                      </Button>
+                      <Button
+                        variant={isRetired ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setIsRetired(true)}
+                      >
+                        Retired
+                      </Button>
+                    </div>
+                  </div>
+
+                  {editingStatePension ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Annual State Pension (£)</Label>
+                          <Input
+                            type="number"
+                            value={statePension.amount}
+                            onChange={(e) => setStatePension({ ...statePension, amount: parseFloat(e.target.value) || 0 })}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            UK full new state pension (2025/26): £11,500
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>State Pension Age</Label>
+                          <Input
+                            type="number"
+                            value={statePension.age}
+                            onChange={(e) => setStatePension({ ...statePension, age: parseInt(e.target.value) || 67 })}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={handleSaveStatePension} disabled={isSaving} className="gap-2">
+                          <Check className="h-4 w-4" /> Save
+                        </Button>
+                        <Button variant="outline" onClick={() => setEditingStatePension(false)} className="gap-2">
+                          <X className="h-4 w-4" /> Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Annual Amount:</span>
+                          <p className="font-medium">£{statePension.amount.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Pension Age:</span>
+                          <p className="font-medium">{statePension.age}</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" onClick={() => setEditingStatePension(true)} className="gap-2">
+                        <Pencil className="h-4 w-4" /> Edit
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

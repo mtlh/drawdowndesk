@@ -16,6 +16,7 @@ export type TaxInfo = {
     bands?: undefined;
 } | {
     taxYear: number;
+    incomeType: string;
     personalAllowance: {
         _id: Id<"personalAllowances">;
         _creationTime: number;
