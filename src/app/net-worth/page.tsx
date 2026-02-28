@@ -45,7 +45,6 @@ const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
 type AccountWithPortfolio = Account & { portfolioName?: string }
 
 export default function NetWorthPage() {
-  // @ts-expect-error - Convex API type instantiation is excessively deep
   const getAccountsData = useQuery(api.accounts.accountCrud.getUserAccounts)
   const getSnapshots = useQuery(api.netWorth.netWorthSnapshots.getNetWorthSnapshots, { months: 12 })
   const getUserPortfolio = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio)
