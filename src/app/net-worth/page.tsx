@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
@@ -54,7 +55,7 @@ export default function NetWorthPage() {
 
   const [accounts, setAccounts] = useState<AccountWithPortfolio[]>([])
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
-  const [portfolioHoldings, setPortfolioHoldings] = useState<{portfolioId: string, portfolioName: string, value: number}[]>([])
+  const [portfolioHoldings, setPortfolioHoldings] = useState<{portfolioId: string, portfolioName: string, value: number, tags: string[]}[]>([])
   const [showNewAccountForm, setShowNewAccountForm] = useState(false)
   const [showInvestments, setShowInvestments] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -104,29 +105,46 @@ export default function NetWorthPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const holdingsByPortfolio = getUserPortfolio.map((portfolio: any) => {
         let totalValue = 0
+        const tags = new Set<string>()
 
         // Add live holdings value (shares * currentPrice), converted to GBP
-        if (portfolio.holdings) {
+        if (portfolio.holdings && portfolio.holdings.length > 0) {
           for (const holding of portfolio.holdings) {
             const currency = holding.currency || "GBP"
             // Use getPriceInPounds logic: convert GBp (pence) to GBP (pounds)
             const holdingValue = (holding.shares || 0) * (holding.currentPrice || 0)
             const gbpValue = currency === 'GBp' ? holdingValue / 100 : holdingValue
             totalValue += gbpValue
+
+            // Collect all accountName values from holdings
+            if (holding.accountName) {
+              tags.add(holding.accountName)
+            }
           }
         }
 
         // Add simple holdings value (already in GBP per schema)
-        if (portfolio.simpleHoldings) {
+        if (portfolio.simpleHoldings && portfolio.simpleHoldings.length > 0) {
           for (const holding of portfolio.simpleHoldings) {
             totalValue += holding.value || 0
+
+            // Collect all accountName and holdingType from simple holdings
+            if (holding.accountName) {
+              tags.add(holding.accountName)
+            } else if (holding.holdingType) {
+              tags.add(holding.holdingType)
+            }
           }
         }
+
+        // Get unique tags array, fallback to ["Investment"]
+        const tagsArray = tags.size > 0 ? Array.from(tags) : ["Investment"]
 
         return {
           portfolioId: portfolio._id,
           portfolioName: portfolio.name,
-          value: totalValue
+          value: totalValue,
+          tags: tagsArray,
         }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }).filter((p: any) => p.value > 0)
@@ -163,7 +181,7 @@ export default function NetWorthPage() {
     return { growth, growthPercent, ytd, ytdPercent }
   }
 
-  const { growth, growthPercent, ytd, ytdPercent } = getGrowthAndYTD()
+  const { growthPercent, ytdPercent } = getGrowthAndYTD()
 
   // Get unique tags
   const uniqueTags = [...new Set(accounts.map(a => a.tag).filter(Boolean))] as string[]
@@ -277,7 +295,7 @@ export default function NetWorthPage() {
   }
 
   if (!getAccountsData) {
-    return <div>Loading accounts…</div>
+    return <LoadingSpinner message="Loading accounts…" fullScreen />
   }
 
   if ('error' in getAccountsData) {
@@ -297,54 +315,108 @@ export default function NetWorthPage() {
               </div>
             </div>
 
-            {/* Add Account Button - Left of quick stats */}
-            <Button onClick={() => setShowNewAccountForm(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Account
-            </Button>
-
             {/* Quick Stats Cards */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[120px] bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
-                <span className="text-lg">🏦</span>
-                <div>
-                  <div className="text-xs text-muted-foreground">Accounts</div>
-                  <div className="text-2xl font-bold">{accounts.length}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[140px] bg-gradient-to-br from-emerald-500/5 to-transparent border-emerald-500/20">
-                <span className="text-lg">📈</span>
-                <div>
-                  <div className="text-xs text-muted-foreground">Investments</div>
-                  <div className="text-2xl font-bold">£{totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[120px] bg-gradient-to-br from-blue-500/5 to-transparent border-blue-500/20">
-                <span className="text-lg">💰</span>
-                <div>
-                  <div className="text-xs text-muted-foreground">Cash</div>
-                  <div className="text-2xl font-bold">£{totalAccountsValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
-                </div>
-              </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <StatCard
+                icon="🏦"
+                label="Accounts"
+                value={`${accounts.length}`}
+                className="from-primary/5 border-primary/20"
+              />
+              <StatCard
+                icon="📈"
+                label="Investments"
+                value={`£${totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                className="from-emerald-500/5 border-emerald-500/20"
+              />
+              <StatCard
+                icon="💰"
+                label="Cash"
+                value={`£${totalAccountsValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                className="from-blue-500/5 border-blue-500/20"
+              />
               <StatCard
                 icon="📊"
                 label="Growth"
-                value={`${growth >= 0 ? "+" : ""}£${growth.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-                subValue={`(${growthPercent >= 0 ? "+" : ""}${growthPercent.toFixed(1)}%)`}
-                valueColor={growth >= 0 ? "text-emerald-600" : "text-red-600"}
-                subValueColor={growthPercent >= 0 ? "text-emerald-600" : "text-red-600"}
+                value={`${growthPercent >= 0 ? "+" : ""}${growthPercent.toFixed(1)}%`}
+                valueColor={growthPercent >= 0 ? "text-emerald-600" : "text-red-600"}
                 className="from-amber-500/5 border-amber-500/20"
               />
               <StatCard
                 icon="📅"
                 label="YTD"
-                value={`${ytd >= 0 ? "+" : ""}£${ytd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-                subValue={`(${ytdPercent >= 0 ? "+" : ""}${ytdPercent.toFixed(1)}%)`}
-                valueColor={ytd >= 0 ? "text-emerald-600" : "text-red-600"}
-                subValueColor={ytdPercent >= 0 ? "text-emerald-600" : "text-red-600"}
+                value={`${ytdPercent >= 0 ? "+" : ""}${ytdPercent.toFixed(1)}%`}
+                valueColor={ytdPercent >= 0 ? "text-emerald-600" : "text-red-600"}
                 className="from-purple-500/5 border-purple-500/20"
               />
             </div>
+          </div>
+
+          {/* Filters */}
+          <div className="mb-6 flex gap-4 items-center flex-wrap">
+            {portfoliosWithAccounts.length > 0 && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Portfolio:</label>
+                <Select value={filterPortfolio} onValueChange={(v: string) => setFilterPortfolio(v)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Portfolios</SelectItem>
+                    {portfoliosWithAccounts.map(p => (
+                      <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Type:</label>
+              <Select value={filterType} onValueChange={(v: AccountType | "all") => setFilterType(v)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {ACCOUNT_TYPES.map(type => (
+                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {uniqueTags.length > 0 && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Tag:</label>
+                <Select value={filterTag} onValueChange={(v: string) => setFilterTag(v)}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tags</SelectItem>
+                    {uniqueTags.map(tag => (
+                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Sort:</label>
+              <Select value={sortBy} onValueChange={(v: "value" | "name" | "type") => setSortBy(v)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="value">Value</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="type">Type</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={() => setShowNewAccountForm(true)} className="gap-2 ml-auto">
+              <Plus className="h-4 w-4" />
+              Add Account
+            </Button>
           </div>
 
           {/* Accounts Table */}
@@ -435,17 +507,18 @@ export default function NetWorthPage() {
                           className="border-t cursor-pointer hover:bg-muted/50"
                           onClick={() => setShowInvestments(!showInvestments)}
                         >
-                          <td colSpan={6} className="p-2 text-sm font-semibold text-muted-foreground bg-muted/30">
-                            <div className="flex items-center justify-between">
-                              <span>{showInvestments ? "▼" : "▶"} Investments ({portfolioHoldings.length}) - £{totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
-                            </div>
+                          <td colSpan={6} className="p-3 text-sm font-semibold text-muted-foreground bg-muted/30">
+                            <span className="flex items-center gap-2">
+                              <span>{showInvestments ? "▼" : "▶"}</span>
+                              <span>Investments ({portfolioHoldings.length})</span>
+                              <span className="font-medium">£{totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                            </span>
                           </td>
                         </tr>
                         {showInvestments && portfolioHoldings.map(portfolio => (
                           <tr key={portfolio.portfolioId} className="border-b hover:bg-muted/30">
                             <td className="p-3">
                               <div>{portfolio.portfolioName}</div>
-                              <div className="text-xs text-muted-foreground">Investment portfolio</div>
                             </td>
                             <td className="p-3">
                               <span className="inline-flex items-center gap-1">
@@ -453,7 +526,32 @@ export default function NetWorthPage() {
                               </span>
                             </td>
                             <td className="p-3">
-                              <span className="text-muted-foreground">-</span>
+                              <div className="flex flex-wrap gap-1">
+                                {portfolio.tags.map((tag, idx) => {
+                                  // Get colour based on tag type
+                                  const tagLower = tag.toLowerCase()
+                                  let colorClass = "bg-primary/10 text-primary"
+                                  if (tagLower.includes("pension") || tagLower.includes("sipp")) {
+                                    colorClass = "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                                  } else if (tagLower.includes("isa")) {
+                                    colorClass = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                                  } else if (tagLower.includes("saving") || tagLower.includes("cash")) {
+                                    colorClass = "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                                  } else if (tagLower.includes("crypto")) {
+                                    colorClass = "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                                  } else if (tagLower.includes("fund")) {
+                                    colorClass = "bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300"
+                                  }
+                                  return (
+                                    <span
+                                      key={idx}
+                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}
+                                    >
+                                      {tag}
+                                    </span>
+                                  )
+                                })}
+                              </div>
                             </td>
                             <td className="p-3 text-right font-medium">
                               £{portfolio.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
@@ -464,7 +562,7 @@ export default function NetWorthPage() {
                                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
                               >
                                 <LinkIcon className="h-3 w-3" />
-                                View Holdings
+                                View
                               </a>
                             </td>
                             <td className="p-3"></td>
@@ -473,17 +571,6 @@ export default function NetWorthPage() {
                       </>
                     )}
                   </tbody>
-                  <tfoot className="border-t bg-muted/80 font-semibold">
-                    <tr>
-                      <td className="p-3" colSpan={3}>
-                        <div>Accounts Total ({filteredAccounts.length})</div>
-                      </td>
-                      <td className="p-3 text-right">
-                        <div>£{filteredTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
-                      </td>
-                      <td colSpan={2}></td>
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
             </CardContent>
@@ -581,69 +668,6 @@ export default function NetWorthPage() {
               </Button>
             </div>
           )}
-
-          {/* Filters */}
-          <div className="mb-6 flex gap-4 items-center flex-wrap">
-            {portfoliosWithAccounts.length > 0 && (
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Portfolio:</label>
-                <Select value={filterPortfolio} onValueChange={(v: string) => setFilterPortfolio(v)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Portfolios</SelectItem>
-                    {portfoliosWithAccounts.map(p => (
-                      <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Type:</label>
-              <Select value={filterType} onValueChange={(v: AccountType | "all") => setFilterType(v)}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {ACCOUNT_TYPES.map(type => (
-                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {uniqueTags.length > 0 && (
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Tag:</label>
-                <Select value={filterTag} onValueChange={(v: string) => setFilterTag(v)}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Tags</SelectItem>
-                    {uniqueTags.map(tag => (
-                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Sort:</label>
-              <Select value={sortBy} onValueChange={(v: "value" | "name" | "type") => setSortBy(v)}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="value">Value</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="type">Type</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
           {/* New Account Form Modal */}
           {showNewAccountForm && (

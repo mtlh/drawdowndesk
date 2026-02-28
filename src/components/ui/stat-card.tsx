@@ -20,13 +20,13 @@ export function StatCard({
   className = ""
 }: StatCardProps) {
   return (
-    <div className={`flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[120px] bg-gradient-to-br to-transparent border ${className}`}>
-      <span className="text-lg">{icon}</span>
+    <div className={`flex items-center gap-3 border rounded-lg px-4 py-3 bg-gradient-to-br to-transparent border ${className}`}>
+      <span className="text-xl">{icon}</span>
       <div>
-        <div className="text-xs text-muted-foreground">{label}</div>
-        <div className={`text-xl font-bold ${valueColor}`}>{value}</div>
+        <div className="text-sm text-muted-foreground">{label}</div>
+        <div className={`text-2xl font-bold ${valueColor}`}>{value}</div>
         {subValue && (
-          <div className={`text-xs ${subValueColor}`}>{subValue}</div>
+          <div className={`text-sm ${subValueColor}`}>{subValue}</div>
         )}
       </div>
     </div>
