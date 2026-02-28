@@ -41,6 +41,43 @@ export default defineSchema({
         lastUpdated: v.optional(v.string()),
     }).index("by_taxYear", ["taxYearId"]),
 
+    // User Tax Overrides - Personal Allowance
+    userTaxAllowances: defineTable({
+        userId: v.id("users"),
+        taxYear: v.number(),                        // e.g., 2025
+        amount: v.float64(),                         // e.g., £12,570
+        taperThreshold: v.float64(),                // e.g., £100,000
+        taperRatePercent: v.float64(),              // e.g., 50
+        isCustom: v.boolean(),                      // true if user has overridden
+        lastUpdated: v.optional(v.string()),
+    }).index("by_userYear", ["userId", "taxYear"]),
+
+    // User Tax Overrides - Tax Bands
+    userTaxBands: defineTable({
+        userId: v.id("users"),
+        taxYear: v.number(),                        // e.g., 2025
+        incomeType: v.string(),                      // "Employment", "Savings", "Dividends"
+        bandName: v.string(),                       // "Basic Rate", etc.
+        bandStartAmount: v.float64(),
+        bandEndAmount: v.optional(v.float64()),
+        taxRatePercent: v.float64(),
+        nationalInsuranceRate: v.optional(v.float64()),
+        isCustom: v.boolean(),                      // true if user has overridden
+        lastUpdated: v.optional(v.string()),
+    }).index("by_userYear", ["userId", "taxYear"]),
+
+    // User Tax Overrides - Capital Gains Tax
+    userCapitalGainsTax: defineTable({
+        userId: v.id("users"),
+        taxYear: v.number(),                        // e.g., 2025
+        assetType: v.string(),                      // "Property", "Shares", etc.
+        annualExemptAmount: v.float64(),
+        basicRatePercent: v.float64(),
+        higherRatePercent: v.float64(),
+        isCustom: v.boolean(),                      // true if user has overridden
+        lastUpdated: v.optional(v.string()),
+    }).index("by_userYear", ["userId", "taxYear"]),
+
     // Historical Returns for monte carlo simulations
     historicalReturns: defineTable({
         assetName: v.string(),                       // "MSCI All Cap", "S&P 500", "FTSE 100", etc.
@@ -143,6 +180,14 @@ export default defineSchema({
         completedDate: v.optional(v.string()),        // Date when goal was completed
         linkedPortfolioId: v.optional(v.id("portfolios")), // Optional link to portfolio for tracking
         autoSyncPortfolio: v.optional(v.boolean()),  // Auto-sync currentAmount from portfolio value
+        lastUpdated: v.optional(v.string()),
+    }).index("by_user", ["userId"]),
+
+    // User finance planning notes
+    financeNotes: defineTable({
+        userId: v.id("users"),                          // Authenticated user ID
+        title: v.string(),                            // Title of the note
+        content: v.string(),                          // Free-form content (markdown supported)
         lastUpdated: v.optional(v.string()),
     }).index("by_user", ["userId"]),
 });

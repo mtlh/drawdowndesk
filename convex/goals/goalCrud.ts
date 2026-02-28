@@ -187,3 +187,75 @@ export const getGoalsWithPortfolio = query({
     return goalsWithPortfolio;
   },
 });
+
+// Sync all goals with autoSyncPortfolio enabled to their linked portfolio values
+export const syncAllAutoSyncGoals = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return { syncedCount: 0 };
+
+    const goals = await ctx.db
+      .query("goals")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Filter to only goals with autoSyncPortfolio enabled and a linked portfolio
+    const autoSyncGoals = goals.filter(
+      (goal) => goal.linkedPortfolioId && goal.autoSyncPortfolio
+    );
+
+    let syncedCount = 0;
+
+    // Sync each goal
+    for (const goal of autoSyncGoals) {
+      // Get portfolio value
+      const holdings = await ctx.db
+        .query("holdings")
+        .withIndex("by_portfolio", q =>
+          q.eq("userId", userId).eq("portfolioId", goal.linkedPortfolioId!)
+        )
+        .collect();
+
+      const simpleHoldings = await ctx.db
+        .query("simpleHoldings")
+        .withIndex("by_portfolio", q =>
+          q.eq("userId", userId).eq("portfolioId", goal.linkedPortfolioId!)
+        )
+        .collect();
+
+      const holdingsValue = holdings.reduce((sum, h) => {
+        const rawValue = (h.shares || 0) * (h.currentPrice || 0);
+        if (h.currency === "GBp") {
+          return sum + (rawValue / 100);
+        }
+        return sum + rawValue;
+      }, 0);
+
+      const simpleHoldingsValue = simpleHoldings.reduce((sum, s) => sum + (s.value || 0), 0);
+      const portfolioValue = holdingsValue + simpleHoldingsValue;
+
+      // Check if goal is now completed
+      const isNowCompleted = portfolioValue >= goal.targetAmount;
+      let completedDate: string | undefined = goal.completedDate;
+
+      if (isNowCompleted && !goal.isCompleted) {
+        completedDate = new Date().toISOString().split("T")[0];
+      } else if (!isNowCompleted && goal.isCompleted) {
+        completedDate = undefined;
+      }
+
+      // Update the goal with the new portfolio value
+      await ctx.db.patch(goal._id, {
+        currentAmount: portfolioValue,
+        isCompleted: isNowCompleted,
+        completedDate,
+        lastUpdated: new Date().toISOString(),
+      });
+
+      syncedCount++;
+    }
+
+    return { syncedCount };
+  },
+});
