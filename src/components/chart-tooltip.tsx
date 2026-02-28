@@ -13,11 +13,12 @@ interface ChartTooltipProps {
  * Reusable chart tooltip component for consistent styling across all charts.
  * Provides a card-styled tooltip matching the app's design system.
  */
-export function ChartTooltip({
-  className,
-  formatter,
-  labelFormatter,
-}: ChartTooltipProps) {
+export function ChartTooltip(props?: ChartTooltipProps) {
+  const {
+    className,
+    formatter,
+    labelFormatter,
+  } = props || {}
   return function TooltipContent({
     active,
     payload,
@@ -72,7 +73,8 @@ export function ChartTooltip({
 /**
  * Simple pie chart tooltip for name/value display (e.g., portfolio allocation)
  */
-export function PieChartTooltip({ className }: { className?: string }) {
+export function PieChartTooltip(props?: { className?: string }) {
+  const { className } = props || {}
   return function TooltipContent({
     active,
     payload,

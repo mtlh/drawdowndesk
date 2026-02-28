@@ -9,13 +9,15 @@ import { calculatePortfolioSummary, normalizePortfolios } from "@/lib/calculateP
 import { isError, isPortfolioArray } from "@/types/portfolios";
 
 export function RefreshButton({
-  label = "Refresh Current Prices",
+  label = "Refresh All Data",
 }: {
   label?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const saveSnapshot = useMutation(api.portfolio.portfolioSnapshots.savePortfolioSnapshot);
+  const calculateNetWorthSnapshot = useMutation(api.netWorth.netWorthSnapshots.calculateAndSaveNetWorthSnapshot);
+  const syncAutoSyncGoals = useMutation(api.goals.goalCrud.syncAllAutoSyncGoals);
 
   async function handleClick() {
     try {
@@ -27,17 +29,23 @@ export function RefreshButton({
         throw new Error("Failed to update holdings with latest prices");
       }
 
-      // Then save snapshot with current total value
+      // Then save portfolio snapshot with current total value
       if (getPortfolioData && !isError(getPortfolioData) && isPortfolioArray(getPortfolioData)) {
         const totalValue = calculatePortfolioSummary(normalizePortfolios(getPortfolioData)).totalValue;
         await saveSnapshot({ totalValue });
       }
 
+      // Also update net worth snapshot
+      await calculateNetWorthSnapshot();
+
+      // Sync all goals with autoSyncPortfolio enabled
+      await syncAutoSyncGoals();
+
       // refresh the page to show updated data
       window.location.reload();
 
     } catch (error) {
-      console.error("Error refreshing prices:", error);
+      console.error("Error refreshing data:", error);
     } finally {
       setLoading(false);
     }

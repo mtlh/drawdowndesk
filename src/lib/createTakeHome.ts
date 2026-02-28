@@ -75,13 +75,6 @@ export function CreateTakeHome(taxInfo: TaxInfo, income: number): TakeHomePay {
         }
     });
 
-    console.log("Take Home Pay Calculation for income:", income, ":", {
-        takeHomePay: takeHomePay,
-        nationalInsurance: nationalInsurance,
-        incomeTax: incomeTax,
-        personalAllowance: personalAllowance,
-    });
-        
     return {
         takeHomePay: takeHomePay,
         nationalInsurance: nationalInsurance,
