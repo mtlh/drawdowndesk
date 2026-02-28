@@ -315,6 +315,12 @@ export default function NetWorthPage() {
               </div>
             </div>
 
+            {/* Add Account Button - Left of quick stats */}
+            <Button onClick={() => setShowNewAccountForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Account
+            </Button>
+
             {/* Quick Stats Cards */}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[120px] bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
@@ -338,42 +344,24 @@ export default function NetWorthPage() {
                   <div className="text-2xl font-bold">£{totalAccountsValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[140px] bg-gradient-to-br from-amber-500/5 to-transparent border-amber-500/20">
-                <span className="text-lg">📊</span>
-                <div>
-                  <div className="text-xs text-muted-foreground">Growth</div>
-                  <div className={`text-xl font-bold ${growth >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {growth >= 0 ? "+" : ""}£{growth.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </div>
-                  <div className={`text-xs ${growthPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    ({growthPercent >= 0 ? "+" : ""}{growthPercent.toFixed(1)}%)
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[140px] bg-gradient-to-br from-purple-500/5 to-transparent border-purple-500/20">
-                <span className="text-lg">📅</span>
-                <div>
-                  <div className="text-xs text-muted-foreground">YTD</div>
-                  <div className={`text-xl font-bold ${ytd >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {ytd >= 0 ? "+" : ""}£{ytd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </div>
-                  <div className={`text-xs ${ytdPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    ({ytdPercent >= 0 ? "+" : ""}{ytdPercent.toFixed(1)}%)
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={refreshNetWorth} disabled={isRefreshing} className="gap-2">
-                <RotateCcw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                {isRefreshing ? "Calculating..." : "Refresh Net Worth"}
-              </Button>
-              <Button onClick={() => setShowNewAccountForm(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Account
-              </Button>
+              <StatCard
+                icon="📊"
+                label="Growth"
+                value={`${growth >= 0 ? "+" : ""}£${growth.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                subValue={`(${growthPercent >= 0 ? "+" : ""}${growthPercent.toFixed(1)}%)`}
+                valueColor={growth >= 0 ? "text-emerald-600" : "text-red-600"}
+                subValueColor={growthPercent >= 0 ? "text-emerald-600" : "text-red-600"}
+                className="from-amber-500/5 border-amber-500/20"
+              />
+              <StatCard
+                icon="📅"
+                label="YTD"
+                value={`${ytd >= 0 ? "+" : ""}£${ytd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                subValue={`(${ytdPercent >= 0 ? "+" : ""}${ytdPercent.toFixed(1)}%)`}
+                valueColor={ytd >= 0 ? "text-emerald-600" : "text-red-600"}
+                subValueColor={ytdPercent >= 0 ? "text-emerald-600" : "text-red-600"}
+                className="from-purple-500/5 border-purple-500/20"
+              />
             </div>
           </div>
 
@@ -507,15 +495,9 @@ export default function NetWorthPage() {
                     <tr>
                       <td className="p-3" colSpan={3}>
                         <div>Accounts Total ({filteredAccounts.length})</div>
-                        <div className="text-xs font-normal text-muted-foreground">
-                          + Investments: £{totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                        </div>
                       </td>
                       <td className="p-3 text-right">
                         <div>£{filteredTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
-                        <div className="text-xs font-normal text-green-600">
-                          Net Worth: £{totalNetWorth.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                        </div>
                       </td>
                       <td colSpan={2}></td>
                     </tr>
