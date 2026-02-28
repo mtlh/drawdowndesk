@@ -6,12 +6,49 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
-const pageNames: Record<string, string> = {
-  "/": "Portfolio Overview",
-  "/holdings": "Holdings",
-  "/cashflow-calculator": "Cashflow Calculator",
-  "/monte-carlo-simulator": "Monte Carlo Simulator",
-  "/one-off-cgt": "Capital Gains Tax",
+interface PageInfo {
+  title: string
+  subtitle: string
+  buttons?: React.ReactNode
+}
+
+const pageInfo: Record<string, PageInfo> = {
+  "/": {
+    title: "Portfolio Overview",
+    subtitle: "Track your investments across all accounts",
+  },
+  "/net-worth": {
+    title: "Net Worth",
+    subtitle: "Track all your accounts and assets",
+  },
+  "/holdings": {
+    title: "Holdings",
+    subtitle: "Manage your investment portfolios and holdings",
+  },
+  "/goal-tracker": {
+    title: "Goal Tracker",
+    subtitle: "Set financial goals and track your progress",
+  },
+  "/finance-notes": {
+    title: "Planning Notes",
+    subtitle: "Your personal space for financial planning notes",
+  },
+  "/cashflow-calculator": {
+    title: "Cashflow Forecast",
+    subtitle: "Plan your retirement income across different account types",
+  },
+  "/accumulation-forecast": {
+    title: "Accumulation Forecast",
+    subtitle: "Project your wealth accumulation over time",
+  },
+  "/monte-carlo-simulator": {
+    title: "Monte Carlo Simulator",
+    subtitle: "Simulate investment returns with probability analysis",
+  },
+  "/one-off-cgt": {
+    title: "Capital Gains Tax",
+    subtitle: "Calculate tax implications of lump sum withdrawals",
+  },
 };
 
 export function AppHeader() {
@@ -32,10 +69,21 @@ export function AppHeader() {
     localStorage.setItem("theme", newTheme);
   };
 
-  const pageName = pageNames[pathname] || "Portfolio";
+  // Handle dynamic routes
+  const getPageInfo = (): PageInfo => {
+    if (pageInfo[pathname]) return pageInfo[pathname]
+
+    // Check for dynamic routes
+    if (pathname.startsWith("/holdings/")) {
+      return { title: "Holdings", subtitle: "View portfolio details" }
+    }
+    return { title: "Dashboard", subtitle: "" }
+  }
+
+  const page = getPageInfo()
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background px-6">
+    <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-background px-6">
       <Button
         variant="ghost"
         size="icon"
@@ -51,7 +99,10 @@ export function AppHeader() {
       </Button>
 
       <div className="flex-1">
-        <h1 className="text-lg font-semibold">{pageName}</h1>
+        <h1 className="text-xl font-semibold leading-tight">{page.title}</h1>
+        {page.subtitle && (
+          <p className="text-sm text-muted-foreground">{page.subtitle}</p>
+        )}
       </div>
 
       <Button

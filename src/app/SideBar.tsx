@@ -1,7 +1,8 @@
 "use client";
 
-import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet } from "lucide-react"
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet, FileText, User } from "lucide-react"
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
+import { usePathname } from "next/navigation";
 
 import {
   Sidebar,
@@ -42,6 +43,11 @@ const menuSections = [
         title: "Goals",
         url: "/goal-tracker",
         icon: MonitorCheck,
+      },
+      {
+        title: "Planning Notes",
+        url: "/finance-notes",
+        icon: FileText,
       }
     ]
   },
@@ -84,6 +90,16 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function AppSidebar() {
+  const pathname = usePathname()
+
+  // Check if a menu item is active
+  const isActive = (url: string) => {
+    if (url === "/") {
+      return pathname === "/"
+    }
+    return pathname.startsWith(url)
+  }
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -111,7 +127,7 @@ export function AppSidebar() {
                       <SidebarMenuSub>
                         {section.items.map((item) => (
                           <SidebarMenuSubItem key={item.title}>
-                            <SidebarMenuButton asChild>
+                            <SidebarMenuButton asChild isActive={isActive(item.url)}>
                               <Link href={item.url}>
                                 <item.icon />
                                 <span>{item.title}</span>
@@ -131,6 +147,10 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarGroup className="gap-4">
           <Authenticated>
+            <Link href="/settings" className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded-md w-full">
+              <User className="h-4 w-4" />
+              Profile / Settings
+            </Link>
             <SignOut />
           </Authenticated>
           <Unauthenticated>
