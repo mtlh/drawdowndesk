@@ -9,14 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Calculator, TrendingUp, Calendar, Info } from "lucide-react"
+import { TrendingUp, Calendar, Info } from "lucide-react"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
+
 import {
   calculateIncomeTax,
   calculateCapitalGainsTax,
   type TaxRates,
 } from "@/lib/taxCalculations"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 interface WithdrawalData {
   pension: number | undefined
@@ -39,8 +42,14 @@ type TaxRatesData = (TaxRates & { taxYear: { taxYear: number } }) | { error: str
 
 
 export default function OneOffCashflow() {
-  // Get current tax data
-  const TAX_RATES = useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, { taxYear: 2025 }) as TaxRatesData;
+  // Get user for custom tax overrides
+  const user = useQuery(api.currentUser.getCurrentUser.getCurrentUser)
+
+  // Get current tax data - passes userId for custom overrides
+  const TAX_RATES = useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, {
+    taxYear: 2025,
+    userId: user?._id as Id<"users"> | undefined
+  }) as TaxRatesData;
   const isLoading = TAX_RATES === undefined;
 
   const [data, setData] = useState<WithdrawalData>({
@@ -204,16 +213,7 @@ export default function OneOffCashflow() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 space-y-8">
           {/* Header */}
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              <Calculator className="h-8 w-8 text-primary" />
-              One-off Capital Gain Calculator
-            </h1>
-            <p className="text-muted-foreground max-w-2xl">
-              Calculate tax implications of withdrawing lump sums which are subject to capital gains tax.
-              See how spreading over several years can reduce your overall tax burden.
-            </p>
-          </div>
+          <div className="space-y-2"></div>
 
           {/* Main Content - Vertical Stack */}
           <div className="space-y-6">
@@ -311,12 +311,7 @@ export default function OneOffCashflow() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-center py-12 text-muted-foreground">
-                    <div className="text-center space-y-2">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                      <p>Loading tax rates...</p>
-                    </div>
-                  </div>
+                  <LoadingSpinner message="Loading tax rates..." />
                 </CardContent>
               </Card>
             ) : (

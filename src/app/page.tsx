@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, Wallet, PieChartIcon, BarChart3 } from "lucide-react"
+import { TrendingUp, Wallet, PieChartIcon, BarChart3 } from "lucide-react"
 import {
   PieChart,
   Pie,
@@ -22,7 +22,7 @@ import { useQuery } from "convex/react"
 import { isError, isPortfolioArray } from "@/types/portfolios"
 import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
 import { CHART_COLORS, CHART_COLORS_MAIN, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
-import { RefreshButton } from "@/components/RefreshHoldingsButton"
+import { ChartTooltip, PieChartTooltip } from "@/components/chart-tooltip"
 
 const COLORS = CHART_COLORS_MAIN
 
@@ -50,112 +50,87 @@ export default function PortfolioOverview() {
       }))
     : [];
 
+  // Calculate YTD return from snapshots
+  const currentYear = new Date().getFullYear();
+  const ytdData = hasSnapshots
+    ? (() => {
+        const yearStartSnapshot = getPortfolioSnapshots.find(s => new Date(s.snapshotDate).getFullYear() === currentYear);
+        const currentValue = portfolioSummary.totalValue;
+        if (yearStartSnapshot && yearStartSnapshot.totalValue > 0) {
+          const ytdReturn = ((currentValue - yearStartSnapshot.totalValue) / yearStartSnapshot.totalValue) * 100;
+          return ytdReturn;
+        }
+        return null;
+      })()
+    : null;
+
   const assetTypeData = calculateAssetTypeAllocation(portfolioSummary.portfolios)
   const accountAllocationData = getAccountAllocationData(portfolioSummary.portfolios)
   const treemapData = generateHoldingsTreemapData(portfolioSummary.portfolios)
 
-  // Custom tooltip for line chart
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
-        <p className="text-sm font-medium">{label}</p>
-        <p className="text-sm text-muted-foreground">£{payload[0].value.toLocaleString()}</p>
-      </div>
-    );
-  };
+  // Reusable chart tooltips
+  const CustomTooltip = ChartTooltip({})
+  const PieTooltip = PieChartTooltip({})
 
-  // Custom tooltip for pie/donut charts
-  const PieTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; value: number } }> }) => {
-    if (!active || !payload?.length) return null;
-    const { name, value } = payload[0].payload;
-    return (
-      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
-        <p className="text-sm font-medium">{name}</p>
-        <p className="text-sm text-muted-foreground">£{value.toLocaleString()}</p>
-      </div>
-    );
-  };
+  // Tooltip for percentage-based charts
+  const PercentTooltip = ChartTooltip({
+    formatter: (value: number) => [`${value.toFixed(1)}%`, "Value"],
+  })
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Portfolio Overview</h1>
-            <p className="text-muted-foreground mt-1">Track your investments across all accounts</p>
-          </div>
+    <div className="flex h-screen bg-background">
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-8">
+        {/* Header Row with Total Value and Quick Stats */}
+        <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+          {/* Total Value - Left */}
           <div className="flex items-center gap-4">
-            <RefreshButton label="Refresh Prices" />
-            <div className="text-right">
+            <div>
               <div className="text-sm text-muted-foreground">Total Value</div>
               <div className="text-3xl font-bold">
                 £{portfolioSummary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </div>
-              <div
-                className={`flex items-center gap-1 justify-end text-sm ${portfolioSummary.totalChangePercent >= 0 ? "text-emerald-600" : "text-red-600"}`}
-              >
-                {portfolioSummary.totalChangePercent >= 0 ? (
-                  <TrendingUp className="h-3.5 w-3.5" />
-                ) : (
-                  <TrendingDown className="h-3.5 w-3.5" />
-                )}
-                <span className="font-medium">
+            </div>
+          </div>
+
+          {/* Quick Stats - Right Side */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[130px] bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+              <Wallet className="h-5 w-5 text-primary" />
+              <div>
+                <div className="text-xs text-muted-foreground">Accounts</div>
+                <div className="text-2xl font-bold">{portfolioSummary.portfolios.length}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[130px] bg-gradient-to-br from-emerald-500/5 to-transparent border-emerald-500/20">
+              <PieChartIcon className="h-5 w-5 text-emerald-600" />
+              <div>
+                <div className="text-xs text-muted-foreground">Holdings</div>
+                <div className="text-2xl font-bold">
+                  {portfolioSummary.portfolios.reduce((acc, portfolio) => acc + portfolio.holdings.length, 0)}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[130px] bg-gradient-to-br from-blue-500/5 to-transparent border-blue-500/20">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              <div>
+                <div className="text-xs text-muted-foreground">YTD</div>
+                <div className={`text-2xl font-bold ${ytdData !== null && ytdData >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {ytdData !== null ? (ytdData >= 0 ? "+" : "") + ytdData.toFixed(2) + "%" : "—"}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[130px] bg-gradient-to-br from-violet-500/5 to-transparent border-violet-500/20">
+              <TrendingUp className="h-5 w-5 text-violet-600" />
+              <div>
+                <div className="text-xs text-muted-foreground">Growth</div>
+                <div className={`text-2xl font-bold ${portfolioSummary.totalChangePercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                   {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
                   {portfolioSummary.totalChangePercent.toFixed(2)}%
-                </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                  <Wallet className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Accounts</div>
-                  <div className="text-2xl font-bold">{portfolioSummary.portfolios.length}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-emerald-500/5 to-transparent border-emerald-500/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
-                  <PieChartIcon className="h-6 w-6 text-emerald-600" />
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Holdings</div>
-                  <div className="text-2xl font-bold">
-                    {portfolioSummary.portfolios.reduce((acc, portfolio) => acc + portfolio.holdings.length, 0)}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-blue-500/5 to-transparent border-blue-500/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
-                  <BarChart3 className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">YTD Return</div>
-                  <div className={`text-2xl font-bold ${portfolioSummary.totalChangePercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
-                    {portfolioSummary.totalChangePercent.toFixed(2)}%
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Charts Grid */}
@@ -204,10 +179,9 @@ export default function PortfolioOverview() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[280px] flex flex-col items-center justify-center text-center p-6">
-                  <p className="text-muted-foreground mb-4">
-                    No performance data yet. Refresh your prices to start tracking your portfolio value over time.
+                  <p className="text-muted-foreground">
+                    No performance data yet. Visit the Holdings page to refresh prices.
                   </p>
-                  <RefreshButton label="Refresh Prices" />
                 </div>
               )}
             </CardContent>
@@ -312,18 +286,7 @@ export default function PortfolioOverview() {
                     tickLine={false}
                     axisLine={false}
                   />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const { name, value } = payload[0].payload;
-                      return (
-                        <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
-                          <p className="text-sm font-medium">{name}</p>
-                          <p className="text-sm text-muted-foreground">{value.toFixed(1)}%</p>
-                        </div>
-                      );
-                    }}
-                  />
+                  <Tooltip content={PercentTooltip} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>
                     {assetTypeData.map((entry, index) => (
                       <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
@@ -347,7 +310,8 @@ export default function PortfolioOverview() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

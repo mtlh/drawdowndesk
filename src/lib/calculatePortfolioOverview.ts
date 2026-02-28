@@ -1,10 +1,4 @@
-// Helper to convert price from pence to pounds if needed
-function getPriceInPounds(price: number, currency: string | undefined): number {
-  if (currency === "GBp") {
-    return price / 100;
-  }
-  return price;
-}
+import { getPriceInPounds } from "./utils"
 
 export interface CalculatedHolding extends Holding {
   marketValue: number

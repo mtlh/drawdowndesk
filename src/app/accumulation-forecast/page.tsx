@@ -180,8 +180,6 @@ export default function AccumulationForecast() {
 
   return (
     <div className="font-sans min-h-screen p-6 gap-4 bg-background">
-      <h1 className="text-xl font-bold mb-4">Accumulation Forecast</h1>
-
       {/* Assumptions row */}
       <div className="flex flex-wrap items-end gap-4 mb-4">
         <div className="flex items-center gap-2">
@@ -297,7 +295,7 @@ export default function AccumulationForecast() {
                   )}
                   <td className="p-3">
                     {accounts.length > 1 && (
-                      <Button variant="ghost" size="icon" onClick={() => removeAccount(accountIndex)} className="h-8 w-8">
+                      <Button variant="ghost" size="icon" onClick={() => removeAccount(accountIndex)} className="h-8 w-8" aria-label="Remove account">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     )}
@@ -334,7 +332,7 @@ export default function AccumulationForecast() {
                     value={contrib.amount}
                     onChange={(e) => updateContribution(0, contribIndex, "amount", parseFloat(e.target.value) || 0)}
                   />
-                  <Button variant="ghost" size="icon" onClick={() => removeContribution(0, contribIndex)} className="h-8 w-8">
+                  <Button variant="ghost" size="icon" onClick={() => removeContribution(0, contribIndex)} className="h-8 w-8" aria-label="Remove contribution">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>

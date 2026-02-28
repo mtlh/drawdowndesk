@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, X } from "lucide-react"
+import { Plus, X } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -14,14 +14,10 @@ import { Id } from "../../../convex/_generated/dataModel"
 import { RefreshButton } from "@/components/RefreshHoldingsButton"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { CHART_COLORS, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
-
-// Helper to convert price from pence to pounds if needed
-function getPriceInPounds(price: number, currency: string | undefined): number {
-  if (currency === "GBp") {
-    return price / 100;
-  }
-  return price;
-}
+import { getPriceInPounds } from "@/lib/utils"
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
+import { PieChartTooltip } from "@/components/chart-tooltip"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 type PortfolioExpanded = {
   portfolio: Portfolio
@@ -31,7 +27,6 @@ type PortfolioExpanded = {
 export default function HoldingsPage() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const updatePortfolioMutation = useMutation(api.portfolio.updateUserPortfolio.updateUserPortfolio);
-  const deletePortfolioMutation = useMutation(api.portfolio.deleteUserPortfolio.deleteUserPortfolio);
 
   const [portfolios, setPortfolios] = useState<PortfolioExpanded[]>([]);
   const [holdings, setHoldings] = useState<Holding[]>([]);
@@ -62,16 +57,10 @@ export default function HoldingsPage() {
   }, [getPortfolioData, portfolios.length, holdings.length]);
 
   // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (showNewPortfolioForm) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = "unset"
-    }
-    return () => {
-      document.body.style.overflow = "unset"
-    }
-  }, [showNewPortfolioForm])
+  useBodyScrollLock(showNewPortfolioForm)
+
+  // Reusable pie chart tooltip
+  const PieTooltip = PieChartTooltip({})
 
   // Calculate portfolio totals
   const getPortfolioStats = (portfolioId: string, portfolioType?: "live" | "manual") => {
@@ -185,7 +174,7 @@ export default function HoldingsPage() {
 
   // Early returns AFTER all hooks
   if (!getPortfolioData) {
-    return <div>Loading portfolio…</div>;
+    return <LoadingSpinner fullScreen message="Loading portfolio..." />;
   }
 
   if (isError(getPortfolioData)) {
@@ -235,28 +224,6 @@ export default function HoldingsPage() {
     }
   }
 
-
-  // Delete portfolio
-  const deletePortfolio = async (portfolioId: string) => {
-    if (!confirm("Are you sure you want to delete this portfolio and all its holdings?")) {
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Delete the portfolio itself
-      await deletePortfolioMutation({ id: portfolioId as Id<"portfolios"> });
-
-      setPortfolios(portfolios.filter((p) => p.id !== portfolioId))
-      setHoldings(holdings.filter((h) => h.portfolioId !== portfolioId))
-    } catch (error) {
-      console.error("Failed to delete portfolio:", error);
-      alert("Failed to delete portfolio. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
   // Update portfolio name
   const updatePortfolioName = async (portfolioId: string, name: string) => {
     setPortfolios(
@@ -281,18 +248,41 @@ export default function HoldingsPage() {
     <div className="flex h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Holdings</h1>
-              <p className="text-muted-foreground">
-                Manage your investment portfolios and holdings
-              </p>
-            </div>
+          <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
+            {/* Filters */}
+            {portfolios.length > 0 && (
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium">Sort by:</label>
+                <Select value={sortBy} onValueChange={(value: "date" | "value") => setSortBy(value)}>
+                  <SelectTrigger className="w-[140px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Created Date</SelectItem>
+                    <SelectItem value="value">Market Value</SelectItem>
+                  </SelectContent>
+                </Select>
+                <label className="text-sm font-medium">Filter by value:</label>
+                <Select value={valueFilter} onValueChange={(value: "all" | "0-1000" | "1000-10000" | "10000-50000" | "50000+") => setValueFilter(value)}>
+                  <SelectTrigger className="w-[180px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Portfolios</SelectItem>
+                    <SelectItem value="0-1000">£0 - £1,000</SelectItem>
+                    <SelectItem value="1000-10000">£1,000 - £10,000</SelectItem>
+                    <SelectItem value="10000-50000">£10,000 - £50,000</SelectItem>
+                    <SelectItem value="50000+">£50,000+</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {/* Buttons */}
             <div className="flex items-center gap-2">
               <RefreshButton />
               <Button
                 onClick={() => setShowNewPortfolioForm(true)}
-                className="gap-2"
+                className="gap-2 h-8"
               >
                 <Plus className="h-4 w-4" />
                 Add Portfolio
@@ -368,39 +358,6 @@ export default function HoldingsPage() {
             </div>
           )}
 
-          {/* Filters and Sorting */}
-          {portfolios.length > 0 && (
-            <div className="mb-6 flex gap-4 items-center">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Sort by:</label>
-                <Select value={sortBy} onValueChange={(value: "date" | "value") => setSortBy(value)}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date">Created Date</SelectItem>
-                    <SelectItem value="value">Market Value</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Filter by value:</label>
-                <Select value={valueFilter} onValueChange={(value: "all" | "0-1000" | "1000-10000" | "10000-50000" | "50000+") => setValueFilter(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Portfolios</SelectItem>
-                    <SelectItem value="0-1000">£0 - £1,000</SelectItem>
-                    <SelectItem value="1000-10000">£1,000 - £10,000</SelectItem>
-                    <SelectItem value="10000-50000">£10,000 - £50,000</SelectItem>
-                    <SelectItem value="50000+">£50,000+</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedAndFilteredPortfolios.length === 0 ? (
               <Card className="col-span-2">
@@ -471,9 +428,6 @@ export default function HoldingsPage() {
                             </CardDescription>
                           )}
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => deletePortfolio(portfolioExpanded.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
                       </div>
                     </CardHeader>
 
@@ -504,14 +458,14 @@ export default function HoldingsPage() {
                             href={`/holdings/${portfolioExpanded.id}`}
                             className="w-full cursor-pointer hover:opacity-80 transition-opacity"
                           >
-                            <ResponsiveContainer width="100%" height={180}>
+                            <ResponsiveContainer width="100%" height={220}>
                               <PieChart>
                                 <Pie
                                   data={allocationData}
                                   cx="50%"
                                   cy="50%"
-                                  innerRadius={DONUT_INNER_RADIUS - 10}
-                                  outerRadius={DONUT_OUTER_RADIUS - 20}
+                                  innerRadius={DONUT_INNER_RADIUS}
+                                  outerRadius={DONUT_OUTER_RADIUS}
                                   paddingAngle={3}
                                   cornerRadius={8}
                                   dataKey="value"
@@ -520,24 +474,13 @@ export default function HoldingsPage() {
                                     <Cell key={item.name} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
                                   ))}
                                 </Pie>
-                                <RechartsTooltip
-                                  content={({ active, payload }) => {
-                                    if (!active || !payload?.length) return null;
-                                    const { name, value } = payload[0].payload;
-                                    return (
-                                      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm">
-                                        <div className="font-semibold">{name}</div>
-                                        <div>£{value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                      </div>
-                                    );
-                                  }}
-                                />
+                                <RechartsTooltip content={PieTooltip} />
                               </PieChart>
                             </ResponsiveContainer>
-                            <div className="flex flex-wrap justify-center gap-2 mt-2">
+                            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 px-2">
                               {allocationData.slice(0, 5).map((item, index) => (
                                 <div key={item.name} className="flex items-center gap-1.5 text-xs">
-                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
+                                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
                                   <span className="text-muted-foreground">{item.name}</span>
                                 </div>
                               ))}
@@ -569,14 +512,14 @@ export default function HoldingsPage() {
                           href={`/holdings/${portfolioExpanded.id}`}
                           className="w-full cursor-pointer hover:opacity-80 transition-opacity"
                         >
-                          <ResponsiveContainer width="100%" height={180}>
+                          <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
                               <Pie
                                 data={allocationData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={DONUT_INNER_RADIUS - 10}
-                                outerRadius={DONUT_OUTER_RADIUS - 20}
+                                innerRadius={DONUT_INNER_RADIUS}
+                                outerRadius={DONUT_OUTER_RADIUS}
                                 paddingAngle={3}
                                 cornerRadius={8}
                                 dataKey="value"
@@ -585,24 +528,13 @@ export default function HoldingsPage() {
                                   <Cell key={item.name} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
                                 ))}
                               </Pie>
-                              <RechartsTooltip
-                                content={({ active, payload }) => {
-                                  if (!active || !payload?.length) return null;
-                                  const { name, value } = payload[0].payload;
-                                  return (
-                                    <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm">
-                                      <div className="font-semibold">{name}</div>
-                                      <div>£{value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                    </div>
-                                  );
-                                }}
-                              />
+                              <RechartsTooltip content={PieTooltip} />
                             </PieChart>
                           </ResponsiveContainer>
-                          <div className="flex flex-wrap justify-center gap-2 mt-2">
+                          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 px-2">
                             {allocationData.slice(0, 5).map((item, index) => (
                               <div key={item.name} className="flex items-center gap-1.5 text-xs">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
                                 <span className="text-muted-foreground">{item.name}</span>
                               </div>
                             ))}

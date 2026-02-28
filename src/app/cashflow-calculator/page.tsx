@@ -34,10 +34,12 @@ import {
   Line,
   LineChart,
 } from "recharts";
-import { Calculator, TrendingUp, Calendar, PoundSterling, AlertCircle, Building2, Wallet, PiggyBank } from "lucide-react";
+import { TrendingUp, Calendar, PoundSterling, AlertCircle, Building2, Wallet, PiggyBank } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { CreateTakeHome, TaxInfo } from "@/lib/createTakeHome";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Account types with different tax treatments
 type AccountType = "pension" | "isa" | "gia";
@@ -226,11 +228,27 @@ const useCashflowCalculation = (
   }, [accounts, annualGrowthRate, withdrawalRate, startAge, statePension, statePensionAge, taxInfo]);
 };
 
-export default function RetirementCashflowCalculator() {
-  // Tax data
-  const taxBandInformation = useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, {
-    taxYear: 2025
+// Type for current user query result
+type CurrentUserResult = { _id: string } | null;
+
+// Helper function to get current user - wraps useQuery to avoid deep type inference
+function useCurrentUserQuery(): CurrentUserResult | undefined {
+  return useQuery(api.currentUser.getCurrentUser.getCurrentUser);
+}
+
+// Helper function to get tax info - wraps useQuery to avoid deep type inference
+function useTaxInfoQuery(userId: string | undefined): TaxInfo {
+  return useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, {
+    taxYear: 2025,
+    userId: userId as Id<"users"> | undefined
   }) as TaxInfo;
+}
+
+export default function RetirementCashflowCalculator() {
+  const user = useCurrentUserQuery();
+
+  // Tax data - passes userId for custom overrides
+  const taxBandInformation = useTaxInfoQuery(user?._id);
 
   // Account values
   const [pensionValue, setPensionValue] = useState(500000);
@@ -289,14 +307,7 @@ export default function RetirementCashflowCalculator() {
 
   // Loading/error states
   if (!taxBandInformation) {
-    return (
-      <div className="flex h-screen bg-background items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading tax information...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen message="Loading tax information..." />;
   }
 
   if (taxBandInformation && 'error' in taxBandInformation && taxBandInformation.error) {
@@ -337,16 +348,7 @@ export default function RetirementCashflowCalculator() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 space-y-8">
           {/* Header */}
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              <Calculator className="h-8 w-8 text-primary" />
-              Retirement Cashflow Calculator
-            </h1>
-            <p className="text-muted-foreground max-w-2xl">
-              Plan your retirement income across different account types. Each account has different tax treatment:
-              Pensions are taxed on withdrawal (25% tax-free), ISAs are completely tax-free, and GIAs are taxed on gains.
-            </p>
-          </div>
+          <div className="space-y-2"></div>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

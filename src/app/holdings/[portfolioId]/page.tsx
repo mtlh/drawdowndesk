@@ -11,6 +11,7 @@ import { Holding, SimpleHolding, isError, isPortfolioArray } from "@/types/portf
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 import { Id } from "../../../../convex/_generated/dataModel"
+import { getPriceInPounds } from "@/lib/utils"
 
 // Helper to get currency symbol
 function getCurrencySymbol(currency: string | undefined): string {
@@ -21,14 +22,6 @@ function getCurrencySymbol(currency: string | undefined): string {
     case "GBP":
     default: return "£";
   }
-}
-
-// Helper to convert price from pence to pounds if needed
-function getPriceInPounds(price: number, currency: string | undefined): number {
-  if (currency === "GBp") {
-    return price / 100;
-  }
-  return price;
 }
 
 // Helper to format value with currency
@@ -49,6 +42,7 @@ export default function PortfolioHoldingsPage() {
   const deleteHoldingsMutation = useMutation(api.portfolio.deleteUserHoldings.deleteUserHoldings);
   const updateSimpleHoldingMutation = useMutation(api.portfolio.updateSimpleHoldings.updateSimpleHolding);
   const deleteSimpleHoldingMutation = useMutation(api.portfolio.updateSimpleHoldings.deleteSimpleHolding);
+  const deletePortfolioMutation = useMutation(api.portfolio.deleteUserPortfolio.deleteUserPortfolio);
 
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [simpleHoldings, setSimpleHoldings] = useState<SimpleHolding[]>([]);
@@ -281,6 +275,21 @@ export default function PortfolioHoldingsPage() {
     }
   };
 
+  // Delete entire portfolio
+  const deletePortfolio = async () => {
+    if (!confirm("Are you sure you want to delete this portfolio and all its holdings?")) {
+      return;
+    }
+
+    try {
+      await deletePortfolioMutation({ id: portfolioId as Id<"portfolios"> });
+      window.location.href = "/holdings";
+    } catch (error) {
+      console.error("Failed to delete portfolio:", error);
+      alert("Failed to delete portfolio. Please try again.");
+    }
+  };
+
   // Add new holding - create blank entry
   const addHolding = () => {
     if (isManual) {
@@ -329,7 +338,7 @@ export default function PortfolioHoldingsPage() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.push("/holdings")}>
+              <Button variant="ghost" size="icon" onClick={() => router.push("/holdings")} aria-label="Back to holdings">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
@@ -347,10 +356,16 @@ export default function PortfolioHoldingsPage() {
                 </div>
               </div>
             </div>
-            <Button onClick={addHolding} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Holding
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="destructive" onClick={deletePortfolio} className="gap-2">
+                <Trash2 className="h-4 w-4" />
+                Delete Portfolio
+              </Button>
+              <Button onClick={addHolding} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Holding
+              </Button>
+            </div>
           </div>
 
           {/* Holdings Grid */}
@@ -449,7 +464,7 @@ export default function PortfolioHoldingsPage() {
                 <CardTitle>
                   {isCreatingNew ? "Add New Holding" : "Edit Holding"}
                 </CardTitle>
-                <Button variant="ghost" size="icon" onClick={closePanel}>
+                <Button variant="ghost" size="icon" onClick={closePanel} aria-label="Close panel">
                   <X className="h-4 w-4" />
                 </Button>
               </CardHeader>
@@ -489,8 +504,7 @@ function SimpleHoldingForm({
   isCreating,
 }: {
   editedValues: Partial<SimpleHolding>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setEditedValues: (values: any) => void;
+  setEditedValues: (values: Partial<SimpleHolding>) => void;
   onSave: () => void;
   onDelete?: () => void;
   isCreating: boolean;
@@ -583,8 +597,7 @@ function LiveHoldingForm({
   isCreating,
 }: {
   editedValues: Partial<Holding>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setEditedValues: (values: any) => void;
+  setEditedValues: (values: Partial<Holding>) => void;
   onSave: () => void;
   onDelete?: () => void;
   isCreating: boolean;

@@ -22,6 +22,7 @@ import React, { useState } from "react";
 import { monteCarloReturn } from "../../../convex/calculators/runMonteCarlo"
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function MonteCarloSimulator() {
 
@@ -32,6 +33,10 @@ export default function MonteCarloSimulator() {
     assetName: assetName,
     yearPeriod: timePeriod
   }) as unknown as monteCarloReturn;
+
+  if (monteCarloReturn === undefined) {
+    return <LoadingSpinner fullScreen message="Loading historical returns..." />
+  }
 
   if (monteCarloReturn && monteCarloReturn.error) {
     return (
@@ -51,7 +56,6 @@ export default function MonteCarloSimulator() {
   return (
     <div className="font-sans grid grid-rows-[auto_1fr_auto] min-h-screen p-8 gap-8  bg-background">
       {/* INPUT SECTION */}
-      <h1 className="text-2xl font-bold">Monte Carlo Simulator</h1>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 w-full max-w-3xl">
         <div>
           <label className="block mb-2 font-medium text-sm text-muted-foreground">Year Period</label>
