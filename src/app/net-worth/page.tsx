@@ -51,14 +51,12 @@ export default function NetWorthPage() {
   const createAccountMutation = useMutation(api.accounts.accountCrud.createAccount)
   const updateAccountMutation = useMutation(api.accounts.accountCrud.updateAccount)
   const deleteAccountMutation = useMutation(api.accounts.accountCrud.deleteAccount)
-  const calculateNetWorthSnapshot = useMutation(api.netWorth.netWorthSnapshots.calculateAndSaveNetWorthSnapshot)
 
   const [accounts, setAccounts] = useState<AccountWithPortfolio[]>([])
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
   const [portfolioHoldings, setPortfolioHoldings] = useState<{portfolioId: string, portfolioName: string, value: number}[]>([])
   const [showNewAccountForm, setShowNewAccountForm] = useState(false)
   const [showInvestments, setShowInvestments] = useState(false)
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [filterType, setFilterType] = useState<AccountType | "all">("all")
   const [filterTag, setFilterTag] = useState<string>("all")
@@ -236,22 +234,6 @@ export default function NetWorthPage() {
       alert("Failed to create account. Please try again.")
     } finally {
       setIsSaving(false)
-    }
-  }
-
-  // Refresh net worth snapshot (recalculates investments from holdings)
-  // Refresh net worth snapshot (just calculates values, doesn't update holdings)
-  const refreshNetWorth = async () => {
-    setIsRefreshing(true)
-    try {
-      const result = await calculateNetWorthSnapshot()
-      console.log("Net worth refreshed:", result)
-      window.location.reload()
-    } catch (error) {
-      console.error("Failed to refresh net worth:", error)
-      alert("Failed to refresh net worth. Check console for details.")
-    } finally {
-      setIsRefreshing(false)
     }
   }
 
