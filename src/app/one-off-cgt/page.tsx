@@ -255,10 +255,10 @@ export default function OneOffCashflow() {
                           setData({ ...data, capitalGains: value === "" ? undefined : Number(value) });
                       }}
                     />
-                    {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.capitalGainsTax && TAX_RATES.capitalGainsTax.annualExemptAmount > 0 &&
+                    {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.capitalGainsTax && (TAX_RATES.capitalGainsTax.annualExemptAmount ?? 0) > 0 &&
                       <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        £{TAX_RATES.capitalGainsTax.annualExemptAmount.toLocaleString()} allowance
+                        £{(TAX_RATES.capitalGainsTax.annualExemptAmount ?? 0).toLocaleString()} allowance
                       </p>
                     }
                   </div>
@@ -337,21 +337,21 @@ export default function OneOffCashflow() {
                       <div className="text-center p-4 rounded-lg border bg-card">
                         <p className="text-sm text-muted-foreground">Single Year CGT</p>
                         <p className="text-2xl font-bold text-destructive">
-                          £{singleYearCalc.capitalGainsTax.toLocaleString()}
+                          £{(singleYearCalc?.capitalGainsTax ?? 0).toLocaleString()}
                         </p>
                       </div>
                       <div className="text-center p-4 rounded-lg border bg-card">
                         <p className="text-sm text-muted-foreground">{data.yearsToSpread}-Year CGT</p>
                         <p className="text-2xl font-bold text-emerald-600">
-                          £{multiYearCalc.capitalGainsTax.toLocaleString()}
+                          £{(multiYearCalc?.capitalGainsTax ?? 0).toLocaleString()}
                         </p>
                       </div>
                       <div className="text-center p-4 rounded-lg border-2 border-primary bg-primary/5">
                         <p className="text-sm text-muted-foreground">Potential Savings</p>
                         <p className="text-2xl font-bold text-primary">
-                          £{savings.toLocaleString()}
+                          £{(savings ?? 0).toLocaleString()}
                         </p>
-                        {savings > 0 && (
+                        {savings > 0 && singleYearCalc?.capitalGainsTax > 0 && (
                           <Badge variant="secondary" className="mt-1">
                             {((savings / singleYearCalc.capitalGainsTax) * 100).toFixed(1)}% reduction
                           </Badge>
@@ -367,14 +367,14 @@ export default function OneOffCashflow() {
                           <div className="flex justify-between text-sm mb-1">
                             <span className="text-muted-foreground">Single Year:</span>
                           </div>
-                          <div className="text-xl font-bold">£{singleYearCalc.netAmount.toLocaleString()}</div>
+                          <div className="text-xl font-bold">£{(singleYearCalc?.netAmount ?? 0).toLocaleString()}</div>
                         </div>
                         <div className="p-4 rounded-lg border bg-emerald-600/5">
                           <div className="flex justify-between text-sm mb-1">
                             <span className="text-muted-foreground">{data.yearsToSpread} Years:</span>
                           </div>
                           <div className="text-xl font-bold text-emerald-600">
-                            £{((data.currentIncome || 0) * data.yearsToSpread + (data.capitalGains || 0) - multiYearCalc.totalTax).toLocaleString()}
+                            £{(((data.currentIncome || 0) * data.yearsToSpread + (data.capitalGains || 0) - (multiYearCalc?.totalTax ?? 0))).toLocaleString()}
                           </div>
                         </div>
                       </div>
@@ -387,11 +387,11 @@ export default function OneOffCashflow() {
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Total Withdrawal:</span>
-                          <span className="font-medium">£{singleYearCalc.totalWithdrawal.toLocaleString()}</span>
+                          <span className="font-medium">£{(singleYearCalc?.totalWithdrawal ?? 0).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Income Tax:</span>
-                          <span>£{singleYearCalc.incomeTax.toLocaleString()}</span>
+                          <span>£{(singleYearCalc?.incomeTax ?? 0).toLocaleString()}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between">
@@ -401,16 +401,16 @@ export default function OneOffCashflow() {
                         {singleyearcapitalGainsBreakdown}
                         <div className="flex justify-between font-medium">
                           <span>Capital Gains Tax:</span>
-                          <span className="text-destructive">£{singleYearCalc.capitalGainsTax.toLocaleString()}</span>
+                          <span className="text-destructive">£{(singleYearCalc?.capitalGainsTax ?? 0).toLocaleString()}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between font-semibold">
                           <span>Total Tax:</span>
-                          <span className="text-destructive">£{singleYearCalc.totalTax.toLocaleString()}</span>
+                          <span className="text-destructive">£{(singleYearCalc?.totalTax ?? 0).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between font-semibold text-lg">
                           <span>Net Amount:</span>
-                          <span className="text-emerald-600">£{singleYearCalc.netAmount.toLocaleString()}</span>
+                          <span className="text-emerald-600">£{(singleYearCalc?.netAmount ?? 0).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -437,21 +437,21 @@ export default function OneOffCashflow() {
                         <Separator />
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Total CGT:</span>
-                          <span>£{multiYearCalc.capitalGainsTax.toLocaleString()}</span>
+                          <span>£{(multiYearCalc?.capitalGainsTax ?? 0).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Total Income Tax:</span>
-                          <span>£{multiYearCalc.incomeTax.toLocaleString()}</span>
+                          <span>£{(multiYearCalc?.incomeTax ?? 0).toLocaleString()}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between font-semibold">
                           <span>Total Tax:</span>
-                          <span className="text-destructive">£{multiYearCalc.totalTax.toLocaleString()}</span>
+                          <span className="text-destructive">£{(multiYearCalc?.totalTax ?? 0).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between font-semibold text-lg">
                           <span>Net Amount:</span>
                           <span className="text-emerald-600">
-                            £{(((data.currentIncome || 0) * data.yearsToSpread) + (data.capitalGains || 0) - multiYearCalc.totalTax).toLocaleString()}
+                            £{((((data.currentIncome || 0) * data.yearsToSpread) + (data.capitalGains || 0) - (multiYearCalc?.totalTax ?? 0))).toLocaleString()}
                           </span>
                         </div>
                       </div>
