@@ -110,6 +110,7 @@ export default function OneOffCashflow() {
     totalWithdrawal: 0,
     taxableAmount: 0,
     incomeTax: 0,
+    nationalInsurance: 0,
     capitalGainsTax: 0,
     totalTax: 0,
     netAmount: 0,
@@ -119,6 +120,7 @@ export default function OneOffCashflow() {
     totalWithdrawal: 0,
     taxableAmount: 0,
     incomeTax: 0,
+    nationalInsurance: 0,
     capitalGainsTax: 0,
     totalTax: 0,
     netAmount: 0,
@@ -357,10 +359,10 @@ export default function OneOffCashflow() {
                           setData({ ...data, capitalGains: value === "" ? undefined : Number(value) });
                       }}
                     />
-                    {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.capitalGainsTax && ((TAX_RATES.capitalGainsTax.annualExemptAmount ?? 0) > 0) &&
+                    {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.capitalGainsTax && ((TAX_RATES.capitalGainsTax[0]?.annualExemptAmount ?? 0) > 0) &&
                       <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        £{(TAX_RATES.capitalGainsTax?.annualExemptAmount ?? 0).toLocaleString()} allowance
+                        £{(TAX_RATES.capitalGainsTax[0]?.annualExemptAmount ?? 0).toLocaleString()} allowance
                       </p>
                     }
                   </div>

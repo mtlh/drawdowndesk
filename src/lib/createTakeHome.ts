@@ -14,6 +14,7 @@ export type TaxInfo = {
     taxYear?: undefined;
     personalAllowance?: undefined;
     bands?: undefined;
+    capitalGainsTax?: undefined;
 } | {
     taxYear: number;
     incomeType: string;
@@ -36,6 +37,14 @@ export type TaxInfo = {
         nationalInsuranceRate: number | undefined;
         additionalNotes: string | undefined;
         lastUpdated: string | undefined;
+    }[];
+    capitalGainsTax?: {
+        _id: Id<"capitalGainsTax">;
+        _creationTime: number;
+        taxYearId: Id<"taxYears">;
+        annualExemptAmount: number;
+        basicRatePercent: number;
+        higherRatePercent: number;
     }[];
     error?: undefined;
 }

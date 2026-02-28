@@ -252,9 +252,10 @@ type UserSettings = {
 
 // Helper function to get user settings - wraps useQuery
 function useUserSettingsQuery(userId: string | undefined): UserSettings | undefined {
-  return useQuery(api.tax.userSettings.getUserSettings, {
-    userId: userId as Id<"users"> | undefined
-  }) as UserSettings | undefined;
+  return useQuery(
+    api.tax.userSettings.getUserSettings,
+    userId ? { userId: userId as Id<"users"> } : "skip"
+  ) as UserSettings | undefined;
 }
 
 export default function RetirementCashflowCalculator() {
