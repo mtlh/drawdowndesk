@@ -205,7 +205,7 @@ const useCashflowCalculation = (
         pensionTaxFree,
         pensionTaxed,
         grossIncome: pensionWithdrawal + isaWithdrawal + giaWithdrawal + currentStatePension,
-        incomeTax: pensionIncomeTax + giaIncomeTax + ((currentStatePension / (totalTaxableIncome || 1)) * incomeTax || 0),
+        incomeTax: pensionIncomeTax + giaIncomeTax + ((currentStatePension / (totalTaxableIncome || 1)) * incomeTax || 0) + nationalInsurance,
         nationalInsurance,
         takeHomePay: totalTakeHome,
       });
@@ -244,11 +244,27 @@ function useTaxInfoQuery(userId: string | undefined): TaxInfo {
   }) as TaxInfo;
 }
 
+// Type for user settings
+type UserSettings = {
+  statePensionAmount: number;
+  statePensionAge: number;
+};
+
+// Helper function to get user settings - wraps useQuery
+function useUserSettingsQuery(userId: string | undefined): UserSettings | undefined {
+  return useQuery(api.tax.userSettings.getUserSettings, {
+    userId: userId as Id<"users"> | undefined
+  }) as UserSettings | undefined;
+}
+
 export default function RetirementCashflowCalculator() {
   const user = useCurrentUserQuery();
 
   // Tax data - passes userId for custom overrides
   const taxBandInformation = useTaxInfoQuery(user?._id);
+
+  // User settings for state pension
+  const userSettings = useUserSettingsQuery(user?._id);
 
   // Account values
   const [pensionValue, setPensionValue] = useState(500000);
@@ -259,10 +275,18 @@ export default function RetirementCashflowCalculator() {
   const [growthRate, setGrowthRate] = useState(5);
   const [withdrawalRate, setWithdrawalRate] = useState(3);
 
-  // State pension
+  // State pension - use user settings if available, otherwise use defaults
   const [statePension, setStatePension] = useState(11000);
   const [statePensionAge, setStatePensionAge] = useState(67);
   const [startAge, setStartAge] = useState(55);
+
+  // Sync state pension values with user settings when they load
+  useMemo(() => {
+    if (userSettings) {
+      setStatePension(userSettings.statePensionAmount);
+      setStatePensionAge(userSettings.statePensionAge);
+    }
+  }, [userSettings]);
 
   // Build accounts array
   const accounts: Account[] = [
@@ -306,7 +330,7 @@ export default function RetirementCashflowCalculator() {
   );
 
   // Loading/error states
-  if (!taxBandInformation) {
+  if (!taxBandInformation || !userSettings) {
     return <LoadingSpinner fullScreen message="Loading tax information..." />;
   }
 
@@ -328,19 +352,19 @@ export default function RetirementCashflowCalculator() {
     );
   }
 
-  // Chart configurations
+  // Chart configurations - using explicit colors for better distinction
   const incomeConfig = {
-    takeHomePension: { label: "Pension Take Home", color: "var(--chart-1)" },
-    isaIncome: { label: "ISA", color: "var(--chart-2)" },
-    giaIncome: { label: "GIA", color: "var(--chart-4)" },
-    statePension: { label: "State Pension", color: "var(--chart-5)" },
-    tax: { label: "Tax", color: "var(--chart-3)" },
+    takeHomePay: { label: "Pension Take Home", color: "#22c55e" },      // Green
+    isaWithdrawal: { label: "ISA", color: "#3b82f6" },                   // Blue
+    giaWithdrawal: { label: "GIA", color: "#f97316" },                   // Orange
+    statePension: { label: "State Pension", color: "#8b5cf6" },           // Purple
+    incomeTax: { label: "Tax (inc NI)", color: "#ef4444" },              // Red
   } satisfies ChartConfig;
 
   const potConfig = {
-    pension: { label: "Pension", color: "var(--chart-1)" },
-    isa: { label: "ISA", color: "var(--chart-2)" },
-    gia: { label: "GIA", color: "var(--chart-4)" },
+    pension: { label: "Pension", color: "#22c55e" },
+    isa: { label: "ISA", color: "#3b82f6" },
+    gia: { label: "GIA", color: "#f97316" },
   } satisfies ChartConfig;
 
   return (
@@ -498,34 +522,23 @@ export default function RetirementCashflowCalculator() {
                   />
                 </div>
 
-                {/* State Pension */}
-                <div>
-                  <Label htmlFor="statePension">Annual State Pension (£)</Label>
-                  <Input
-                    id="statePension"
-                    type="number"
-                    step="500"
-                    value={statePension}
-                    onChange={(e) => setStatePension(Number(e.target.value))}
-                    className="mt-2"
-                  />
-                </div>
-
-                {/* State Pension Age */}
-                <div>
-                  <Label htmlFor="statePensionAge">State Pension Age</Label>
-                  <Select value={statePensionAge.toString()} onValueChange={(v) => setStatePensionAge(Number(v))}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[60, 61, 62, 63, 64, 65, 66, 67, 68].map((age) => (
-                        <SelectItem key={age} value={age.toString()}>
-                          Age {age}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* State Pension Settings - Link to Settings */}
+                <div className="space-y-2">
+                  <Label>State Pension</Label>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">£{statePension.toLocaleString()} / year</p>
+                        <p className="text-sm text-muted-foreground">Starting at age {statePensionAge}</p>
+                      </div>
+                      <a
+                        href="/settings"
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Edit in Settings
+                      </a>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Growth Rate */}
@@ -581,14 +594,17 @@ export default function RetirementCashflowCalculator() {
                     <YAxis tickLine={false} tickMargin={8} tickFormatter={(v) => `£${(v/1000).toFixed(0)}k`} />
                     <ChartTooltip
                       content={<ChartTooltipContent />}
-                      formatter={(value: number) => [`£${value.toLocaleString()}`, ""]}
+                      formatter={(value: number, name: string) => [
+                        `£${value.toLocaleString()}`,
+                        incomeConfig[name as keyof typeof incomeConfig]?.label || name
+                      ]}
                     />
                     <ChartLegend content={<ChartLegendContent />} />
-                    <Bar dataKey="takeHomePay" stackId="a" fill="var(--color-takeHomePension)" radius={[0, 0, 2, 2]} />
-                    <Bar dataKey="isaWithdrawal" stackId="a" fill="var(--color-isaIncome)" />
-                    <Bar dataKey="giaWithdrawal" stackId="a" fill="var(--color-giaIncome)" />
-                    <Bar dataKey="statePension" stackId="a" fill="var(--color-statePension)" />
-                    <Bar dataKey="incomeTax" stackId="a" fill="var(--color-tax)" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="takeHomePay" stackId="a" fill="#22c55e" radius={[0, 0, 2, 2]} />
+                    <Bar dataKey="isaWithdrawal" stackId="a" fill="#3b82f6" />
+                    <Bar dataKey="giaWithdrawal" stackId="a" fill="#f97316" />
+                    <Bar dataKey="statePension" stackId="a" fill="#8b5cf6" />
+                    <Bar dataKey="incomeTax" stackId="a" fill="#ef4444" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ChartContainer>
               </CardContent>
@@ -608,12 +624,15 @@ export default function RetirementCashflowCalculator() {
                     <YAxis tickLine={false} tickMargin={8} tickFormatter={(v) => `£${(v/1000000).toFixed(1)}M`} />
                     <ChartTooltip
                       content={<ChartTooltipContent />}
-                      formatter={(value: number) => [`£${value.toLocaleString()}`, ""]}
+                      formatter={(value: number, name: string) => [
+                        `£${value.toLocaleString()}`,
+                        potConfig[name as keyof typeof potConfig]?.label || name
+                      ]}
                     />
                     <ChartLegend content={<ChartLegendContent />} />
-                    <Line type="monotone" dataKey="pensionPot" stroke="var(--color-pension)" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="isaPot" stroke="var(--color-isa)" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="giaPot" stroke="var(--color-gia)" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="pensionPot" stroke="#22c55e" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="isaPot" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="giaPot" stroke="#f97316" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ChartContainer>
               </CardContent>

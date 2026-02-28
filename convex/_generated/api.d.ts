@@ -29,6 +29,7 @@ import type * as portfolio_updateUserHoldings from "../portfolio/updateUserHoldi
 import type * as portfolio_updateUserPortfolio from "../portfolio/updateUserPortfolio.js";
 import type * as tax_runTaxQuery from "../tax/runTaxQuery.js";
 import type * as tax_seedTaxYear from "../tax/seedTaxYear.js";
+import type * as tax_userSettings from "../tax/userSettings.js";
 import type * as tax_userTaxOverrides from "../tax/userTaxOverrides.js";
 
 import type {
@@ -59,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   "portfolio/updateUserPortfolio": typeof portfolio_updateUserPortfolio;
   "tax/runTaxQuery": typeof tax_runTaxQuery;
   "tax/seedTaxYear": typeof tax_seedTaxYear;
+  "tax/userSettings": typeof tax_userSettings;
   "tax/userTaxOverrides": typeof tax_userTaxOverrides;
 }>;
 
