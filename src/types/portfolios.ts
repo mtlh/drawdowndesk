@@ -58,6 +58,7 @@ export interface PortfolioWithHoldings {
   lastUpdated?: string;
   name: string;
   portfolioType?: "live" | "manual";
+  _creationTime?: number;
 }
 
 export type AccountType = "bank" | "savings" | "pension" | "crypto" | "cash" | "other";

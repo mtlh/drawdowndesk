@@ -22,7 +22,7 @@ import { api } from "../../convex/_generated/api"
 import { useQuery } from "convex/react"
 import { usePortfolioData } from "@/hooks/usePortfolioData"
 import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
-import { CHART_COLORS, CHART_COLORS_MAIN, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
+import { CHART_COLORS_MAIN, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 import { ChartTooltip, PieChartTooltip } from "@/components/chart-tooltip"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
@@ -45,7 +45,7 @@ export default function PortfolioOverview() {
 
   // Calculate 1-day changes from snapshots
   const oneDayChanges = useMemo(() => {
-    if (!portfolioData.success || !getPortfolioSnapshots || getPortfolioSnapshots.length === 0) return {};
+    if (!portfolioData.success || !getPortfolioSnapshots || "error" in getPortfolioSnapshots || getPortfolioSnapshots.length === 0) return {};
 
     const today = new Date().toISOString().split("T")[0];
     const yesterday = new Date();
@@ -86,6 +86,9 @@ export default function PortfolioOverview() {
     return <div>Error: {portfolioData.error}</div>;
   }
 
+  // Handle case where portfolioSummary is null (no holdings)
+  const summary = portfolioSummary ?? { totalValue: 0, totalChange: 0, totalChangePercent: 0, portfolios: [] };
+
   // Merge 1-day changes into portfolio allocation data
   const portfolioAllocationWithPerformance = portfolioAllocationData.map(item => {
     const change = oneDayChanges[item.name];
@@ -110,10 +113,10 @@ export default function PortfolioOverview() {
 
   // Calculate YTD return from snapshots (investment only)
   const currentYear = new Date().getFullYear();
-  const ytdData = investmentSnapshots.length > 0
+  const ytdData = investmentSnapshots.length > 0 && summary
     ? (() => {
         const yearStartSnapshot = investmentSnapshots.find(s => new Date(s.snapshotDate).getFullYear() === currentYear);
-        const currentValue = portfolioSummary.totalValue;
+        const currentValue = summary.totalValue;
         if (yearStartSnapshot && yearStartSnapshot.totalValue > 0) {
           const ytdReturn = ((currentValue - yearStartSnapshot.totalValue) / yearStartSnapshot.totalValue) * 100;
           return ytdReturn;
@@ -122,9 +125,9 @@ export default function PortfolioOverview() {
       })()
     : null;
 
-  const assetTypeData = calculateAssetTypeAllocation(portfolioSummary.portfolios)
-  const accountAllocationData = getAccountAllocationData(portfolioSummary.portfolios)
-  const treemapData = generateHoldingsTreemapData(portfolioSummary.portfolios)
+  const assetTypeData = calculateAssetTypeAllocation(summary.portfolios)
+  const accountAllocationData = getAccountAllocationData(summary.portfolios)
+  const treemapData = generateHoldingsTreemapData(summary.portfolios)
 
   // Reusable chart tooltips
   const CustomTooltip = ChartTooltip({})
@@ -146,7 +149,7 @@ export default function PortfolioOverview() {
             <div>
               <div className="text-sm text-muted-foreground">Total Value</div>
               <div className="text-3xl font-bold">
-                £{portfolioSummary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                £{summary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </div>
             </div>
           </div>
@@ -157,7 +160,7 @@ export default function PortfolioOverview() {
               <Wallet className="h-5 w-5 text-primary" />
               <div>
                 <div className="text-xs text-muted-foreground">Accounts</div>
-                <div className="text-2xl font-bold">{portfolioSummary.portfolios.length}</div>
+                <div className="text-2xl font-bold">{summary.portfolios.length}</div>
               </div>
             </div>
             <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[130px] bg-gradient-to-br from-emerald-500/5 to-transparent border-emerald-500/20">
@@ -165,7 +168,7 @@ export default function PortfolioOverview() {
               <div>
                 <div className="text-xs text-muted-foreground">Holdings</div>
                 <div className="text-2xl font-bold">
-                  {portfolioSummary.portfolios.reduce((acc, portfolio) => acc + portfolio.holdings.length, 0)}
+                  {summary.portfolios.reduce((acc, portfolio) => acc + portfolio.holdings.length, 0)}
                 </div>
               </div>
             </div>
@@ -182,9 +185,9 @@ export default function PortfolioOverview() {
               <TrendingUp className="h-5 w-5 text-violet-600" />
               <div>
                 <div className="text-xs text-muted-foreground">Growth</div>
-                <div className={`text-2xl font-bold ${portfolioSummary.totalChangePercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {portfolioSummary.totalChangePercent >= 0 ? "+" : ""}
-                  {portfolioSummary.totalChangePercent.toFixed(2)}%
+                <div className={`text-2xl font-bold ${summary.totalChangePercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {summary.totalChangePercent >= 0 ? "+" : ""}
+                  {summary.totalChangePercent.toFixed(2)}%
                 </div>
               </div>
             </div>
@@ -369,7 +372,7 @@ export default function PortfolioOverview() {
           </CardHeader>
           <CardContent>
             <div className="w-full">
-              <CustomTreemap data={treemapData} colors={[...CHART_COLORS]} />
+              <CustomTreemap data={treemapData} />
             </div>
           </CardContent>
         </Card>

@@ -174,7 +174,7 @@ export default function TransactionsPage() {
   }, [portfolios]);
 
   const filteredEvents = useMemo(() => {
-    if (!buySellEvents || buySellEvents.error) return [];
+    if (!buySellEvents || "error" in buySellEvents) return [];
     let filtered = [...buySellEvents];
     if (selectedPortfolioId !== "all") {
       filtered = filtered.filter(e => e.portfolioId === selectedPortfolioId);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo } from "react";
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts";
 import type { TreemapNode } from "./treeMapNode";
@@ -67,7 +68,7 @@ const SingleAccount: React.FC<SingleAccountProps> = ({ name, value, holdings, co
   const isSingleHolding = sortedHoldings.length === 1;
 
   // Custom treemap content renderer
-  const renderContent = (props: { x?: number; y?: number; width?: number; height?: number; name?: string; value?: number; index?: number }) => {
+  const renderContent = (props: any): React.ReactElement => {
     const { x = 0, y = 0, width = 0, height = 0, name = "", value = 0, index = 0 } = props;
     const hasSpace = width > 40 && height > 20;
     const fontSize = Math.max(10, Math.min(width * 0.05, height * 0.16));
@@ -145,9 +146,9 @@ const SingleAccount: React.FC<SingleAccountProps> = ({ name, value, holdings, co
             dataKey="value"
             aspectRatio={1.5}
             stroke="#fff"
-            content={renderContent}
+            content={renderContent as any}
           >
-            <Tooltip content={renderTooltip} />
+            <Tooltip content={renderTooltip as any} />
           </Treemap>
         </ResponsiveContainer>
       </div>

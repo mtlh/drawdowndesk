@@ -2,13 +2,13 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { isError, isPortfolioArray, Portfolio } from "@/types/portfolios";
+import { isError, isPortfolioArray, PortfolioWithHoldings } from "@/types/portfolios";
 
 /**
  * Result type for portfolio data query
  */
 export type PortfolioDataResult =
-  | { success: true; data: Portfolio[]; isLoading: boolean }
+  | { success: true; data: PortfolioWithHoldings[]; isLoading: boolean }
   | { success: false; error: string; isLoading: boolean };
 
 /**

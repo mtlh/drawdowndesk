@@ -52,7 +52,8 @@ export interface Portfolio {
 
 export type PortfoliosWithHoldings = Portfolio[]
 
-// --- Normalizer for Convex return shape --- 
+// --- Normalizer for Convex return shape ---
+// Accepts PortfolioWithHoldings[] from Convex query and converts to Portfolio[] for calculations
 export function normalizePortfolios(
   data: {
     holdings: Holding[];
@@ -63,7 +64,7 @@ export function normalizePortfolios(
       holdingType?: string;
     }>;
     _id: Id<"portfolios">;
-    _creationTime: number;
+    _creationTime?: number;
     lastUpdated?: string;
     userId: string;
     name: string;
@@ -91,7 +92,7 @@ export function normalizePortfolios(
 
     return {
       _id: p._id,
-      _creationTime: p._creationTime,
+      _creationTime: p._creationTime ?? 0,
       lastUpdated: p.lastUpdated,
       name: p.name,
       userId: p.userId,
