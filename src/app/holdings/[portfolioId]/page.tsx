@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +12,7 @@ import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 import { Id } from "../../../../convex/_generated/dataModel"
 import { getPriceInPounds } from "@/lib/utils"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 // Helper to get currency symbol
 function getCurrencySymbol(currency: string | undefined): string {
@@ -51,21 +52,21 @@ export default function PortfolioHoldingsPage() {
   const [editedValues, setEditedValues] = useState<Partial<Holding>>({});
   const [editedSimpleValues, setEditedSimpleValues] = useState<Partial<SimpleHolding>>({});
 
+  const initialized = useRef(false);
   useEffect(() => {
     if (
       getPortfolioData &&
       isPortfolioArray(getPortfolioData) &&
-      holdings.length === 0
+      !initialized.current
     ) {
+      initialized.current = true;
       setHoldings(getPortfolioData.flatMap((p) => p.holdings));
       setSimpleHoldings(getPortfolioData.flatMap((p) => p.simpleHoldings || []));
     }
-  }, [getPortfolioData, holdings.length]);
+  }, [getPortfolioData]);
 
   if (!getPortfolioData) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
+    return <LoadingSpinner fullScreen />;
   }
 
   if (isError(getPortfolioData)) {

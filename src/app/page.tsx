@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, Wallet, PieChartIcon, BarChart3 } from "lucide-react"
 import {
@@ -19,42 +20,99 @@ import {
 import { calculatePortfolioSummary, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
 import { api } from "../../convex/_generated/api"
 import { useQuery } from "convex/react"
-import { isError, isPortfolioArray } from "@/types/portfolios"
+import { usePortfolioData } from "@/hooks/usePortfolioData"
 import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
 import { CHART_COLORS, CHART_COLORS_MAIN, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 import { ChartTooltip, PieChartTooltip } from "@/components/chart-tooltip"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 const COLORS = CHART_COLORS_MAIN
 
 export default function PortfolioOverview() {
-  const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
+  const portfolioData = usePortfolioData();
   const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
 
-  if (!getPortfolioData) { return <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-  </div>; }
+  // All hooks must be called before any conditional returns
+  const portfolioSummary = useMemo(() => {
+    if (!portfolioData.success) return null;
+    return calculatePortfolioSummary(normalizePortfolios(portfolioData.data));
+  }, [portfolioData]);
 
-  if (isError(getPortfolioData)) { return <div>Error: {getPortfolioData.error}</div>; }
+  const portfolioAllocationData = useMemo(() => {
+    if (!portfolioSummary) return [];
+    return getPortfolioAllocationData(portfolioSummary.portfolios);
+  }, [portfolioSummary]);
 
-  if (!isPortfolioArray(getPortfolioData)) { return <div>Error: Unexpected response format.</div>; }
+  // Calculate 1-day changes from snapshots
+  const oneDayChanges = useMemo(() => {
+    if (!portfolioData.success || !getPortfolioSnapshots || getPortfolioSnapshots.length === 0) return {};
 
-  const portfolioSummary = calculatePortfolioSummary(normalizePortfolios(getPortfolioData))
-  const portfolioAllocationData = getPortfolioAllocationData(portfolioSummary.portfolios)
+    const today = new Date().toISOString().split("T")[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
 
-  // Convert snapshots to performance chart data
+    const changes: Record<string, { oneDayChange: number; oneDayChangePercent: number }> = {};
+
+    // Get portfolio IDs from the data
+    const portfolioMap = new Map(portfolioData.data.map(p => [p._id, p.name]));
+
+    for (const [portfolioId, portfolioName] of portfolioMap) {
+      const todaySnapshots = getPortfolioSnapshots.filter(s =>
+        s.portfolioId === portfolioId && s.snapshotDate === today
+      );
+      const yesterdaySnapshots = getPortfolioSnapshots.filter(s =>
+        s.portfolioId === portfolioId && s.snapshotDate === yesterdayStr
+      );
+
+      const todayValue = todaySnapshots.length > 0 ? todaySnapshots[0].totalValue : 0;
+      const yesterdayValue = yesterdaySnapshots.length > 0 ? yesterdaySnapshots[0].totalValue : 0;
+      const change = todayValue - yesterdayValue;
+      const changePercent = yesterdayValue > 0 ? (change / yesterdayValue) * 100 : 0;
+
+      changes[portfolioName] = { oneDayChange: change, oneDayChangePercent: changePercent };
+    }
+
+    return changes;
+  }, [getPortfolioSnapshots, portfolioData]);
+
+  // Handle loading state
+  if (portfolioData.isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  // Handle error state
+  if (!portfolioData.success) {
+    return <div>Error: {portfolioData.error}</div>;
+  }
+
+  // Merge 1-day changes into portfolio allocation data
+  const portfolioAllocationWithPerformance = portfolioAllocationData.map(item => {
+    const change = oneDayChanges[item.name];
+    return {
+      ...item,
+      oneDayChange: change?.oneDayChange ?? 0,
+      oneDayChangePercent: change?.oneDayChangePercent ?? 0,
+    };
+  });
+
+  // Convert snapshots to performance chart data (only total investment, no portfolioId)
   const hasSnapshots = getPortfolioSnapshots && Array.isArray(getPortfolioSnapshots) && getPortfolioSnapshots.length > 0;
-  const performanceData = hasSnapshots
-    ? getPortfolioSnapshots.map(snapshot => ({
+  const investmentSnapshots = hasSnapshots
+    ? getPortfolioSnapshots.filter(s => !s.portfolioId)
+    : [];
+  const performanceData = investmentSnapshots.length > 0
+    ? investmentSnapshots.map(snapshot => ({
         date: new Date(snapshot.snapshotDate).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
         value: snapshot.totalValue,
       }))
     : [];
 
-  // Calculate YTD return from snapshots
+  // Calculate YTD return from snapshots (investment only)
   const currentYear = new Date().getFullYear();
-  const ytdData = hasSnapshots
+  const ytdData = investmentSnapshots.length > 0
     ? (() => {
-        const yearStartSnapshot = getPortfolioSnapshots.find(s => new Date(s.snapshotDate).getFullYear() === currentYear);
+        const yearStartSnapshot = investmentSnapshots.find(s => new Date(s.snapshotDate).getFullYear() === currentYear);
         const currentValue = portfolioSummary.totalValue;
         if (yearStartSnapshot && yearStartSnapshot.totalValue > 0) {
           const ytdReturn = ((currentValue - yearStartSnapshot.totalValue) / yearStartSnapshot.totalValue) * 100;
@@ -213,12 +271,17 @@ export default function PortfolioOverview() {
                   <Tooltip content={<PieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              {/* Legend below donut */}
+              {/* Legend below donut with 1-day change */}
               <div className="flex flex-wrap justify-center gap-3 mt-2">
-                {portfolioAllocationData.map((entry, index) => (
+                {portfolioAllocationWithPerformance.map((entry, index) => (
                   <div key={entry.name} className="flex items-center gap-1.5 text-xs">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                     <span className="text-muted-foreground">{entry.name}</span>
+                    {entry.oneDayChangePercent !== 0 && (
+                      <span className={entry.oneDayChangePercent >= 0 ? "text-green-600" : "text-red-600"}>
+                        {entry.oneDayChangePercent >= 0 ? "+" : ""}{entry.oneDayChangePercent.toFixed(2)}%
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -301,11 +364,11 @@ export default function PortfolioOverview() {
         {/* Holdings Treemap */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Holdings</CardTitle>
-            <CardDescription>Visual breakdown by value</CardDescription>
+            <CardTitle className="text-lg">Holdings by Account</CardTitle>
+            <CardDescription>Stock/bond split within each account</CardDescription>
           </CardHeader>
           <CardContent>
-            <div style={{ width: "100%", height: 450 }}>
+            <div className="w-full">
               <CustomTreemap data={treemapData} colors={[...CHART_COLORS]} />
             </div>
           </CardContent>

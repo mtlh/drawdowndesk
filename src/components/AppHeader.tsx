@@ -25,6 +25,10 @@ const pageInfo: Record<string, PageInfo> = {
     title: "Holdings",
     subtitle: "Manage your investment portfolios and holdings",
   },
+  "/transactions": {
+    title: "Transactions",
+    subtitle: "View and manage your transaction history",
+  },
   "/goal-tracker": {
     title: "Goal Tracker",
     subtitle: "Set financial goals and track your progress",

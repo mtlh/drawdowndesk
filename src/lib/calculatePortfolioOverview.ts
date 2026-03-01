@@ -194,7 +194,7 @@ export function calculateAssetTypeAllocation(portfolios: CalculatedPortfolio[]) 
   }))
 }
 
-// Generate treemap data from all holdings grouped by type
+// Generate treemap data from all holdings grouped by account
 export function generateHoldingsTreemapData(portfolios: CalculatedPortfolio[]) {
   interface TreemapNode {
     name: string
@@ -202,28 +202,40 @@ export function generateHoldingsTreemapData(portfolios: CalculatedPortfolio[]) {
     children?: TreemapNode[]
   }
 
-  const holdingsByType: Record<string, Array<{ symbol: string; marketValue: number }>> = {}
+  // Group all holdings by account - flatten to just account -> individual holdings
+  const holdingsByAccount: Record<string, Array<{ symbol: string; marketValue: number; holdingType: string }>> = {}
 
   portfolios.forEach((portfolio) => {
     portfolio.holdings.forEach((holding) => {
-      const type = holding.holdingType ?? "Other"
-      if (!holdingsByType[type]) {
-        holdingsByType[type] = []
+      const accountName = holding.accountName ?? "Unknown"
+
+      if (!holdingsByAccount[accountName]) {
+        holdingsByAccount[accountName] = []
       }
-      holdingsByType[type].push({
+      holdingsByAccount[accountName].push({
         symbol: holding.symbol,
         marketValue: holding.marketValue,
+        holdingType: holding.holdingType ?? "Other",
       })
     })
   })
 
-  const children: TreemapNode[] = Object.entries(holdingsByType).map(([type, holdings]) => ({
-    name: type,
-    children: holdings.map((holding) => ({
-      name: holding.symbol,
-      value: holding.marketValue,
-    })),
-  }))
+  // Build treemap structure: Account -> Individual Holdings
+  const children: TreemapNode[] = Object.entries(holdingsByAccount).map(([accountName, holdings]) => {
+    const accountTotal = holdings.reduce((sum, h) => sum + h.marketValue, 0)
+
+    // Sort holdings by value descending
+    const sortedHoldings = [...holdings].sort((a, b) => b.marketValue - a.marketValue)
+
+    return {
+      name: accountName,
+      value: accountTotal,
+      children: sortedHoldings.map((holding) => ({
+        name: holding.symbol,
+        value: holding.marketValue,
+      })),
+    }
+  })
 
   return children
 }

@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
+import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
 import { calculatePortfolioSummary, normalizePortfolios } from "@/lib/calculatePortfolioOverview";
-import { isError, isPortfolioArray } from "@/types/portfolios";
+import { usePortfolioData } from "@/hooks/usePortfolioData";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export function RefreshButton({
   label = "Refresh All Data",
@@ -14,7 +15,8 @@ export function RefreshButton({
   label?: string;
 }) {
   const [loading, setLoading] = useState(false);
-  const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
+  const portfolioData = usePortfolioData();
+  const getUser = useCurrentUser();
   const saveSnapshot = useMutation(api.portfolio.portfolioSnapshots.savePortfolioSnapshot);
   const calculateNetWorthSnapshot = useMutation(api.netWorth.netWorthSnapshots.calculateAndSaveNetWorthSnapshot);
   const syncAutoSyncGoals = useMutation(api.goals.goalCrud.syncAllAutoSyncGoals);
@@ -23,15 +25,21 @@ export function RefreshButton({
     try {
       setLoading(true);
 
-      // First refresh the prices
-      const response = await fetch(window.location.origin + "/api/updateTickers");
+      // Get user ID for API call
+      const userId = getUser?._id;
+
+      // First refresh the prices (pass userId if available)
+      const url = userId
+        ? `${window.location.origin}/api/updateTickers?userId=${userId}`
+        : `${window.location.origin}/api/updateTickers`;
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error("Failed to update holdings with latest prices");
       }
 
       // Then save portfolio snapshot with current total value
-      if (getPortfolioData && !isError(getPortfolioData) && isPortfolioArray(getPortfolioData)) {
-        const totalValue = calculatePortfolioSummary(normalizePortfolios(getPortfolioData)).totalValue;
+      if (portfolioData.success) {
+        const totalValue = calculatePortfolioSummary(normalizePortfolios(portfolioData.data)).totalValue;
         await saveSnapshot({ totalValue });
       }
 

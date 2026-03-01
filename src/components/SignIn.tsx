@@ -9,7 +9,7 @@ export function SignIn() {
   return (
     <Button
       onClick={() => void signIn("google", {redirectTo: redirectTo})}
-      className="gap-2"
+      className="w-full gap-2 h-12 text-base hover:bg-slate-50 active:scale-[0.98] transition-all bg-white text-slate-800 font-semibold shadow-md hover:shadow-lg"
       size="lg"
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">

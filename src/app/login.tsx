@@ -2,17 +2,21 @@
 
 import { SignIn } from "@/components/SignIn"
 import { Button } from "@/components/ui/button"
-import { Github, TrendingUp, BarChart3, PieChart as PieChartIcon } from "lucide-react"
+import { Github, TrendingUp, BarChart3, Target, Wallet, Calculator, TrendingDown } from "lucide-react"
+import Image from "next/image"
+import favicon from "../app/favicon.ico"
 import {
   PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
 } from "recharts"
 
 export default function SignInPage() {
@@ -39,106 +43,148 @@ export default function SignInPage() {
     { name: "House Down Payment", progress: 45 },
   ]
 
+  const performanceData = [
+    { month: "W1", value: 100000 },
+    { month: "W2", value: 102500 },
+    { month: "W3", value: 101800 },
+    { month: "W4", value: 104200 },
+    { month: "W5", value: 106500 },
+    { month: "W6", value: 108000 },
+  ]
+
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-background">
-      {/* Left side - Branding and features */}
-      <div className="lg:w-5/12 p-8 lg:p-12 flex flex-col justify-center text-foreground bg-card/50 border-r border-border">
-        <div className="space-y-12">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary text-primary-foreground flex items-center justify-center rounded-xl font-bold text-xl shadow-lg">
-              DD
-            </div>
-            <span className="text-2xl font-bold">Drawdown Desk</span>
-          </div>
-
-          {/* Main heading */}
-          <div>
-            <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-              Your finances,<br />
-              <span className="text-primary">perfectly synced</span>
-            </h1>
-            <p className="text-muted-foreground text-lg leading-relaxed">
-              Track investments, simulate returns, and plan your retirement with professional-grade analytics.
-            </p>
-          </div>
-
-          {/* Features */}
-          <div className="space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">Real-time portfolio tracking</h3>
-                <p className="text-sm text-muted-foreground">Live prices and automatic updates keep your portfolio accurate.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                <BarChart3 className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">Monte Carlo simulations</h3>
-                <p className="text-sm text-muted-foreground">Project future returns with historical market data modeling.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                <PieChartIcon className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">UK tax calculations</h3>
-                <p className="text-sm text-muted-foreground">Built-in tax bands for retirement income and capital gains.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Buttons - Centered in left panel */}
-          <div className="flex items-center justify-center gap-4 pt-8">
-            <a href="https://github.com/mtlh/drawdowndesk" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="gap-2">
-                <Github className="w-4 h-4" />
-                GitHub
-              </Button>
-            </a>
-            <SignIn />
-          </div>
-        </div>
+    <div className="min-h-screen flex items-center justify-center p-6 lg:p-10 relative overflow-hidden">
+      {/* Background with dark overlay */}
+      <div className="absolute inset-0 bg-[#0f172a]">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url(/hero-bg.jpg)' }}
+        />
+        <div className="absolute inset-0 bg-white/20" />
       </div>
 
-      {/* Right side - Sign in and dashboard preview */}
-      <div className="lg:w-7/12 p-6 lg:p-12 flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center">
-          {/* Dashboard Preview */}
-          <div className="w-full max-w-lg mb-10">
-            <div className="bg-card rounded-2xl border border-border shadow-xl overflow-hidden">
-              {/* Dashboard header */}
-              <div className="bg-muted/50 px-5 py-3 border-b border-border flex items-center justify-between">
-                <span className="text-sm font-medium">Portfolio Overview</span>
-                <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+      {/* Main card - improved contrast */}
+      <div className="relative w-[80vw] h-[85vh] min-w-[1000px] min-h-[700px] bg-white/5 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row">
+        {/* Left side - Login */}
+        <div className="lg:w-5/12 p-8 lg:p-12 flex flex-col bg-white/5 overflow-hidden">
+          {/* Logo with favicon - at top */}
+          <div className="flex items-center gap-4">
+            <Image src={favicon} alt="Drawdown Desk" width={48} height={48} className="rounded-xl" />
+            <span className="text-3xl font-bold text-white">Drawdown Desk</span>
+          </div>
+
+          {/* Heading + Buttons - centered in middle */}
+          <div className="mt-auto mb-auto">
+            <div className="mb-8">
+              <h1 className="text-5xl font-bold mb-3 text-white">
+                Welcome back
+              </h1>
+              <p className="text-slate-300 text-lg">
+                Sign in to track your investments.
+              </p>
+            </div>
+
+            {/* Sign in buttons - same width */}
+            <div className="space-y-4 w-full">
+            <div className="w-full">
+              <div className="group">
+                <SignIn />
+              </div>
+            </div>
+            <a href="https://github.com/mtlh/drawdowndesk" target="_blank" rel="noopener noreferrer" className="block w-full">
+              <Button variant="outline" className="w-full gap-2 border-white/20 h-12 text-base hover:border-white/50 hover:bg-white/10 text-white bg-black/70 transition-all font-semibold shadow-md hover:shadow-lg">
+                <Github className="w-5 h-5" />
+                View on GitHub
+              </Button>
+            </a>
+          </div>
+          </div>
+        </div>
+
+        {/* Right side - Dashboard preview */}
+        <div className="lg:w-7/12 bg-white/5 p-8 lg:p-12 overflow-hidden">
+          {/* Dashboard preview card */}
+          <div className="bg-white rounded-2xl border border-white/50 shadow-lg overflow-hidden h-full">
+            {/* Dashboard header */}
+            <div className="bg-slate-100/80 px-6 py-4 border-b border-slate-200/50 flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-700">Portfolio Overview</span>
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-5 overflow-y-auto">
+              {/* Top row - 3 small cards */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-slate-50/80 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wallet className="w-4 h-4 text-[#4F46E5]" />
+                    <span className="text-xs font-medium text-slate-500">Total Value</span>
+                  </div>
+                  <div className="text-lg font-bold text-slate-800">£248,592</div>
+                  <div className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
+                    <TrendingUp className="w-3 h-3" /> +12.4%
+                  </div>
+                </div>
+                <div className="bg-slate-50/80 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    <span className="text-xs font-medium text-slate-500">YTD Return</span>
+                  </div>
+                  <div className="text-lg font-bold text-slate-800">+£24,850</div>
+                  <div className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
+                    <TrendingUp className="w-3 h-3" /> +11.1%
+                  </div>
+                </div>
+                <div className="bg-slate-50/80 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs font-medium text-slate-500">Goals</span>
+                  </div>
+                  <div className="text-lg font-bold text-slate-800">2/5</div>
+                  <div className="text-xs text-slate-500 mt-1">completed</div>
                 </div>
               </div>
 
-              <div className="p-5 space-y-4">
-                {/* Asset Allocation - Donut */}
-                <div className="bg-muted/30 rounded-xl p-4">
-                  <h4 className="text-sm font-semibold mb-3">Asset Allocation</h4>
-                  <div className="flex items-center gap-4">
-                    <ResponsiveContainer width={140} height={140}>
+              {/* Performance Chart */}
+              <div className="bg-slate-50/80 rounded-xl p-5">
+                <h4 className="text-sm font-semibold text-slate-700 mb-4">Portfolio Performance</h4>
+                <ResponsiveContainer width="100%" height={120}>
+                  <AreaChart data={performanceData}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="month" stroke="#94a3b8" style={{ fontSize: "11px" }} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#94a3b8" style={{ fontSize: "11px" }} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v/1000}k`} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }}
+                      labelStyle={{ color: "#475569" }}
+                      formatter={(value: number) => [`£${value.toLocaleString()}`, "Value"]}
+                    />
+                    <Area type="monotone" dataKey="value" stroke="#4F46E5" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Middle row - Allocation & Cashflow */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50/80 rounded-xl p-4">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Asset Allocation</h4>
+                  <div className="flex items-center gap-3">
+                    <ResponsiveContainer width={100} height={100}>
                       <PieChart>
                         <Pie
                           data={portfolioData}
                           dataKey="value"
                           cx="50%"
                           cy="50%"
-                          innerRadius={40}
-                          outerRadius={55}
+                          innerRadius={25}
+                          outerRadius={40}
                           paddingAngle={3}
                         >
                           {portfolioData.map((entry, index) => (
@@ -147,58 +193,76 @@ export default function SignInPage() {
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       {portfolioData.map((item, index) => (
                         <div key={index} className="flex items-center gap-2">
                           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }}></div>
-                          <span className="text-xs text-muted-foreground">{item.name}</span>
-                          <span className="text-xs font-medium ml-auto">{item.value}%</span>
+                          <span className="text-xs text-slate-500">{item.name}</span>
+                          <span className="text-xs font-medium text-slate-700 ml-auto">{item.value}%</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                {/* Cashflow Line Chart */}
-                <div className="bg-muted/30 rounded-xl p-4">
-                  <h4 className="text-sm font-semibold mb-3">Monthly Cashflow</h4>
-                  <ResponsiveContainer width="100%" height={120}>
-                    <LineChart data={cashflowData}>
-                      <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" style={{ fontSize: "11px" }} tickLine={false} axisLine={false} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: "11px" }} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v/1000}k`} />
+                <div className="bg-slate-50/80 rounded-xl p-4">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Monthly Cashflow</h4>
+                  <ResponsiveContainer width="100%" height={100}>
+                    <BarChart data={cashflowData}>
+                      <XAxis dataKey="month" stroke="#94a3b8" style={{ fontSize: "10px" }} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#94a3b8" style={{ fontSize: "10px" }} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v/1000}k`} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
-                        labelStyle={{ color: "hsl(var(--foreground))" }}
+                        contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "11px" }}
+                        labelStyle={{ color: "#475569" }}
                       />
-                      <Line type="monotone" dataKey="value" stroke="#4F46E5" strokeWidth={2} dot={false} />
-                    </LineChart>
+                      <Bar dataKey="value" fill="#4F46E5" radius={[4, 4, 0, 0]} />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
+              </div>
 
-                {/* Goals Progress Bar */}
-                <div className="bg-muted/30 rounded-xl p-4">
-                  <h4 className="text-sm font-semibold mb-3">Financial Goals</h4>
-                  <div className="space-y-2">
-                    {goalsData.map((goal, index) => (
-                      <div key={index}>
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-muted-foreground">{goal.name}</span>
-                          <span className="font-medium">{goal.progress}%</span>
-                        </div>
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${goal.progress}%` }}
-                          ></div>
-                        </div>
+              {/* Goals */}
+              <div className="bg-slate-50/80 rounded-xl p-5">
+                <h4 className="text-sm font-semibold text-slate-700 mb-4">Financial Goals</h4>
+                <div className="space-y-3">
+                  {goalsData.map((goal, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-slate-500">{goal.name}</span>
+                        <span className="font-medium text-slate-700">{goal.progress}%</span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#4F46E5] rounded-full"
+                          style={{ width: `${goal.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bottom row - Quick actions */}
+              <div className="grid grid-cols-4 gap-3">
+                <div className="bg-slate-50/80 rounded-xl p-3 text-center">
+                  <Calculator className="w-5 h-5 text-[#4F46E5] mx-auto mb-2" />
+                  <span className="text-xs text-slate-600">Cashflow</span>
+                </div>
+                <div className="bg-slate-50/80 rounded-xl p-3 text-center">
+                  <BarChart3 className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
+                  <span className="text-xs text-slate-600">Monte Carlo</span>
+                </div>
+                <div className="bg-slate-50/80 rounded-xl p-3 text-center">
+                  <TrendingDown className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+                  <span className="text-xs text-slate-600">CGT Calc</span>
+                </div>
+                <div className="bg-slate-50/80 rounded-xl p-3 text-center">
+                  <Target className="w-5 h-5 text-purple-500 mx-auto mb-2" />
+                  <span className="text-xs text-slate-600">Goals</span>
                 </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

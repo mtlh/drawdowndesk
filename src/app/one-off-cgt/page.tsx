@@ -13,6 +13,7 @@ import { TrendingUp, Info, AlertCircle } from "lucide-react"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 import {
   calculateIncomeTax,
@@ -77,7 +78,7 @@ function toTaxRates(taxInfo: TaxInfo): TaxRates | null {
 
 export default function OneOffCashflow() {
   // Get user for custom tax overrides
-  const user = useQuery(api.currentUser.getCurrentUser.getCurrentUser)
+  const user = useCurrentUser()
 
   // Get user settings (to check if retired)
   const userSettings = useQuery(

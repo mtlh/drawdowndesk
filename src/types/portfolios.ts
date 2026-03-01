@@ -25,9 +25,13 @@ export interface Holding {
 }
  
 export interface BuySellEvent {
+  _id?: Id<"buySellEvents">;
   portfolioId?: Id<"portfolios"> | undefined;        // Foreign key to portfolio (optional)
   holdingId?: Id<"holdings"> | undefined;          // Foreign key to holding (optional)
   userId: string;              // Authenticated user ID
+  symbol: string;              // e.g., "MSFT"
+  name: string;                // e.g., "Microsoft Corporation"
+  currency?: string;           // e.g., "GBP", "USD", "GBp"
   buyShares: number;           // Positive = buy, negative = sell
   purchaseDate: string;        // e.g., "2022-03-15"
   pricePerShare: number;       // e.g., 120.5

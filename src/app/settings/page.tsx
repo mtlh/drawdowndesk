@@ -10,6 +10,7 @@ import { useQuery, useMutation, Authenticated } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
@@ -50,7 +51,7 @@ interface CgtRate {
 }
 
 function SettingsContent() {
-  const user = useQuery(api.currentUser.getCurrentUser.getCurrentUser)
+  const user = useCurrentUser()
   const userOverrides = useQuery(
     api.tax.userTaxOverrides.getUserTaxOverrides,
     user ? { userId: user._id as Id<"users">, taxYear: CURRENT_TAX_YEAR } : "skip"

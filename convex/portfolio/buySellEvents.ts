@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import { Id } from "../_generated/dataModel";
 
 // Get all buy/sell events for the current user
 export const getBuySellEvents = query({
@@ -66,7 +67,7 @@ export const addBuySellEvent = mutation({
       .collect();
 
     const existingHolding = existingHoldings.find(h => h.symbol === args.symbol);
-    let holdingId: string | undefined;
+    let holdingId: Id<"holdings"> | undefined;
     let isNewHolding = false;
     let eventCurrency = currency;
 

@@ -44,7 +44,7 @@ export const updateUserHolding = mutation({
 
     // 2. Insert if missing
     if (!existingHolding) {
-      await ctx.db.insert("holdings", {
+      const holdingId = await ctx.db.insert("holdings", {
         userId,
         portfolioId: args.portfolioId,
         symbol: args.symbol,
@@ -61,11 +61,28 @@ export const updateUserHolding = mutation({
         lastUpdated: now,
       });
 
+      // Log the initial buy transaction
+      await ctx.db.insert("buySellEvents", {
+        userId,
+        portfolioId: args.portfolioId,
+        holdingId,
+        symbol: args.symbol,
+        name: args.name,
+        buyShares: args.shares,
+        purchaseDate: args.purchaseDate,
+        pricePerShare: args.avgPrice,
+        notes: "Initial purchase",
+        lastUpdated: now,
+      });
+
       return { created: true };
     }
 
     // 3. Update if present
     if (existingHolding._id) {
+      // Calculate the difference in shares to log as transaction
+      const shareDifference = args.shares - existingHolding.shares;
+
       await ctx.db.replace(existingHolding._id, {
         userId,
         portfolioId: args.portfolioId,
@@ -82,6 +99,23 @@ export const updateUserHolding = mutation({
         purchaseDate: args.purchaseDate,
         lastUpdated: now,
       });
+
+      // Log the transaction (buy if positive, sell if negative)
+      if (shareDifference !== 0) {
+        await ctx.db.insert("buySellEvents", {
+          userId,
+          portfolioId: args.portfolioId,
+          holdingId: existingHolding._id,
+          symbol: args.symbol,
+          name: args.name,
+          buyShares: shareDifference,
+          purchaseDate: args.purchaseDate,
+          pricePerShare: args.currentPrice,
+          notes: shareDifference > 0 ? "Buy (holding update)" : "Sell (holding update)",
+          lastUpdated: now,
+        });
+      }
+
       return { updated: true };
     }
 

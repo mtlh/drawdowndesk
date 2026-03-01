@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import { Id } from "../_generated/dataModel";
 
 // Save a portfolio snapshot with the current total value
 export const savePortfolioSnapshot = mutation({
@@ -45,8 +46,15 @@ export const savePortfolioSnapshot = mutation({
 
 // Calculate total portfolio value and save snapshot in one mutation
 export const calculateAndSaveSnapshot = mutation({
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+  args: {
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    // Try to get userId from auth, or use provided userId (for API calls)
+    let userId = await getAuthUserId(ctx);
+    if (!userId && args.userId) {
+      userId = args.userId;
+    }
     if (!userId) {
       return { error: "User not found." };
     }
@@ -58,8 +66,11 @@ export const calculateAndSaveSnapshot = mutation({
       .collect();
 
     let totalValue = 0;
+    const portfolioValues: { portfolioId: Id<"portfolios">; value: number }[] = [];
 
     for (const portfolio of portfolios) {
+      let portfolioValue = 0;
+
       // Add value from live holdings
       const holdings = await ctx.db
         .query("holdings")
@@ -71,7 +82,9 @@ export const calculateAndSaveSnapshot = mutation({
       for (const holding of holdings) {
         const shares = holding.shares || 0;
         const currentPrice = holding.currentPrice || 0;
-        totalValue += shares * currentPrice;
+        const holdingValue = shares * currentPrice;
+        portfolioValue += holdingValue;
+        totalValue += holdingValue;
       }
 
       // Add value from simple holdings (manual portfolios like pensions/OICS)
@@ -83,21 +96,28 @@ export const calculateAndSaveSnapshot = mutation({
         .collect();
 
       for (const simpleHolding of simpleHoldings) {
-        totalValue += simpleHolding.value || 0;
+        const holdingValue = simpleHolding.value || 0;
+        portfolioValue += holdingValue;
+        totalValue += holdingValue;
       }
+
+      portfolioValues.push({ portfolioId: portfolio._id, value: portfolioValue });
     }
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Check if a snapshot already exists for today
-    const existingSnapshots = await ctx.db
+    // Get all snapshots for today to check what exists
+    const allTodaySnapshots = await ctx.db
       .query("portfolioSnapshots")
       .withIndex("by_userDate", q => q.eq("userId", userId).eq("snapshotDate", today))
       .collect();
 
-    if (existingSnapshots.length > 0) {
-      await ctx.db.replace(existingSnapshots[0]._id, {
-        ...existingSnapshots[0],
+    // Find total snapshot (one without portfolioId)
+    const existingTotalSnapshot = allTodaySnapshots.find(s => !s.portfolioId);
+
+    if (existingTotalSnapshot) {
+      await ctx.db.replace(existingTotalSnapshot._id, {
+        ...existingTotalSnapshot,
         totalValue,
         lastUpdated: new Date().toISOString(),
       });
@@ -108,6 +128,35 @@ export const calculateAndSaveSnapshot = mutation({
         snapshotDate: today,
         lastUpdated: new Date().toISOString(),
       });
+    }
+
+    // Save per-portfolio snapshots
+    for (const pv of portfolioValues) {
+      // Query specifically for this portfolio's snapshot using the new index
+      const existingPortfolioSnapshots = await ctx.db
+        .query("portfolioSnapshots")
+        .withIndex("by_userPortfolioDate", q =>
+          q.eq("userId", userId)
+           .eq("portfolioId", pv.portfolioId)
+           .eq("snapshotDate", today)
+        )
+        .collect();
+
+      if (existingPortfolioSnapshots.length > 0) {
+        await ctx.db.replace(existingPortfolioSnapshots[0]._id, {
+          ...existingPortfolioSnapshots[0],
+          totalValue: pv.value,
+          lastUpdated: new Date().toISOString(),
+        });
+      } else {
+        await ctx.db.insert("portfolioSnapshots", {
+          userId,
+          portfolioId: pv.portfolioId,
+          totalValue: pv.value,
+          snapshotDate: today,
+          lastUpdated: new Date().toISOString(),
+        });
+      }
     }
 
     return { success: true, totalValue };
@@ -141,3 +190,59 @@ export const getPortfolioSnapshots = query({
     return snapshots;
   },
 });
+
+// Get snapshots for a specific portfolio with date range filtering
+export const getPortfolioPerformanceSnapshots = query({
+  args: {
+    portfolioId: v.id("portfolios"),
+    range: v.optional(v.union(v.literal("1D"), v.literal("1W"), v.literal("1M"), v.literal("YTD"), v.literal("1Y"))),
+  },
+
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { error: "User not found." };
+    }
+
+    const range = args.range || "1M";
+    const today = new Date();
+    let cutoffDate: Date;
+
+    switch (range) {
+      case "1D":
+        cutoffDate = new Date(today);
+        cutoffDate.setDate(cutoffDate.getDate() - 1);
+        break;
+      case "1W":
+        cutoffDate = new Date(today);
+        cutoffDate.setDate(cutoffDate.getDate() - 7);
+        break;
+      case "1M":
+        cutoffDate = new Date(today);
+        cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+        break;
+      case "YTD":
+        cutoffDate = new Date(today.getFullYear(), 0, 1);
+        break;
+      case "1Y":
+      default:
+        cutoffDate = new Date(today);
+        cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+        break;
+    }
+
+    const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+    const snapshots = await ctx.db
+      .query("portfolioSnapshots")
+      .withIndex("by_userPortfolioDate", q =>
+        q.eq("userId", userId).eq("portfolioId", args.portfolioId)
+      )
+      .filter(q => q.gte(q.field("snapshotDate"), cutoffStr))
+      .order("asc")
+      .collect();
+
+    return snapshots;
+  },
+});
+

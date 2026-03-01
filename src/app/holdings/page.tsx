@@ -1,22 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useRef, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, X } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Plus, X, LineChart as LineChartIcon } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { RefreshButton } from "@/components/RefreshHoldingsButton"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, CartesianGrid, XAxis, YAxis } from "recharts"
 import { CHART_COLORS, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 import { getPriceInPounds } from "@/lib/utils"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
-import { PieChartTooltip } from "@/components/chart-tooltip"
+import { PieChartTooltip, ChartTooltip } from "@/components/chart-tooltip"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 type PortfolioExpanded = {
@@ -24,9 +25,12 @@ type PortfolioExpanded = {
   id: string
 }
 
+type TimelineRange = "1D" | "1W" | "1M" | "YTD" | "1Y";
+
 export default function HoldingsPage() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const updatePortfolioMutation = useMutation(api.portfolio.updateUserPortfolio.updateUserPortfolio);
+  const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
 
   const [portfolios, setPortfolios] = useState<PortfolioExpanded[]>([]);
   const [holdings, setHoldings] = useState<Holding[]>([]);
@@ -37,14 +41,17 @@ export default function HoldingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "value">("date");
   const [valueFilter, setValueFilter] = useState<"all" | "0-1000" | "1000-10000" | "10000-50000" | "50000+">("all");
+  const [selectedTimeline, setSelectedTimeline] = useState<TimelineRange>("1M");
+  const [performanceModalPortfolioId, setPerformanceModalPortfolioId] = useState<string | null>(null);
 
+  const initialized = useRef(false);
   useEffect(() => {
     if (
       getPortfolioData &&
       isPortfolioArray(getPortfolioData) &&
-      portfolios.length === 0 &&
-      holdings.length === 0
+      !initialized.current
     ) {
+      initialized.current = true;
       const initialPortfolios = getPortfolioData.map((p) => ({
         portfolio: p,
         id: p._id,
@@ -54,7 +61,7 @@ export default function HoldingsPage() {
       setHoldings(getPortfolioData.flatMap((p) => p.holdings));
       setSimpleHoldings(getPortfolioData.flatMap((p) => p.simpleHoldings || []));
     }
-  }, [getPortfolioData, portfolios.length, holdings.length]);
+  }, [getPortfolioData]);
 
   // Prevent body scroll when modal is open
   useBodyScrollLock(showNewPortfolioForm)
@@ -63,7 +70,7 @@ export default function HoldingsPage() {
   const PieTooltip = PieChartTooltip({})
 
   // Calculate portfolio totals
-  const getPortfolioStats = (portfolioId: string, portfolioType?: "live" | "manual") => {
+  const getPortfolioStats = useCallback((portfolioId: string, portfolioType?: "live" | "manual") => {
     if (portfolioType === "manual") {
       const portfolioSimpleHoldings = simpleHoldings.filter((h) => h.portfolioId === portfolioId)
       const totalValue = portfolioSimpleHoldings.reduce((sum, h) => sum + h.value, 0)
@@ -76,7 +83,7 @@ export default function HoldingsPage() {
       const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
       return { totalValue, totalCost, totalGain, totalGainPercent }
     }
-  }
+  }, [holdings, simpleHoldings])
 
   // Calculate allocation data for pie chart - aggregates duplicates by name
   const getPortfolioAllocationData = (portfolioId: string, portfolioType?: "live" | "manual") => {
@@ -124,7 +131,7 @@ export default function HoldingsPage() {
   }
 
   // Sort and filter portfolios - MUST be called before any early returns
-  const sortedAndFilteredPortfolios = (() => {
+  const sortedAndFilteredPortfolios = useMemo(() => {
     let filtered = portfolios.map((p) => {
       const stats = getPortfolioStats(p.id, p.portfolio.portfolioType);
       return { ...p, stats };
@@ -170,7 +177,7 @@ export default function HoldingsPage() {
     });
 
     return filtered;
-  })();
+  }, [portfolios, valueFilter, sortBy, getPortfolioStats]);
 
   // Early returns AFTER all hooks
   if (!getPortfolioData) {
@@ -248,27 +255,26 @@ export default function HoldingsPage() {
     <div className="flex h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
-          <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
             {/* Filters */}
             {portfolios.length > 0 && (
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium">Sort by:</label>
+              <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-lg">
                 <Select value={sortBy} onValueChange={(value: "date" | "value") => setSortBy(value)}>
-                  <SelectTrigger className="w-[140px] h-8">
-                    <SelectValue />
+                  <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                    <SelectValue placeholder="Sort" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="date">Created Date</SelectItem>
                     <SelectItem value="value">Market Value</SelectItem>
                   </SelectContent>
                 </Select>
-                <label className="text-sm font-medium">Filter by value:</label>
+                <div className="w-px h-6 bg-border" />
                 <Select value={valueFilter} onValueChange={(value: "all" | "0-1000" | "1000-10000" | "10000-50000" | "50000+") => setValueFilter(value)}>
-                  <SelectTrigger className="w-[180px] h-8">
-                    <SelectValue />
+                  <SelectTrigger className="w-[160px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                    <SelectValue placeholder="Filter by value" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Portfolios</SelectItem>
+                    <SelectItem value="all">All Values</SelectItem>
                     <SelectItem value="0-1000">£0 - £1,000</SelectItem>
                     <SelectItem value="1000-10000">£1,000 - £10,000</SelectItem>
                     <SelectItem value="10000-50000">£10,000 - £50,000</SelectItem>
@@ -360,17 +366,30 @@ export default function HoldingsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedAndFilteredPortfolios.length === 0 ? (
-              <Card className="col-span-2">
+              <Card className="col-span-full">
                 <CardContent className="flex flex-col items-center justify-center py-16">
-                  <p className="mb-4 text-muted-foreground">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Plus className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-lg font-medium mb-2">
                     {portfolios.length === 0
-                      ? "No portfolios yet. Create your first portfolio to get started."
-                      : "No portfolios match the selected filters."}
+                      ? "No portfolios yet"
+                      : "No portfolios match your filters"}
+                  </p>
+                  <p className="text-muted-foreground mb-6 text-center max-w-md">
+                    {portfolios.length === 0
+                      ? "Create your first portfolio to start tracking your investments."
+                      : "Try adjusting your filter criteria to see more portfolios."}
                   </p>
                   {portfolios.length === 0 && (
                     <Button onClick={() => setShowNewPortfolioForm(true)} className="gap-2">
                       <Plus className="h-4 w-4" />
-                      Add Portfolio
+                      Create Portfolio
+                    </Button>
+                  )}
+                  {portfolios.length > 0 && valueFilter !== "all" && (
+                    <Button variant="outline" onClick={() => setValueFilter("all")} className="gap-2">
+                      Clear Filters
                     </Button>
                   )}
                 </CardContent>
@@ -383,15 +402,33 @@ export default function HoldingsPage() {
                 const allocationData = getPortfolioAllocationData(portfolioExpanded.id, portfolioExpanded.portfolio.portfolioType)
 
                 return (
-                  <Card key={portfolioExpanded.id} className="flex flex-col">
+                  <Card key={portfolioExpanded.id} className="flex flex-col hover:shadow-lg transition-shadow duration-200">
                     <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <Input
-                            value={portfolioExpanded.portfolio.name}
-                            onChange={(e) => updatePortfolioName(portfolioExpanded.id, e.target.value)}
-                            className="mb-1 border-none p-0 text-lg font-semibold shadow-none focus-visible:ring-0"
-                          />
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              isManual
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                            }`}>
+                              {isManual ? "Manual" : "Live"}
+                            </span>
+                            <Input
+                              value={portfolioExpanded.portfolio.name}
+                              onChange={(e) => updatePortfolioName(portfolioExpanded.id, e.target.value)}
+                              className="border-none p-0 text-lg font-semibold shadow-none focus-visible:ring-0 bg-transparent"
+                            />
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPerformanceModalPortfolioId(portfolioExpanded.id)}
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground -ml-2"
+                          >
+                            <LineChartIcon className="h-3 w-3 mr-1" />
+                            Performance
+                          </Button>
                           <CardDescription>
                             {isManual ? "Total Value" : "Market Value"}: <span className="font-semibold text-foreground">£{portfolioExpanded.stats.totalValue.toFixed(2)}</span>
                           </CardDescription>
@@ -547,6 +584,144 @@ export default function HoldingsPage() {
               })
             )}
           </div>
+
+          {/* Performance Modal */}
+          <Dialog open={!!performanceModalPortfolioId} onOpenChange={(open) => !open && setPerformanceModalPortfolioId(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader className="pb-2">
+                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                  <LineChartIcon className="h-5 w-5 text-primary" />
+                  {performanceModalPortfolioId
+                    ? portfolios.find(p => p.id === performanceModalPortfolioId)?.portfolio.name
+                    : "Portfolio Performance"}
+                </DialogTitle>
+              </DialogHeader>
+              {performanceModalPortfolioId && (() => {
+                const snapshots = (getPortfolioSnapshots && !('error' in getPortfolioSnapshots))
+                  ? getPortfolioSnapshots.filter(s => s.portfolioId === performanceModalPortfolioId)
+                  : [];
+                const hasData = snapshots.length > 0;
+
+                // Calculate period return
+                let periodReturn = 0;
+                let periodReturnPercent = 0;
+                let currentValue = 0;
+                let periodHigh = 0;
+                let periodLow = Infinity;
+                if (hasData && snapshots.length >= 2) {
+                  const firstValue = snapshots[0].totalValue;
+                  const lastValue = snapshots[snapshots.length - 1].totalValue;
+                  periodReturn = lastValue - firstValue;
+                  periodReturnPercent = firstValue > 0 ? (periodReturn / firstValue) * 100 : 0;
+                  currentValue = lastValue;
+                  snapshots.forEach(s => {
+                    if (s.totalValue > periodHigh) periodHigh = s.totalValue;
+                    if (s.totalValue < periodLow) periodLow = s.totalValue;
+                  });
+                } else if (hasData) {
+                  currentValue = snapshots[0].totalValue;
+                  periodHigh = snapshots[0].totalValue;
+                  periodLow = snapshots[0].totalValue;
+                }
+
+                const chartData = snapshots.map(s => ({
+                  date: new Date(s.snapshotDate).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
+                  value: s.totalValue,
+                }));
+
+                const CustomTooltip = ChartTooltip({});
+
+                return (
+                  <div className="space-y-4">
+                    {/* Stats cards */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border border-primary/20">
+                        <div className="text-xs text-muted-foreground mb-1">Current Value</div>
+                        <div className="text-lg font-bold">£{currentValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      </div>
+                      <div className={`rounded-lg p-3 border ${periodReturn >= 0 ? "bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20" : "bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20"}`}>
+                        <div className="text-xs text-muted-foreground mb-1">Period Return</div>
+                        <div className={`text-lg font-bold ${periodReturn >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {periodReturn >= 0 ? "+" : ""}£{periodReturn.toFixed(2)}
+                        </div>
+                        <div className={`text-xs ${periodReturn >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {periodReturnPercent >= 0 ? "+" : ""}{periodReturnPercent.toFixed(2)}%
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-lg p-3 border border-amber-500/20">
+                        <div className="text-xs text-muted-foreground mb-1">Period Range</div>
+                        <div className="text-sm font-semibold">£{periodLow.toLocaleString("en-US", { minimumFractionDigits: 0 })} - £{periodHigh.toLocaleString("en-US", { minimumFractionDigits: 0 })}</div>
+                      </div>
+                    </div>
+
+                    {/* Timeline selector */}
+                    <div className="flex items-center gap-1 justify-center bg-muted/50 rounded-lg p-1">
+                      {(["1D", "1W", "1M", "YTD", "1Y"] as TimelineRange[]).map((range) => (
+                        <Button
+                          key={range}
+                          variant={selectedTimeline === range ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => setSelectedTimeline(range)}
+                          className={`h-8 px-4 text-xs font-medium ${selectedTimeline === range ? "shadow-sm" : "text-muted-foreground"}`}
+                        >
+                          {range}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Chart */}
+                    {hasData ? (
+                      <div className="relative">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="modalPortfolioValueGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.4} />
+                                <stop offset="100%" stopColor="#4F46E5" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                            <XAxis
+                              dataKey="date"
+                              stroke="hsl(var(--muted-foreground))"
+                              tick={{ fontSize: 11 }}
+                              tickLine={false}
+                              axisLine={false}
+                              dy={10}
+                            />
+                            <YAxis
+                              stroke="hsl(var(--muted-foreground))"
+                              tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
+                              tick={{ fontSize: 11 }}
+                              tickLine={false}
+                              axisLine={false}
+                              dx={-10}
+                            />
+                            <RechartsTooltip content={<CustomTooltip />} />
+                            <Line
+                              type="monotone"
+                              dataKey="value"
+                              stroke="#4F46E5"
+                              strokeWidth={3}
+                              dot={{ fill: "#4F46E5", strokeWidth: 0, r: 4 }}
+                              activeDot={{ r: 6, fill: "#4F46E5" }}
+                              fill="url(#modalPortfolioValueGradient)"
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="h-[280px] flex flex-col items-center justify-center text-muted-foreground bg-muted/30 rounded-lg border-2 border-dashed">
+                        <LineChartIcon className="h-12 w-12 mb-3 opacity-50" />
+                        <p className="text-sm">No historical data for this portfolio yet.</p>
+                        <p className="text-xs mt-1">Performance tracking starts after the first snapshot is saved.</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </DialogContent>
+          </Dialog>
         </div>
       </main>
     </div>

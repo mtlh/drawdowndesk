@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { Plus, Trash2, X, Link as LinkIcon } from "lucide-react"
 import { StatCard } from "@/components/ui/stat-card"
-import { Account, AccountType, Portfolio } from "@/types/portfolios"
+import { Account, AccountType, Portfolio, PortfolioWithHoldings } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import {
@@ -71,38 +72,30 @@ export default function NetWorthPage() {
   const [newAccountPortfolioId, setNewAccountPortfolioId] = useState<string>("")
   const [newAccountNotes, setNewAccountNotes] = useState("")
 
+  const accountsInitialized = useRef(false);
   useEffect(() => {
-    if (getAccountsData && !('error' in getAccountsData) && accounts.length === 0) {
+    if (getAccountsData && !('error' in getAccountsData) && !accountsInitialized.current) {
+      accountsInitialized.current = true;
       setAccounts(getAccountsData.accounts as AccountWithPortfolio[])
       setPortfolios(getAccountsData.portfolios as Portfolio[])
     }
-  }, [getAccountsData, accounts.length])
+  }, [getAccountsData])
 
   // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (showNewAccountForm) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = "unset"
-    }
-    return () => {
-      document.body.style.overflow = "unset"
-    }
-  }, [showNewAccountForm])
+  useBodyScrollLock(showNewAccountForm)
 
   // Calculate totals by account type
-  const totalAccountsValue = accounts.reduce((sum, a) => sum + a.value, 0)
+  const totalAccountsValue = useMemo(() => accounts.reduce((sum, a) => sum + a.value, 0), [accounts])
 
   // Calculate total investments from portfolio holdings
-  const totalInvestments = portfolioHoldings.reduce((sum, p) => sum + p.value, 0)
+  const totalInvestments = useMemo(() => portfolioHoldings.reduce((sum, p) => sum + p.value, 0), [portfolioHoldings])
 
-  const totalNetWorth = totalAccountsValue + totalInvestments
+  const totalNetWorth = useMemo(() => totalAccountsValue + totalInvestments, [totalAccountsValue, totalInvestments])
 
   // Calculate investment values from portfolio holdings
   useEffect(() => {
     if (getUserPortfolio && !('error' in getUserPortfolio)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const holdingsByPortfolio = getUserPortfolio.map((portfolio: any) => {
+      const holdingsByPortfolio = getUserPortfolio.map((portfolio: PortfolioWithHoldings) => {
         let totalValue = 0
         const tags = new Set<string>()
 
@@ -145,15 +138,14 @@ export default function NetWorthPage() {
           value: totalValue,
           tags: tagsArray,
         }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      }).filter((p: any) => p.value > 0)
+      }).filter((p) => p.value > 0)
 
       setPortfolioHoldings(holdingsByPortfolio)
     }
   }, [getUserPortfolio])
 
   // Calculate growth and YTD from snapshots
-  const getGrowthAndYTD = () => {
+  const { growthPercent, ytdPercent } = useMemo(() => {
     if (!getSnapshots || !Array.isArray(getSnapshots) || getSnapshots.length === 0) {
       return { growth: 0, growthPercent: 0, ytd: 0, ytdPercent: 0 }
     }
@@ -178,9 +170,7 @@ export default function NetWorthPage() {
     const ytdPercent = ytdStartValue ? (ytd / ytdStartValue) * 100 : 0
 
     return { growth, growthPercent, ytd, ytdPercent }
-  }
-
-  const { growthPercent, ytdPercent } = getGrowthAndYTD()
+  }, [getSnapshots, totalNetWorth])
 
   // Get unique tags
   const uniqueTags = [...new Set(accounts.map(a => a.tag).filter(Boolean))] as string[]
@@ -352,13 +342,12 @@ export default function NetWorthPage() {
           </div>
 
           {/* Filters */}
-          <div className="mb-6 flex gap-4 items-center flex-wrap">
-            {portfoliosWithAccounts.length > 0 && (
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Portfolio:</label>
+          <div className="mb-6 flex gap-3 items-center flex-wrap">
+            <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-lg">
+              {portfoliosWithAccounts.length > 0 && (
                 <Select value={filterPortfolio} onValueChange={(v: string) => setFilterPortfolio(v)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
+                  <SelectTrigger className="w-[150px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                    <SelectValue placeholder="Portfolio" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Portfolios</SelectItem>
@@ -367,13 +356,11 @@ export default function NetWorthPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Type:</label>
+              )}
+              <div className="w-px h-6 bg-border" />
               <Select value={filterType} onValueChange={(v: AccountType | "all") => setFilterType(v)}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue />
+                <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                  <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
@@ -382,28 +369,26 @@ export default function NetWorthPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            {uniqueTags.length > 0 && (
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Tag:</label>
-                <Select value={filterTag} onValueChange={(v: string) => setFilterTag(v)}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Tags</SelectItem>
-                    {uniqueTags.map(tag => (
-                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Sort:</label>
+              {uniqueTags.length > 0 && (
+                <>
+                  <div className="w-px h-6 bg-border" />
+                  <Select value={filterTag} onValueChange={(v: string) => setFilterTag(v)}>
+                    <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                      <SelectValue placeholder="Tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Tags</SelectItem>
+                      {uniqueTags.map(tag => (
+                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+              <div className="w-px h-6 bg-border" />
               <Select value={sortBy} onValueChange={(v: "value" | "name" | "type") => setSortBy(v)}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue />
+                <SelectTrigger className="w-[100px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                  <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="value">Value</SelectItem>
@@ -436,15 +421,42 @@ export default function NetWorthPage() {
                   <tbody>
                     {filteredAccounts.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                          {accounts.length === 0
-                            ? "No accounts yet. Add your first account to start tracking your net worth."
-                            : "No accounts match the selected filters."}
+                        <td colSpan={6} className="p-12 text-center">
+                          <div className="flex flex-col items-center">
+                            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                              <span className="text-3xl">🏦</span>
+                            </div>
+                            <p className="text-lg font-medium mb-2">
+                              {accounts.length === 0
+                                ? "No accounts yet"
+                                : "No accounts match your filters"}
+                            </p>
+                            <p className="text-muted-foreground mb-6">
+                              {accounts.length === 0
+                                ? "Add your first account to start tracking your net worth."
+                                : "Try adjusting your filter criteria."}
+                            </p>
+                            {accounts.length === 0 && (
+                              <Button onClick={() => setShowNewAccountForm(true)} className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Add Account
+                              </Button>
+                            )}
+                            {accounts.length > 0 && (filterType !== "all" || filterTag !== "all" || filterPortfolio !== "all") && (
+                              <Button variant="outline" onClick={() => {
+                                setFilterType("all")
+                                setFilterTag("all")
+                                setFilterPortfolio("all")
+                              }} className="gap-2">
+                                Clear Filters
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ) : (
                       filteredAccounts.map(account => (
-                        <tr key={account._id} className="border-b hover:bg-muted/30">
+                        <tr key={account._id} className="border-b hover:bg-muted/50 transition-colors">
                           <td className="p-3">
                             <div className="font-medium">{account.name}</div>
                             {account.notes && <div className="text-xs text-muted-foreground">{account.notes}</div>}

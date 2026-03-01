@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet, FileText, User } from "lucide-react"
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet, FileText, User, ArrowLeftRight } from "lucide-react"
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { usePathname } from "next/navigation";
 
@@ -38,6 +38,11 @@ const menuSections = [
         title: "Holdings",
         url: "/holdings",
         icon: FileChartPie,
+      },
+      {
+        title: "Transactions",
+        url: "/transactions",
+        icon: ArrowLeftRight,
       },
       {
         title: "Goals",

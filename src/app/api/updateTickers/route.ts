@@ -1,5 +1,6 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
+import { Id } from "../../../../convex/_generated/dataModel";
 
 const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL!
@@ -118,7 +119,10 @@ interface HoldingPriceInfo {
   currency?: string;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get("userId");
+
   // @ts-expect-error - Convex API type instantiation is excessively deep
   const getAllHoldings = api.portfolio.currentPriceUpdates.updateHoldingWithTicker.getAllHoldings;
   const holdings: HoldingPriceInfo[] = await convex.query(getAllHoldings, {});
@@ -185,14 +189,10 @@ export async function GET() {
 
   // After updating prices, calculate total portfolio value and save a snapshot
   try {
-    const result = await convex.mutation(
+    await convex.mutation(
       api.portfolio.portfolioSnapshots.calculateAndSaveSnapshot,
-      {}
+      { userId: userId ? userId as Id<"users"> : undefined }
     );
-
-    if (result && !result.error) {
-      console.debug(`Portfolio snapshot saved: £${result.totalValue?.toLocaleString()}`);
-    }
   } catch (snapshotError) {
     console.error("Failed to save portfolio snapshot:", snapshotError);
   }
