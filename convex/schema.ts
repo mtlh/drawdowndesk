@@ -139,20 +139,24 @@ export default defineSchema({
         portfolioId: v.optional(v.id("portfolios")), // Foreign key to portfolio
         holdingId: v.optional(v.id("holdings")),     // Foreign key to holding
         userId: v.id("users"),                          // Authenticated user ID
+        symbol: v.string(),                          // e.g., "MSFT"
+        name: v.string(),                            // e.g., "Microsoft Corporation"
+        currency: v.optional(v.string()),            // e.g., "GBP", "USD", "GBp"
         buyShares: v.float64(),                      // e.g., 1000 (buy positive, sell negative)
         purchaseDate: v.string(),                    // e.g., "2022-03-15"
         pricePerShare: v.float64(),                  // e.g., 120.5
         notes: v.optional(v.string()),
         lastUpdated: v.optional(v.string()),
-    }),
+    }).index("by_user", ["userId"]).index("by_userPortfolio", ["userId", "portfolioId"]),
 
     // Portfolio value snapshots for performance tracking
     portfolioSnapshots: defineTable({
         userId: v.id("users"),                          // Authenticated user ID
+        portfolioId: v.optional(v.id("portfolios")),    // Optional portfolio ID for per-portfolio snapshots
         totalValue: v.float64(),                       // Total portfolio value in GBP
         snapshotDate: v.string(),                      // Date of snapshot (YYYY-MM-DD)
         lastUpdated: v.optional(v.string()),
-    }).index("by_userDate", ["userId", "snapshotDate"]),
+    }).index("by_userDate", ["userId", "snapshotDate"]).index("by_userPortfolioDate", ["userId", "portfolioId", "snapshotDate"]),
 
     // Net worth snapshots including all accounts
     netWorthSnapshots: defineTable({
