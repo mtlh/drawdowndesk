@@ -5,13 +5,13 @@ const config: ForgeConfig = {
   packagerConfig: {
     name: 'DrawdownDesk',
     ignore: [
-      /^\/src/,
-      /^\/convex/,
-      /^\/\.git/,
-      /^\/\.next/,
+      /^\/src$/,
+      /^\/src\//,
+      /^\/convex$/,
+      /^\/convex\//,
+      /^\/\./,
       /\.ts$/,
       /\.tsx$/,
-      /^\/node_modules\/(?!electron-store)/,
     ],
   },
   makers: [
