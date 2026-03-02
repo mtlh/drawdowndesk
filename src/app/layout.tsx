@@ -22,13 +22,14 @@ export const metadata: Metadata = {
 const themeScript = `
 (function() {
   try {
-    // Force light mode on login page to prevent hydration mismatch
-    var path = window.location.pathname;
-    if (path === '/login' || path === '/') {
-      document.documentElement.classList.remove('dark');
+    // Read theme from localStorage - only read, never write here
+    var theme = localStorage.getItem('theme');
+    // Default to dark if not set
+    if (!theme) {
+      document.documentElement.classList.add('dark');
       return;
     }
-    var theme = localStorage.getItem('theme');
+    // Apply theme
     if (theme === 'light') {
       document.documentElement.classList.remove('dark');
     } else {

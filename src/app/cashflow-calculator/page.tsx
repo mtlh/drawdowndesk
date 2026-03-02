@@ -370,7 +370,7 @@ export default function RetirementCashflowCalculator() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-8 space-y-8">
           {/* Header */}
           <div className="space-y-2"></div>
@@ -546,7 +546,7 @@ export default function RetirementCashflowCalculator() {
                 <div>
                   <Label htmlFor="growthRate">Annual Growth Rate (%)</Label>
                   <Select value={growthRate.toString()} onValueChange={(v) => setGrowthRate(Number(v))}>
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className="mt-2" aria-label="Select growth rate">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -563,7 +563,7 @@ export default function RetirementCashflowCalculator() {
                 <div>
                   <Label htmlFor="withdrawalRate">Annual Withdrawal Rate (%)</Label>
                   <Select value={withdrawalRate.toString()} onValueChange={(v) => setWithdrawalRate(Number(v))}>
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className="mt-2" aria-label="Select withdrawal rate">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

@@ -23,19 +23,19 @@ export function ErrorDisplay({
   className,
 }: ErrorDisplayProps) {
   const errorContent = (
-    <div className="flex items-center gap-2 text-destructive">
-      <AlertCircle className="h-5 w-5" />
+    <div className="flex items-center gap-2 text-destructive" role="alert">
+      <AlertCircle className="h-5 w-5" aria-hidden="true" />
       <span>{message}</span>
     </div>
   )
 
   if (fullScreen) {
     return (
-      <div className="flex min-h-screen bg-background items-center justify-center">
+      <div className="flex min-h-screen bg-background items-center justify-center" role="alert">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
+              <AlertCircle className="h-5 w-5" aria-hidden="true" />
               {title}
             </CardTitle>
           </CardHeader>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Plus, X, LineChart as LineChartIcon } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
@@ -86,7 +86,7 @@ export default function HoldingsPage() {
   }, [holdings, simpleHoldings])
 
   // Calculate allocation data for pie chart - aggregates duplicates by name
-  const getPortfolioAllocationData = (portfolioId: string, portfolioType?: "live" | "manual") => {
+  const getPortfolioAllocationData = useCallback((portfolioId: string, portfolioType?: "live" | "manual") => {
     if (portfolioType === "manual") {
       const portfolioSimpleHoldings = simpleHoldings.filter((h) => h.portfolioId === portfolioId)
       const rawData = portfolioSimpleHoldings.map((holding) => ({
@@ -128,7 +128,7 @@ export default function HoldingsPage() {
 
       return Object.values(aggregated);
     }
-  }
+  }, [holdings, simpleHoldings])
 
   // Sort and filter portfolios - MUST be called before any early returns
   const sortedAndFilteredPortfolios = useMemo(() => {
@@ -253,14 +253,14 @@ export default function HoldingsPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+      <main className="flex-1 overflow-y-auto bg-background">
+        <div className="p-4 lg:p-8">
           <div className="mb-6 flex items-center justify-between gap-4 flex-wrap min-h-[40px]">
             {/* Filters */}
             {portfolios.length > 0 && (
               <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-lg">
                 <Select value={sortBy} onValueChange={(value: "date" | "value") => setSortBy(value)}>
-                  <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                  <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Sort by">
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,7 +270,7 @@ export default function HoldingsPage() {
                 </Select>
                 <div className="w-px h-6 bg-border" />
                 <Select value={valueFilter} onValueChange={(value: "all" | "0-1000" | "1000-10000" | "10000-50000" | "50000+") => setValueFilter(value)}>
-                  <SelectTrigger className="w-[160px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                  <SelectTrigger className="w-[160px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Filter by value">
                     <SelectValue placeholder="Filter by value" />
                   </SelectTrigger>
                   <SelectContent>
@@ -314,8 +314,9 @@ export default function HoldingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Portfolio Name</label>
+                    <label htmlFor="portfolio-name" className="text-sm font-medium">Portfolio Name</label>
                     <Input
+                      id="portfolio-name"
                       placeholder="e.g., Retirement Fund, Savings, Growth Portfolio"
                       value={newPortfolioName}
                       onChange={(e) => setNewPortfolioName(e.target.value)}
@@ -328,9 +329,9 @@ export default function HoldingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Portfolio Type</label>
+                    <label htmlFor="portfolio-type" className="text-sm font-medium">Portfolio Type</label>
                     <Select value={newPortfolioType} onValueChange={(value: "live" | "manual") => setNewPortfolioType(value)}>
-                      <SelectTrigger className="mt-2">
+                      <SelectTrigger id="portfolio-type" className="mt-2" aria-label="Select portfolio type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -418,7 +419,7 @@ export default function HoldingsPage() {
                               value={portfolioExpanded.portfolio.name}
                               onChange={(e) => updatePortfolioName(portfolioExpanded.id, e.target.value)}
                               style={{ backgroundColor: 'transparent', border: 'none' }}
-                              className="border-none p-0 text-lg font-semibold shadow-none focus-visible:ring-0 bg-transparent"
+                              className="border-none p-0 text-lg font-semibold shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 bg-transparent"
                             />
                           </div>
                           <Button
@@ -596,6 +597,9 @@ export default function HoldingsPage() {
                     ? portfolios.find(p => p.id === performanceModalPortfolioId)?.portfolio.name
                     : "Portfolio Performance"}
                 </DialogTitle>
+                <DialogDescription>
+                  View historical performance data for this portfolio over time.
+                </DialogDescription>
               </DialogHeader>
               {performanceModalPortfolioId && (() => {
                 const snapshots = (getPortfolioSnapshots && !('error' in getPortfolioSnapshots))

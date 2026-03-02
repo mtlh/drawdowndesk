@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FileText, Keyboard, Check, AlertCircle, Plus, Trash2, Eye, Edit3, Loader2 } from "lucide-react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -193,9 +194,17 @@ export default function FinanceNotesPage() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="p-4 text-center text-muted-foreground">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-sm">Loading notes...</p>
+            <div className="p-2 space-y-1">
+              {/* Skeleton loaders for note items */}
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="p-3 rounded-lg border border-transparent">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-3/4 rounded" />
+                    <Skeleton className="h-3 w-full rounded" />
+                    <Skeleton className="h-3 w-1/2 rounded" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : notes.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
@@ -245,7 +254,7 @@ export default function FinanceNotesPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-3 md:p-4 space-y-3">
           {/* Compact status indicator */}
           <div className="flex items-center gap-2 text-xs">
@@ -274,12 +283,15 @@ export default function FinanceNotesPage() {
 
           {isLoading ? (
             <Card>
-              <CardContent className="py-12">
-                <div className="flex items-center justify-center text-muted-foreground">
-                  <div className="text-center space-y-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p>Loading notes...</p>
-                  </div>
+              <CardContent className="py-6 space-y-4">
+                <Skeleton className="h-8 w-1/2 rounded" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full rounded" />
+                  <Skeleton className="h-4 w-full rounded" />
+                  <Skeleton className="h-4 w-3/4 rounded" />
+                  <Skeleton className="h-4 w-5/6 rounded" />
+                  <Skeleton className="h-4 w-full rounded" />
+                  <Skeleton className="h-4 w-2/3 rounded" />
                 </div>
               </CardContent>
             </Card>

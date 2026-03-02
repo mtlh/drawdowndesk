@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { calculatePortfolioSummary, normalizePortfolios } from "@/lib/calculatePortfolioOverview";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
@@ -15,8 +15,11 @@ export function RefreshButton({
   label?: string;
 }) {
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const portfolioData = usePortfolioData();
   const getUser = useCurrentUser();
+  // Re-query on refreshKey change to get fresh data
+  useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {}, refreshKey);
   const saveSnapshot = useMutation(api.portfolio.portfolioSnapshots.savePortfolioSnapshot);
   const calculateNetWorthSnapshot = useMutation(api.netWorth.netWorthSnapshots.calculateAndSaveNetWorthSnapshot);
   const syncAutoSyncGoals = useMutation(api.goals.goalCrud.syncAllAutoSyncGoals);
@@ -49,8 +52,8 @@ export function RefreshButton({
       // Sync all goals with autoSyncPortfolio enabled
       await syncAutoSyncGoals();
 
-      // refresh the page to show updated data
-      window.location.reload();
+      // Trigger re-query to fetch fresh data
+      setRefreshKey(k => k + 1);
 
     } catch (error) {
       console.error("Error refreshing data:", error);

@@ -121,7 +121,7 @@ export default defineSchema({
         currentPrice: v.float64(),                   // e.g., 118.2
         purchaseDate: v.string(),                    // e.g., "2022-03-15"
         lastUpdated: v.optional(v.string()),
-    }).index("by_portfolio", ["userId", "portfolioId"]).index("by_symbol", ["symbol"]),
+    }).index("by_portfolio", ["userId", "portfolioId"]).index("by_symbol", ["symbol"]).index("by_user_symbol", ["userId", "symbol"]).index("by_user", ["userId"]),
 
     // Simple holdings for manual portfolios (pensions, OICS, etc.)
     simpleHoldings: defineTable({
@@ -133,7 +133,7 @@ export default defineSchema({
         holdingType: v.optional(v.string()),         // e.g., "Fund", "Pension", "Savings"
         notes: v.optional(v.string()),                // Optional notes
         lastUpdated: v.optional(v.string()),
-    }).index("by_portfolio", ["userId", "portfolioId"]),
+    }).index("by_portfolio", ["userId", "portfolioId"]).index("by_user", ["userId"]),
 
     // Buy and sell events
     buySellEvents: defineTable({
@@ -179,7 +179,7 @@ export default defineSchema({
         portfolioId: v.optional(v.id("portfolios")),  // Optional link to investment portfolio for importing
         notes: v.optional(v.string()),
         lastUpdated: v.optional(v.string()),
-    }).index("by_user", ["userId"]),
+    }).index("by_user", ["userId"]).index("by_user_portfolio", ["userId", "portfolioId"]),
 
     // Financial goals
     goals: defineTable({

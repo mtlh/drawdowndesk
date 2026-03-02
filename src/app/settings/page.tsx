@@ -295,7 +295,7 @@ function SettingsContent() {
 
   return (
     <div className="flex h-screen bg-background">
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-8 max-w-4xl mx-auto space-y-8">
           {/* Header */}
           <div className="space-y-2">
@@ -414,16 +414,18 @@ function SettingsContent() {
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Personal Allowance (£)</Label>
+                          <Label htmlFor="personal-allowance">Personal Allowance (£)</Label>
                           <Input
+                            id="personal-allowance"
                             type="number"
                             value={allowance.amount}
                             onChange={(e) => setAllowanceState({ ...allowance, amount: parseFloat(e.target.value) || 0 })}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Taper Threshold (£)</Label>
+                          <Label htmlFor="taper-threshold">Taper Threshold (£)</Label>
                           <Input
+                            id="taper-threshold"
                             type="number"
                             value={allowance.taperThreshold}
                             onChange={(e) => setAllowanceState({ ...allowance, taperThreshold: parseFloat(e.target.value) || 0 })}
@@ -431,8 +433,9 @@ function SettingsContent() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>Taper Rate (%)</Label>
+                        <Label htmlFor="taper-rate">Taper Rate (%)</Label>
                         <Input
+                          id="taper-rate"
                           type="number"
                           value={allowance.taperRatePercent}
                           onChange={(e) => setAllowanceState({ ...allowance, taperRatePercent: parseFloat(e.target.value) || 0 })}
@@ -499,8 +502,9 @@ function SettingsContent() {
                           <h4 className="font-medium">{band.bandName}</h4>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label>Band Start (£)</Label>
+                              <Label htmlFor={`band-start-${index}`}>Band Start (£)</Label>
                               <Input
+                                id={`band-start-${index}`}
                                 type="number"
                                 value={band.bandStartAmount}
                                 onChange={(e) => {
@@ -511,8 +515,9 @@ function SettingsContent() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Band End (£, leave empty for unlimited)</Label>
+                              <Label htmlFor={`band-end-${index}`}>Band End (£, leave empty for unlimited)</Label>
                               <Input
+                                id={`band-end-${index}`}
                                 type="number"
                                 value={band.bandEndAmount || ""}
                                 onChange={(e) => {
@@ -523,8 +528,9 @@ function SettingsContent() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Tax Rate (%)</Label>
+                              <Label htmlFor={`tax-rate-${index}`}>Tax Rate (%)</Label>
                               <Input
+                                id={`tax-rate-${index}`}
                                 type="number"
                                 value={band.taxRatePercent}
                                 onChange={(e) => {
@@ -535,8 +541,9 @@ function SettingsContent() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>National Insurance (%)</Label>
+                              <Label htmlFor={`ni-rate-${index}`}>National Insurance (%)</Label>
                               <Input
+                                id={`ni-rate-${index}`}
                                 type="number"
                                 value={band.nationalInsuranceRate}
                                 onChange={(e) => {
@@ -605,8 +612,9 @@ function SettingsContent() {
                           <h4 className="font-medium">{c.assetType}</h4>
                           <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-2">
-                              <Label>Annual Exempt Amount (£)</Label>
+                              <Label htmlFor={`cgt-exempt-${index}`}>Annual Exempt Amount (£)</Label>
                               <Input
+                                id={`cgt-exempt-${index}`}
                                 type="number"
                                 value={c.annualExemptAmount}
                                 onChange={(e) => {
@@ -617,8 +625,9 @@ function SettingsContent() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Basic Rate (%)</Label>
+                              <Label htmlFor={`cgt-basic-${index}`}>Basic Rate (%)</Label>
                               <Input
+                                id={`cgt-basic-${index}`}
                                 type="number"
                                 value={c.basicRatePercent}
                                 onChange={(e) => {
@@ -629,8 +638,9 @@ function SettingsContent() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Higher Rate (%)</Label>
+                              <Label htmlFor={`cgt-higher-${index}`}>Higher Rate (%)</Label>
                               <Input
+                                id={`cgt-higher-${index}`}
                                 type="number"
                                 value={c.higherRatePercent}
                                 onChange={(e) => {
@@ -694,7 +704,7 @@ function SettingsContent() {
                   {/* Retired Toggle */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label className="text-base">Retirement Status</Label>
+                      <Label className="text-base" htmlFor="retirement-status">Retirement Status</Label>
                       <p className="text-sm text-muted-foreground">
                         Determines which tax bands to use in calculations
                       </p>
@@ -721,8 +731,9 @@ function SettingsContent() {
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Annual State Pension (£)</Label>
+                          <Label htmlFor="state-pension-amount">Annual State Pension (£)</Label>
                           <Input
+                            id="state-pension-amount"
                             type="number"
                             value={statePension.amount}
                             onChange={(e) => setStatePension({ ...statePension, amount: parseFloat(e.target.value) || 0 })}
@@ -732,8 +743,9 @@ function SettingsContent() {
                           </p>
                         </div>
                         <div className="space-y-2">
-                          <Label>State Pension Age</Label>
+                          <Label htmlFor="state-pension-age">State Pension Age</Label>
                           <Input
+                            id="state-pension-age"
                             type="number"
                             value={statePension.age}
                             onChange={(e) => setStatePension({ ...statePension, age: parseInt(e.target.value) || 67 })}

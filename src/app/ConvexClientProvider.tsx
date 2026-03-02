@@ -21,7 +21,7 @@ function AppShell({ children }: { children: ReactNode }) {
         <AppSidebar />
         <div className="flex flex-1 flex-col">
           <AppHeader />
-          <main className="flex-1">
+          <main className="flex-1 bg-background">
             {children}
           </main>
         </div>

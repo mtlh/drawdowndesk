@@ -24,20 +24,21 @@ export function LoadingSpinner({
   size = "default",
 }: LoadingSpinnerProps) {
   const spinner = (
-    <>
+    <div role="status" aria-live="polite" aria-busy="true">
       <div
         className={cn(
           "animate-spin rounded-full border-b-2 border-primary",
           sizeClasses[size],
           className
         )}
+        aria-hidden="true"
       />
       {message && (
         <p className={cn("text-muted-foreground", size === "sm" && "text-sm")}>
           {message}
         </p>
       )}
-    </>
+    </div>
   )
 
   if (fullScreen) {

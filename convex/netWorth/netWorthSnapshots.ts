@@ -15,7 +15,7 @@ export const calculateAndSaveNetWorthSnapshot = mutation({
     // Get all live holdings for the user (regardless of portfolioId)
     const allHoldings = await ctx.db
       .query("holdings")
-      .filter(q => q.eq(q.field("userId"), userId))
+      .withIndex("by_user", q => q.eq("userId", userId))
       .collect();
 
     for (const holding of allHoldings) {
@@ -33,7 +33,7 @@ export const calculateAndSaveNetWorthSnapshot = mutation({
     // Get all simple holdings for the user
     const allSimpleHoldings = await ctx.db
       .query("simpleHoldings")
-      .filter(q => q.eq(q.field("userId"), userId))
+      .withIndex("by_user", q => q.eq("userId", userId))
       .collect();
 
     for (const simpleHolding of allSimpleHoldings) {

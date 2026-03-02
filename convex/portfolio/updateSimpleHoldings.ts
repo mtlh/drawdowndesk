@@ -1,10 +1,11 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
+import { Id } from "../_generated/dataModel";
 
 export const updateSimpleHolding = mutation({
   args: {
-    _id: v.optional(v.string()),
+    _id: v.optional(v.id("simpleHoldings")),
     portfolioId: v.id("portfolios"),
     name: v.string(),
     value: v.float64(),
@@ -31,15 +32,14 @@ export const updateSimpleHolding = mutation({
       return { error: "This portfolio is not a manual portfolio." };
     }
 
-    // Find existing simple holding
-    const existing = await ctx.db
-      .query("simpleHoldings")
-      .withIndex("by_portfolio", q => q.eq("userId", userId).eq("portfolioId", args.portfolioId))
-      .collect();
-
-    let existingHolding;
+    // Optimization: If _id is provided, fetch directly instead of all and find
+    let existingHolding = null;
     if (args._id) {
-      existingHolding = existing.find(h => h._id === args._id);
+      existingHolding = await ctx.db.get(args._id);
+      // Verify ownership
+      if (existingHolding && (existingHolding.userId !== userId || existingHolding.portfolioId !== args.portfolioId)) {
+        existingHolding = null;
+      }
     }
 
     const now = new Date().toISOString();

@@ -25,12 +25,22 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state"
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
+const SIDEBAR_STORAGE_KEY = "sidebar_state"
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+
+// Helper to get initial sidebar state from localStorage
+function getInitialSidebarState(): boolean {
+  if (typeof window === "undefined") return true
+  try {
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+    return stored !== "collapsed"
+  } catch {
+    return true
+  }
+}
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -54,7 +64,7 @@ function useSidebar() {
 }
 
 function SidebarProvider({
-  defaultOpen = true,
+  defaultOpen,
   open: openProp,
   onOpenChange: setOpenProp,
   className,
@@ -69,9 +79,12 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
+  // Use provided defaultOpen, or fall back to localStorage
+  const initialOpen = defaultOpen !== undefined ? defaultOpen : getInitialSidebarState()
+
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen)
+  const [_open, _setOpen] = React.useState(initialOpen)
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -82,8 +95,12 @@ function SidebarProvider({
         _setOpen(openState)
       }
 
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      // Persist to localStorage
+      try {
+        localStorage.setItem(SIDEBAR_STORAGE_KEY, openState ? "expanded" : "collapsed")
+      } catch {
+        // Ignore storage errors
+      }
     },
     [setOpenProp, open]
   )

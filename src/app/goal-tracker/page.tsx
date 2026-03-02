@@ -172,7 +172,7 @@ export default function GoalTracker() {
 
   return (
     <div className="flex h-screen bg-background">
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-8 space-y-8">
 
           {isLoading ? (
@@ -267,7 +267,7 @@ export default function GoalTracker() {
                               value={newGoal.category}
                               onValueChange={(value) => setNewGoal({ ...newGoal, category: value })}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger aria-label="Select category">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -316,7 +316,7 @@ export default function GoalTracker() {
                               value={newGoal.linkedPortfolioId || "none"}
                               onValueChange={(value) => setNewGoal({ ...newGoal, linkedPortfolioId: value === "none" ? undefined : value as Id<"portfolios"> })}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger aria-label="Select portfolio to track">
                                 <SelectValue placeholder="Select a portfolio to track" />
                               </SelectTrigger>
                               <SelectContent>
@@ -381,7 +381,7 @@ export default function GoalTracker() {
                               <CardHeader className="pb-2">
                                 <div className="flex items-start justify-between">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-2xl">{getCategoryIcon(goal.category)}</span>
+                                    <span className="text-2xl" aria-hidden="true">{getCategoryIcon(goal.category)}</span>
                                     <CardTitle className="text-lg">{goal.name}</CardTitle>
                                   </div>
                                   <div className="flex gap-1">
@@ -491,7 +491,7 @@ export default function GoalTracker() {
                             <CardHeader className="pb-2">
                               <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-2xl">{getCategoryIcon(goal.category)}</span>
+                                  <span className="text-2xl" aria-hidden="true">{getCategoryIcon(goal.category)}</span>
                                   <CardTitle className="text-lg">{goal.name}</CardTitle>
                                 </div>
                                 <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-700">
@@ -539,7 +539,7 @@ export default function GoalTracker() {
                           value={editingGoal.category || "other"}
                           onValueChange={(value) => setEditingGoal({ ...editingGoal, category: value })}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger aria-label="Select category">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -586,7 +586,7 @@ export default function GoalTracker() {
                           value={editingGoal.linkedPortfolioId || "none"}
                           onValueChange={(value) => setEditingGoal({ ...editingGoal, linkedPortfolioId: value === "none" ? undefined : value as Id<"portfolios"> })}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger aria-label="Select portfolio to track">
                             <SelectValue placeholder="Select a portfolio to track" />
                           </SelectTrigger>
                           <SelectContent>

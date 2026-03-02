@@ -183,8 +183,9 @@ export default function AccumulationForecast() {
       {/* Assumptions row */}
       <div className="flex flex-wrap items-end gap-4 mb-4">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-muted-foreground">Age</label>
+          <label htmlFor="current-age" className="text-sm text-muted-foreground">Age</label>
           <Input
+            id="current-age"
             type="number"
             className="w-20 h-9"
             value={currentAge}
@@ -192,15 +193,18 @@ export default function AccumulationForecast() {
           />
           <span className="text-muted-foreground">→</span>
           <Input
+            id="retirement-age"
             type="number"
             className="w-20 h-9"
             value={retirementAge}
             onChange={(e) => setRetirementAge(parseInt(e.target.value) || 65)}
+            aria-label="Retirement age"
           />
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-muted-foreground">Return</label>
+          <label htmlFor="annual-return" className="text-sm text-muted-foreground">Return</label>
           <Input
+            id="annual-return"
             type="number"
             className="w-20 h-9"
             value={annualReturn}
@@ -209,8 +213,9 @@ export default function AccumulationForecast() {
           <span className="text-muted-foreground">%</span>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-muted-foreground">Inflation</label>
+          <label htmlFor="inflation" className="text-sm text-muted-foreground">Inflation</label>
           <Input
+            id="inflation"
             type="number"
             className="w-20 h-9"
             value={inflation}
@@ -263,7 +268,7 @@ export default function AccumulationForecast() {
                 <tr key={account.id} className="border-t">
                   <td className="p-3">
                     <Select value={account.accountType} onValueChange={(v) => updateAccountField(accountIndex, "accountType", v)}>
-                      <SelectTrigger className="w-full h-9">
+                      <SelectTrigger className="w-full h-9" aria-label="Select account type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

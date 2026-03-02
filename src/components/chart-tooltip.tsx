@@ -23,7 +23,16 @@ export function ChartTooltip(props?: ChartTooltipProps) {
     active,
     payload,
     label,
-  }: TooltipProps<number, string>) {
+    // Recharts passes these props but we don't need them - capture to prevent DOM warnings
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    tooltipPayload: _tooltipPayload,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    tooltipPosition: _tooltipPosition,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    dataKey: _dataKey,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ..._rest
+  }: TooltipProps<number, string> & { tooltipPayload?: unknown; tooltipPosition?: unknown; dataKey?: unknown }) {
     if (!active || !payload?.length) return null;
 
     const formattedLabel = labelFormatter ? labelFormatter(label) : label;
@@ -78,7 +87,16 @@ export function PieChartTooltip(props?: { className?: string }) {
   return function TooltipContent({
     active,
     payload,
-  }: TooltipProps<number, string>) {
+    // Recharts passes these props but we don't need them - capture to prevent DOM warnings
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    tooltipPayload: _tooltipPayload,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    tooltipPosition: _tooltipPosition,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    dataKey: _dataKey,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ..._rest
+  }: TooltipProps<number, string> & { tooltipPayload?: unknown; tooltipPosition?: unknown; dataKey?: unknown }) {
     if (!active || !payload?.length) return null;
 
     const { name, value } = payload[0].payload;

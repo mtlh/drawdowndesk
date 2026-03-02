@@ -120,7 +120,7 @@ export const CustomNode: React.FC<CustomNodeProps> = (props) => {
 
       {isAccount && showText && (
         <>
-          <text x={x + width/2} y={centerY - 5} textAnchor="middle" fill="#fff" fontSize={fontSize} fontWeight="bold" style={{textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>
+          <text x={x + width/2} y={centerY - 5} textAnchor="middle" fill="var(--treemap-text, #fff)" fontSize={fontSize} fontWeight="bold" style={{textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>
             {nodeName}
           </text>
           <text x={x + width/2} y={centerY + 14} textAnchor="middle" fill="rgba(255,255,255,0.9)" fontSize={fontSize-2} style={{textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>
@@ -131,7 +131,7 @@ export const CustomNode: React.FC<CustomNodeProps> = (props) => {
 
       {isAssetType && showSmall && (
         <>
-          <text x={x + 5} y={centerY - 3} fill="#fff" fontSize={fontSize-1} fontWeight="600" style={{textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>
+          <text x={x + 5} y={centerY - 3} fill="var(--treemap-text, #fff)" fontSize={fontSize-1} fontWeight="600" style={{textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>
             {nodeName.length > 12 ? nodeName.slice(0,10)+".." : nodeName}
           </text>
           <text x={x + 5} y={centerY + 11} fill="rgba(255,255,255,0.85)" fontSize={fontSize-3} style={{textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>
@@ -142,7 +142,7 @@ export const CustomNode: React.FC<CustomNodeProps> = (props) => {
 
       {!isAccount && !isAssetType && showSmall && (
         <>
-          <text x={x + 4} y={centerY - 2} fill="#fff" fontSize={Math.max(9, fontSize-2)} fontWeight="600" style={{textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>
+          <text x={x + 4} y={centerY - 2} fill="var(--treemap-text, #fff)" fontSize={Math.max(9, fontSize-2)} fontWeight="600" style={{textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>
             {nodeName.length > 9 ? nodeName.slice(0,7)+".." : nodeName}
           </text>
           <text x={x + 4} y={centerY + 9} fill="rgba(255,255,255,0.8)" fontSize={Math.max(8, fontSize-4)} style={{textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>

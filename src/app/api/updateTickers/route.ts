@@ -176,16 +176,19 @@ export async function GET(request: Request) {
     });
   }
 
-  for (const q of results) {
-    await convex.mutation(
-      api.portfolio.currentPriceUpdates.updateHoldingWithTicker.updateHoldingWithTicker,
-      {
-        symbol: q.symbol,
-        currentPrice: q.price,
-        currency: q.currency,
-      }
-    );
-  }
+  // Run all mutations in parallel for better performance
+  await Promise.all(
+    results.map(q =>
+      convex.mutation(
+        api.portfolio.currentPriceUpdates.updateHoldingWithTicker.updateHoldingWithTicker,
+        {
+          symbol: q.symbol,
+          currentPrice: q.price,
+          currency: q.currency,
+        }
+      )
+    )
+  )
 
   // After updating prices, calculate total portfolio value and save a snapshot
   try {

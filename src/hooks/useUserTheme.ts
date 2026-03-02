@@ -13,11 +13,6 @@ interface UserSettingsData {
   isRetired: boolean
 }
 
-/**
- * Hook to ensure user settings exist and get theme preference.
- * Creates default settings on first sign-in.
- * Returns theme from database, defaults to "dark".
- */
 export function useUserTheme() {
   const user = useCurrentUser()
   const ensureSettings = useMutation(api.tax.userSettings.ensureUserSettings)
@@ -27,6 +22,19 @@ export function useUserTheme() {
   ) as UserSettingsData | null | undefined
   const updateTheme = useMutation(api.tax.userSettings.saveUserSettings)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [localTheme, setLocalTheme] = useState<string | null>(null)
+
+  // Read localStorage after mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('theme')
+      if (stored === 'light' || stored === 'dark') {
+        setLocalTheme(stored)
+      }
+    } catch {
+      // localStorage not available
+    }
+  }, [])
 
   // Ensure settings exist on first load
   useEffect(() => {
@@ -37,27 +45,35 @@ export function useUserTheme() {
     }
   }, [user, isInitialized, ensureSettings])
 
-  // Only use theme from DB when it's actually loaded (not during initial loading)
-  // This prevents overwriting localStorage with default "dark" before DB value arrives
-  const theme = userSettings !== undefined ? userSettings?.theme ?? "dark" : undefined
+  // Use DB value if loaded, otherwise use localStorage
+  // Don't override - let layout script handle the initial theme
+  const theme = userSettings !== undefined
+    ? userSettings?.theme
+    : (localTheme ?? undefined)
 
-  // Sync theme to localStorage only when we have a confirmed value from DB
+  // Sync to localStorage when theme changes from DB
   useEffect(() => {
-    if (theme) {
+    if (userSettings !== undefined && theme) {
       try {
         localStorage.setItem('theme', theme)
       } catch {
         // localStorage not available
       }
     }
-  }, [theme])
+  }, [theme, userSettings])
 
   const setTheme = (newTheme: "light" | "dark") => {
-    // Also save to localStorage immediately for flash prevention
+    // Save to localStorage immediately for flash prevention
     try {
       localStorage.setItem('theme', newTheme)
     } catch {
       // localStorage not available
+    }
+    // Apply to DOM immediately for instant toggle
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
     }
     if (user) {
       updateTheme({

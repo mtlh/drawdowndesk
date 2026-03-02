@@ -174,8 +174,12 @@ export default function TransactionsPage() {
   }, [portfolios]);
 
   const filteredEvents = useMemo(() => {
+    // Handle new paginated response format
     if (!buySellEvents || "error" in buySellEvents) return [];
-    let filtered = [...buySellEvents];
+    const events = Array.isArray(buySellEvents) ? buySellEvents : buySellEvents.events;
+    if (!events) return [];
+
+    let filtered = [...events];
     if (selectedPortfolioId !== "all") {
       filtered = filtered.filter(e => e.portfolioId === selectedPortfolioId);
     }
@@ -416,7 +420,7 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-8 space-y-6 bg-background">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -451,7 +455,7 @@ export default function TransactionsPage() {
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex flex-wrap gap-2">
           <Select value={selectedPortfolioId} onValueChange={setSelectedPortfolioId}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px]" aria-label="Filter by portfolio">
               <SelectValue placeholder="All Portfolios" />
             </SelectTrigger>
             <SelectContent>
@@ -460,7 +464,7 @@ export default function TransactionsPage() {
             </SelectContent>
           </Select>
           <Select value={dateFilter} onValueChange={(v: DateFilter) => setDateFilter(v)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[150px]" aria-label="Filter by date range">
               <SelectValue placeholder="Date Range" />
             </SelectTrigger>
             <SelectContent>
@@ -513,7 +517,7 @@ export default function TransactionsPage() {
                         <td className="p-3 text-right font-mono">{formatCurrencyValue(priceInGBP)}</td>
                         <td className="p-3 text-right font-mono font-medium">{formatCurrencyValue(totalInGBP)}</td>
                         <td className="p-3 text-muted-foreground text-sm max-w-[150px] truncate">{event.notes || "-"}</td>
-                        <td className="p-3"><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => event._id && handleDeleteEvent(event._id)}><Trash2 className="h-4 w-4" /></Button></td>
+                        <td className="p-3"><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Delete transaction" onClick={() => event._id && handleDeleteEvent(event._id)}><Trash2 className="h-4 w-4" /></Button></td>
                       </tr>
                     );
                   })
@@ -551,9 +555,9 @@ export default function TransactionsPage() {
             {/* Left Column - Selection */}
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Portfolio</label>
+                <label htmlFor="portfolio" className="text-sm font-medium">Portfolio</label>
                 <Select value={formPortfolioId} onValueChange={(v) => { const p = portfolios.find(x => x._id === v); setFormPortfolioId(v); setFormPortfolioName(p?.name || ""); setFormExistingHoldingId(""); setFormIsNewHolding(false); }}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select portfolio" /></SelectTrigger>
+                  <SelectTrigger id="portfolio" className="mt-1" aria-label="Select portfolio"><SelectValue placeholder="Select portfolio" /></SelectTrigger>
                   <SelectContent>
                     {portfolios.map(p => (<SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>))}
                   </SelectContent>
@@ -562,9 +566,9 @@ export default function TransactionsPage() {
 
               {formPortfolioId && (
                 <div>
-                  <label className="text-sm font-medium">Existing Holding</label>
+                  <label htmlFor="existing-holding" className="text-sm font-medium">Existing Holding</label>
                   <Select value={formExistingHoldingId} onValueChange={(v) => { setFormExistingHoldingId(v); setFormIsNewHolding(false); const h = holdings.find(x => x._id === v); if (h) { setFormSymbol(h.symbol); setFormName(h.name); setFormAccountName(h.accountName || ""); setFormCurrency(h.currency || "GBP"); setFormPrice(h.currentPrice.toString()); }}}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select holding" /></SelectTrigger>
+                    <SelectTrigger id="existing-holding" className="mt-1" aria-label="Select existing holding"><SelectValue placeholder="Select holding" /></SelectTrigger>
                     <SelectContent>
                       {portfolioHoldings.map(h => (
                         <SelectItem key={h._id} value={h._id || ""}>
@@ -590,13 +594,13 @@ export default function TransactionsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs font-medium">Symbol</label>
-                      <Input placeholder="MSFT" value={formSymbol} onChange={(e) => setFormSymbol(e.target.value.toUpperCase())} className="mt-1" />
+                      <label htmlFor="symbol" className="text-xs font-medium">Symbol</label>
+                      <Input id="symbol" placeholder="MSFT" value={formSymbol} onChange={(e) => setFormSymbol(e.target.value.toUpperCase())} className="mt-1" />
                     </div>
                     <div>
-                      <label className="text-xs font-medium">Currency</label>
+                      <label htmlFor="currency" className="text-xs font-medium">Currency</label>
                       <Select value={formCurrency} onValueChange={setFormCurrency}>
-                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                        <SelectTrigger id="currency" className="mt-1" aria-label="Select currency"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="GBP">GBP</SelectItem>
                           <SelectItem value="GBp">GBp</SelectItem>
@@ -607,12 +611,12 @@ export default function TransactionsPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-medium">Name</label>
-                    <Input placeholder="Microsoft Corporation" value={formName} onChange={(e) => setFormName(e.target.value)} className="mt-1" />
+                    <label htmlFor="holding-name" className="text-xs font-medium">Name</label>
+                    <Input id="holding-name" placeholder="Microsoft Corporation" value={formName} onChange={(e) => setFormName(e.target.value)} className="mt-1" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium">Account (optional)</label>
-                    <Input placeholder="e.g., S&S ISA" value={formAccountName} onChange={(e) => setFormAccountName(e.target.value)} className="mt-1" />
+                    <label htmlFor="account-name" className="text-xs font-medium">Account (optional)</label>
+                    <Input id="account-name" placeholder="e.g., S&S ISA" value={formAccountName} onChange={(e) => setFormAccountName(e.target.value)} className="mt-1" />
                   </div>
                 </div>
               )}
@@ -623,9 +627,9 @@ export default function TransactionsPage() {
               {(formExistingHoldingId || formIsNewHolding) && (
                 <>
                   <div>
-                    <label className="text-sm font-medium">Transaction Type</label>
+                    <label htmlFor="transaction-type" className="text-sm font-medium">Transaction Type</label>
                     <Select value={formIsBuy ? "buy" : "sell"} onValueChange={(v) => setFormIsBuy(v === "buy")}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="transaction-type" className="mt-1" aria-label="Select transaction type"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="buy">Buy</SelectItem>
                         <SelectItem value="sell">Sell</SelectItem>
@@ -635,23 +639,23 @@ export default function TransactionsPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-medium">Shares</label>
-                      <Input type="number" step="any" placeholder="100" value={formShares} onChange={(e) => setFormShares(e.target.value)} className="mt-1" />
+                      <label htmlFor="shares" className="text-sm font-medium">Shares</label>
+                      <Input id="shares" type="number" step="any" placeholder="100" value={formShares} onChange={(e) => setFormShares(e.target.value)} className="mt-1" />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Price</label>
-                      <Input type="number" step="any" placeholder="150.00" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} className="mt-1" />
+                      <label htmlFor="price" className="text-sm font-medium">Price</label>
+                      <Input id="price" type="number" step="any" placeholder="150.00" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} className="mt-1" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Date</label>
-                    <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="mt-1" />
+                    <label htmlFor="date" className="text-sm font-medium">Date</label>
+                    <Input id="date" type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="mt-1" />
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">Notes</label>
-                    <Input placeholder="Optional notes" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} className="mt-1" />
+                    <label htmlFor="notes" className="text-sm font-medium">Notes</label>
+                    <Input id="notes" placeholder="Optional notes" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} className="mt-1" />
                   </div>
                 </>
               )}
@@ -703,7 +707,7 @@ export default function TransactionsPage() {
                       {t.accountName && <span className="text-muted-foreground">({t.accountName})</span>}
                       <span className="text-muted-foreground">{t.shares} @ {formatCurrencyValue(getPriceInPounds(parseFloat(t.price) || 0, t.currency))}</span>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeFromQueue(t.id)}>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" aria-label="Remove from queue" onClick={() => removeFromQueue(t.id)}>
                       <X className="h-3 w-3" />
                     </Button>
                   </div>

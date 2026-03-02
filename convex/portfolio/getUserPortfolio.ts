@@ -14,34 +14,47 @@ export const getUserPortfolio = query({
         .withIndex("by_userPorfolio", q => q.eq("userId", userId))
         .collect();
 
-    const portfoliosWithHoldings = await Promise.all(
-        portfolios.map(async (p) => {
-            const holdings = await ctx.db
-            .query("holdings")
-            .withIndex("by_portfolio", q =>
-                q.eq("userId", userId).eq("portfolioId", p._id)
-            )
-            .collect();
+    // Optimization: Fetch all holdings in a single query, then group by portfolioId
+    const allHoldings = await ctx.db
+        .query("holdings")
+        .withIndex("by_user", q => q.eq("userId", userId))
+        .collect();
 
-            // For manual portfolios, also fetch simpleHoldings
-            let simpleHoldings: any[] = [];
-            if (p.portfolioType === "manual") {
-                simpleHoldings = await ctx.db
-                    .query("simpleHoldings")
-                    .withIndex("by_portfolio", q =>
-                        q.eq("userId", userId).eq("portfolioId", p._id)
-                    )
-                    .collect();
-            }
+    // Fetch all simpleHoldings in a single query
+    const allSimpleHoldings = await ctx.db
+        .query("simpleHoldings")
+        .withIndex("by_user", q => q.eq("userId", userId))
+        .collect();
 
-            return { 
-                ...p, 
-                holdings, 
-                simpleHoldings: simpleHoldings.length > 0 ? simpleHoldings : undefined,
-                portfolioType: p.portfolioType || "live" // Default to "live" for backward compatibility
-            };
-        })
-    );
+    // Group holdings by portfolioId in memory (O(n) instead of N+1 queries)
+    const holdingsByPortfolio = new Map<string, typeof allHoldings>();
+    for (const holding of allHoldings) {
+        const existing = holdingsByPortfolio.get(holding.portfolioId) || [];
+        existing.push(holding);
+        holdingsByPortfolio.set(holding.portfolioId, existing);
+    }
+
+    // Group simpleHoldings by portfolioId
+    const simpleHoldingsByPortfolio = new Map<string, typeof allSimpleHoldings>();
+    for (const sh of allSimpleHoldings) {
+        const existing = simpleHoldingsByPortfolio.get(sh.portfolioId) || [];
+        existing.push(sh);
+        simpleHoldingsByPortfolio.set(sh.portfolioId, existing);
+    }
+
+    // Combine portfolios with their holdings
+    const portfoliosWithHoldings = portfolios.map((p) => {
+        const holdings = holdingsByPortfolio.get(p._id) || [];
+        const simpleHoldings = simpleHoldingsByPortfolio.get(p._id) || [];
+
+        return {
+            ...p,
+            holdings,
+            simpleHoldings: simpleHoldings.length > 0 ? simpleHoldings : undefined,
+            portfolioType: p.portfolioType || "live"
+        };
+    });
+
     return portfoliosWithHoldings;
   },
 });

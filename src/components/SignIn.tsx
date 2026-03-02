@@ -5,11 +5,10 @@ import { Button } from "./ui/button";
 
 export function SignIn() {
   const { signIn } = useAuthActions();
-  const redirectTo = typeof window !== "undefined" ? window.location.href : "/";
   return (
     <Button
-      onClick={() => void signIn("google", {redirectTo: redirectTo})}
-      className="w-full gap-2 h-12 text-base hover:bg-accent active:scale-[0.98] transition-all bg-background text-foreground border border-border font-semibold shadow-md hover:shadow-lg"
+      onClick={() => void signIn("google", { redirectTo: "/holdings" })}
+      className="w-full gap-2 h-12 text-base hover:bg-gray-100 active:scale-[0.98] transition-all bg-white text-black border border-gray-300 font-semibold shadow-md hover:shadow-lg"
       size="lg"
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -34,7 +33,7 @@ export function SignIn() {
     </Button>
   );
 }
- 
+
 export function SignOut() {
   const { signOut } = useAuthActions();
   return <Button onClick={() => void signOut()}>Sign out</Button>;

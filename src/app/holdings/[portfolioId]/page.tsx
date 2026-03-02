@@ -87,7 +87,7 @@ export default function PortfolioHoldingsPage() {
     return (
       <div className="flex min-h-screen bg-background">
         <main className="flex-1 overflow-y-auto">
-          <div className="p-8">
+          <div className="p-4 lg:p-8">
             <div className="mb-4">
               <Button variant="ghost" onClick={() => router.push("/holdings")} className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
@@ -335,16 +335,16 @@ export default function PortfolioHoldingsPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8 space-y-6">
+      <main className="flex-1 overflow-y-auto bg-background">
+        <div className="p-4 lg:p-8 space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Button variant="ghost" size="icon" onClick={() => router.push("/holdings")} aria-label="Back to holdings">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold">{portfolio.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold truncate max-w-[200px] sm:max-w-none">{portfolio.name}</h1>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-lg font-semibold">£{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   {!isManual && (
@@ -359,13 +359,13 @@ export default function PortfolioHoldingsPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="destructive" onClick={deletePortfolio} className="gap-2">
+              <Button variant="destructive" size="sm" onClick={deletePortfolio} className="gap-1 sm:gap-2">
                 <Trash2 className="h-4 w-4" />
-                Delete Portfolio
+                <span className="hidden sm:inline">Delete Portfolio</span>
               </Button>
-              <Button onClick={addHolding} className="gap-2">
+              <Button size="sm" onClick={addHolding} className="gap-1 sm:gap-2">
                 <Plus className="h-4 w-4" />
-                Add Holding
+                <span className="hidden sm:inline">Add Holding</span>
               </Button>
             </div>
           </div>
@@ -521,8 +521,9 @@ function SimpleHoldingForm({
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="lg:col-span-2">
-          <label className="text-sm text-muted-foreground">Name</label>
+          <label htmlFor="simple-name" className="text-sm text-muted-foreground">Name</label>
           <Input
+            id="simple-name"
             value={simpleEdited.name || ""}
             onChange={(e) => setEditedValues({ ...simpleEdited, name: e.target.value })}
             placeholder="e.g., Vanguard Global All Cap"
@@ -530,8 +531,9 @@ function SimpleHoldingForm({
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">Value (£)</label>
+          <label htmlFor="simple-value" className="text-sm text-muted-foreground">Value (£)</label>
           <Input
+            id="simple-value"
             type="number"
             step="any"
             value={simpleEdited.value ?? ""}
@@ -551,8 +553,9 @@ function SimpleHoldingForm({
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">Account</label>
+          <label htmlFor="simple-account" className="text-sm text-muted-foreground">Account</label>
           <Input
+            id="simple-account"
             value={simpleEdited.accountName || ""}
             onChange={(e) => setEditedValues({ ...simpleEdited, accountName: e.target.value })}
             placeholder="e.g., S&S ISA"
@@ -560,8 +563,9 @@ function SimpleHoldingForm({
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">Type</label>
+          <label htmlFor="simple-type" className="text-sm text-muted-foreground">Type</label>
           <Input
+            id="simple-type"
             value={simpleEdited.holdingType || ""}
             onChange={(e) => setEditedValues({ ...simpleEdited, holdingType: e.target.value })}
             placeholder="e.g., Fund, Pension"
@@ -570,8 +574,9 @@ function SimpleHoldingForm({
         </div>
       </div>
       <div>
-        <label className="text-sm text-muted-foreground">Notes</label>
+        <label htmlFor="simple-notes" className="text-sm text-muted-foreground">Notes</label>
         <Input
+          id="simple-notes"
           value={simpleEdited.notes || ""}
           onChange={(e) => setEditedValues({ ...simpleEdited, notes: e.target.value })}
           placeholder="Optional notes"
@@ -624,8 +629,9 @@ function LiveHoldingForm({
           >
             Find UK ETFs
           </a>
-          <label className="text-sm text-muted-foreground">Symbol</label>
+          <label htmlFor="live-symbol" className="text-sm text-muted-foreground">Symbol</label>
           <Input
+            id="live-symbol"
             value={liveEdited.symbol || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, symbol: e.target.value })}
             placeholder="e.g., ACWI"
@@ -633,8 +639,9 @@ function LiveHoldingForm({
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">Exchange</label>
+          <label htmlFor="live-exchange" className="text-sm text-muted-foreground">Exchange</label>
           <Input
+            id="live-exchange"
             value={liveEdited.exchange || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, exchange: e.target.value })}
             placeholder="e.g., LSE"
@@ -642,8 +649,9 @@ function LiveHoldingForm({
           />
         </div>
         <div className="lg:col-span-2">
-          <label className="text-sm text-muted-foreground">Name</label>
+          <label htmlFor="live-name" className="text-sm text-muted-foreground">Name</label>
           <Input
+            id="live-name"
             value={liveEdited.name || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, name: e.target.value })}
             placeholder="e.g., iShares MSCI ACWI"
@@ -651,8 +659,9 @@ function LiveHoldingForm({
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">Account</label>
+          <label htmlFor="live-account" className="text-sm text-muted-foreground">Account</label>
           <Input
+            id="live-account"
             value={liveEdited.accountName || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, accountName: e.target.value })}
             placeholder="e.g., S&S ISA"
@@ -660,20 +669,21 @@ function LiveHoldingForm({
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">Currency</label>
+          <label htmlFor="live-currency" className="text-sm text-muted-foreground">Currency</label>
           <Input
+            id="live-currency"
             value={liveEdited.currency || "GBP"}
             readOnly
             className="mt-1 bg-muted"
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">Type</label>
+          <label htmlFor="live-type" className="text-sm text-muted-foreground">Type</label>
           <Select
             value={liveEdited.dataType || "etf"}
             onValueChange={(value) => setEditedValues({ ...liveEdited, dataType: value })}
           >
-            <SelectTrigger className="mt-1">
+            <SelectTrigger id="live-type" className="mt-1" aria-label="Select data type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -683,8 +693,9 @@ function LiveHoldingForm({
           </Select>
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">Shares</label>
+          <label htmlFor="live-shares" className="text-sm text-muted-foreground">Shares</label>
           <Input
+            id="live-shares"
             type="number"
             step="any"
             value={liveEdited.shares ?? ""}
@@ -704,10 +715,11 @@ function LiveHoldingForm({
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">
+          <label htmlFor="live-avg-price" className="text-sm text-muted-foreground">
             Avg Price {liveEdited.currency === "GBp" ? "(pence)" : liveEdited.currency === "USD" ? "($)" : liveEdited.currency === "EUR" ? "(€)" : "(£)"}
           </label>
           <Input
+            id="live-avg-price"
             type="number"
             step="any"
             value={liveEdited.avgPrice ?? ""}
@@ -727,10 +739,11 @@ function LiveHoldingForm({
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">
+          <label htmlFor="live-current-price" className="text-sm text-muted-foreground">
             Current Price {liveEdited.currency === "GBp" ? "(pence)" : liveEdited.currency === "USD" ? "($)" : liveEdited.currency === "EUR" ? "(€)" : "(£)"}
           </label>
           <Input
+            id="live-current-price"
             type="number"
             step="any"
             value={liveEdited.currentPrice ?? ""}
@@ -740,8 +753,9 @@ function LiveHoldingForm({
           />
         </div>
         <div>
-          <label className="text-sm text-muted-foreground">Purchase Date</label>
+          <label htmlFor="live-purchase-date" className="text-sm text-muted-foreground">Purchase Date</label>
           <Input
+            id="live-purchase-date"
             type="date"
             value={liveEdited.purchaseDate || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, purchaseDate: e.target.value })}

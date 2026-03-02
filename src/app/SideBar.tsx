@@ -31,7 +31,7 @@ const menuSections = [
       },
       {
         title: "Holdings Overview",
-        url: "/",
+        url: "/holdings-overview",
         icon: Home,
       },
       {

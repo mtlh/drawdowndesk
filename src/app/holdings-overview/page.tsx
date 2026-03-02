@@ -17,8 +17,8 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts"
-import { calculatePortfolioSummary, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../lib/calculatePortfolioOverview"
-import { api } from "../../convex/_generated/api"
+import { calculatePortfolioSummary, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../../lib/calculatePortfolioOverview"
+import { api } from "../../../convex/_generated/api"
 import { useQuery } from "convex/react"
 import { usePortfolioData } from "@/hooks/usePortfolioData"
 import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
@@ -141,8 +141,8 @@ export default function PortfolioOverview() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+      <main className="flex-1 overflow-y-auto bg-background">
+        <div className="p-4 lg:p-8">
         {/* Header Row with Total Value and Quick Stats */}
         <div className="mb-6 flex items-center justify-between gap-4 flex-wrap min-h-[88px]">
           {/* Total Value - Left */}

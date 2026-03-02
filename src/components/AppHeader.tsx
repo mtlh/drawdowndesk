@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { Moon, Sun, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
 import { useUserTheme } from "@/hooks/useUserTheme";
 
 interface PageInfo {
@@ -65,14 +64,8 @@ export function AppHeader() {
   const { toggleSidebar, state } = useSidebar();
   const { theme, setTheme } = useUserTheme();
 
-  useEffect(() => {
-    // Apply theme from database once loaded (skip when undefined to let layout script handle it)
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else if (theme === "light") {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme]);
+  // Don't touch the theme class here - layout script and useUserTheme handle it
+  // This prevents flash by not overriding what was set before React
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";

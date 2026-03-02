@@ -188,29 +188,39 @@ export default function NetWorthPage() {
     return { growth, growthPercent, ytd, ytdPercent }
   }, [getSnapshots, totalNetWorth])
 
-  // Get unique tags
-  const uniqueTags = [...new Set(accounts.map(a => a.tag).filter(Boolean))] as string[]
+  // Get unique tags (memoized)
+  const uniqueTags = useMemo(() =>
+    [...new Set(accounts.map(a => a.tag).filter(Boolean))] as string[],
+    [accounts]
+  )
 
-  // Get unique portfolios that have accounts linked
-  const portfoliosWithAccounts = portfolios.filter(p => accounts.some(a => a.portfolioId === p._id))
+  // Get unique portfolios that have accounts linked (memoized)
+  const portfoliosWithAccounts = useMemo(() =>
+    portfolios.filter(p => accounts.some(a => a.portfolioId === p._id)),
+    [portfolios, accounts]
+  )
 
-  // Filter and sort accounts
-  const filteredAccounts = accounts
-    .filter(account => {
-      if (filterType !== "all" && account.accountType !== filterType) return false
-      if (filterTag !== "all" && account.tag !== filterTag) return false
-      if (filterPortfolio !== "all" && account.portfolioId !== filterPortfolio) return false
-      return true
-    })
-    .sort((a, b) => {
-      if (sortBy === "value") return b.value - a.value
-      if (sortBy === "name") return a.name.localeCompare(b.name)
-      if (sortBy === "type") return a.accountType.localeCompare(b.accountType)
-      return 0
-    })
+  // Filter and sort accounts (memoized to prevent recalculation on every render)
+  const filteredAccounts = useMemo(() => {
+    return accounts
+      .filter(account => {
+        if (filterType !== "all" && account.accountType !== filterType) return false
+        if (filterTag !== "all" && account.tag !== filterTag) return false
+        if (filterPortfolio !== "all" && account.portfolioId !== filterPortfolio) return false
+        return true
+      })
+      .sort((a, b) => {
+        if (sortBy === "value") return b.value - a.value
+        if (sortBy === "name") return a.name.localeCompare(b.name)
+        if (sortBy === "type") return a.accountType.localeCompare(b.accountType)
+        return 0
+      })
+  }, [accounts, filterType, filterTag, filterPortfolio, sortBy])
 
-  // Calculate total for filtered accounts
-  const filteredTotal = filteredAccounts.reduce((sum, a) => sum + a.value, 0)
+  // Calculate total for filtered accounts (memoized)
+  const filteredTotal = useMemo(() => {
+    return filteredAccounts.reduce((sum, a) => sum + a.value, 0)
+  }, [filteredAccounts])
 
   // Get the selected portfolio for banner
   const selectedPortfolio = filterPortfolio !== "all"
@@ -309,8 +319,8 @@ export default function NetWorthPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+      <main className="flex-1 overflow-y-auto bg-background">
+        <div className="p-4 lg:p-8">
           <div className="mb-8 flex items-center justify-between gap-4 flex-wrap min-h-[88px]">
             {/* Net Worth - Left */}
             <div className="flex flex-col justify-center">
@@ -362,7 +372,7 @@ export default function NetWorthPage() {
             <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-lg">
               {portfoliosWithAccounts.length > 0 && (
                 <Select value={filterPortfolio} onValueChange={(v: string) => setFilterPortfolio(v)}>
-                  <SelectTrigger className="w-[150px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                  <SelectTrigger className="w-[150px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Filter by portfolio">
                     <SelectValue placeholder="Portfolio" />
                   </SelectTrigger>
                   <SelectContent>
@@ -375,7 +385,7 @@ export default function NetWorthPage() {
               )}
               <div className="w-px h-6 bg-border" />
               <Select value={filterType} onValueChange={(v: AccountType | "all") => setFilterType(v)}>
-                <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Filter by account type">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -389,7 +399,7 @@ export default function NetWorthPage() {
                 <>
                   <div className="w-px h-6 bg-border" />
                   <Select value={filterTag} onValueChange={(v: string) => setFilterTag(v)}>
-                    <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                    <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Filter by tag">
                       <SelectValue placeholder="Tag" />
                     </SelectTrigger>
                     <SelectContent>
@@ -403,7 +413,7 @@ export default function NetWorthPage() {
               )}
               <div className="w-px h-6 bg-border" />
               <Select value={sortBy} onValueChange={(v: "value" | "name" | "type") => setSortBy(v)}>
-                <SelectTrigger className="w-[100px] h-8 border-0 bg-transparent shadow-none focus:ring-0">
+                <SelectTrigger className="w-[100px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Sort by">
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent>
@@ -439,7 +449,7 @@ export default function NetWorthPage() {
                         <td colSpan={5} className="p-12 text-center">
                           <div className="flex flex-col items-center">
                             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                              <span className="text-3xl">🏦</span>
+                              <span className="text-3xl" aria-hidden="true">🏦</span>
                             </div>
                             <p className="text-lg font-medium mb-2">
                               {accounts.length === 0
@@ -534,7 +544,7 @@ export default function NetWorthPage() {
                           <div className="font-medium">{item.accountName}</div>
                         </td>
                         <td className="p-3">
-                          <span className="inline-flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1" aria-hidden="true">
                             📈 Investment
                           </span>
                         </td>
@@ -676,8 +686,9 @@ export default function NetWorthPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Account Name</label>
+                    <label htmlFor="account-name" className="text-sm font-medium">Account Name</label>
                     <Input
+                      id="account-name"
                       placeholder="e.g., NatWest Current Account"
                       value={newAccountName}
                       onChange={(e) => setNewAccountName(e.target.value)}
@@ -685,9 +696,9 @@ export default function NetWorthPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Account Type</label>
+                    <label htmlFor="account-type" className="text-sm font-medium">Account Type</label>
                     <Select value={newAccountType} onValueChange={(v: AccountType) => setNewAccountType(v)}>
-                      <SelectTrigger className="mt-2">
+                      <SelectTrigger id="account-type" className="mt-2" aria-label="Select account type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -698,8 +709,9 @@ export default function NetWorthPage() {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Purpose Tag (optional)</label>
+                    <label htmlFor="account-tag" className="text-sm font-medium">Purpose Tag (optional)</label>
                     <Input
+                      id="account-tag"
                       placeholder="e.g., Emergency Fund, House Fund"
                       value={newAccountTag}
                       onChange={(e) => setNewAccountTag(e.target.value)}
@@ -707,8 +719,9 @@ export default function NetWorthPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Current Value (£)</label>
+                    <label htmlFor="account-value" className="text-sm font-medium">Current Value (£)</label>
                     <Input
+                      id="account-value"
                       type="number"
                       step="0.01"
                       placeholder="1000.00"
@@ -718,9 +731,9 @@ export default function NetWorthPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Link to Portfolio (optional)</label>
+                    <label htmlFor="account-portfolio" className="text-sm font-medium">Link to Portfolio (optional)</label>
                     <Select value={newAccountPortfolioId || "none"} onValueChange={(v) => setNewAccountPortfolioId(v === "none" ? "" : v)}>
-                      <SelectTrigger className="mt-2">
+                      <SelectTrigger id="account-portfolio" className="mt-2" aria-label="Select portfolio to link">
                         <SelectValue placeholder="Select a portfolio" />
                       </SelectTrigger>
                       <SelectContent>
@@ -735,8 +748,9 @@ export default function NetWorthPage() {
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Notes (optional)</label>
+                    <label htmlFor="account-notes" className="text-sm font-medium">Notes (optional)</label>
                     <Input
+                      id="account-notes"
                       placeholder="Any additional notes"
                       value={newAccountNotes}
                       onChange={(e) => setNewAccountNotes(e.target.value)}

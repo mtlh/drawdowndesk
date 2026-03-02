@@ -58,8 +58,9 @@ export default function MonteCarloSimulator() {
       {/* INPUT SECTION */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 w-full max-w-3xl">
         <div>
-          <label className="block mb-2 font-medium text-sm text-muted-foreground">Year Period</label>
+          <label htmlFor="year-period" className="block mb-2 font-medium text-sm text-muted-foreground">Year Period</label>
           <Input
+            id="year-period"
             type="number"
             placeholder="e.g. 20"
             className="w-full p-2 border rounded-md bg-card"
@@ -76,9 +77,9 @@ export default function MonteCarloSimulator() {
           />
         </div>
         <div>
-          <label className="block mb-2 font-medium text-sm text-muted-foreground">Asset</label>
+          <label htmlFor="asset-select" className="block mb-2 font-medium text-sm text-muted-foreground">Asset</label>
           <Select onValueChange={(value) => setAssetName(value)} defaultValue="FTSE Global All Cap">
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger id="asset-select" className="w-[180px]" aria-label="Select asset">
               <SelectValue placeholder="Select an asset" />
             </SelectTrigger>
             <SelectContent>

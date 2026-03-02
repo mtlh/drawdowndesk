@@ -164,11 +164,14 @@ export const getAccountsByPortfolio = query({
       return { error: "User not found." };
     }
 
+    // Use index to filter directly in database instead of fetching all and filtering in JS
     const accounts = await ctx.db
       .query("accounts")
-      .withIndex("by_user", q => q.eq("userId", userId))
+      .withIndex("by_user_portfolio", q =>
+        q.eq("userId", userId).eq("portfolioId", args.portfolioId)
+      )
       .collect();
 
-    return accounts.filter(a => a.portfolioId === args.portfolioId);
+    return accounts;
   },
 });

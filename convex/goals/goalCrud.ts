@@ -133,58 +133,69 @@ export const getGoalsWithPortfolio = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    // Get portfolio values for goals with linked portfolios
-    const goalsWithPortfolio = await Promise.all(
-      goals.map(async (goal) => {
-        if (!goal.linkedPortfolioId) {
-          return { ...goal, portfolioValue: null, portfolioName: null };
+    // Optimization: Fetch all portfolios, holdings, and simpleHoldings in bulk
+    const portfolios = await ctx.db
+      .query("portfolios")
+      .withIndex("by_userPorfolio", q => q.eq("userId", userId))
+      .collect();
+
+    const allHoldings = await ctx.db
+      .query("holdings")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    const allSimpleHoldings = await ctx.db
+      .query("simpleHoldings")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    // Create lookup maps for O(1) access
+    const portfolioMap = new Map(portfolios.map(p => [p._id, p]));
+    const holdingsByPortfolio = new Map<string, typeof allHoldings>();
+    for (const h of allHoldings) {
+      const existing = holdingsByPortfolio.get(h.portfolioId) || [];
+      existing.push(h);
+      holdingsByPortfolio.set(h.portfolioId, existing);
+    }
+    const simpleHoldingsByPortfolio = new Map<string, typeof allSimpleHoldings>();
+    for (const sh of allSimpleHoldings) {
+      const existing = simpleHoldingsByPortfolio.get(sh.portfolioId) || [];
+      existing.push(sh);
+      simpleHoldingsByPortfolio.set(sh.portfolioId, existing);
+    }
+
+    // Process goals with O(1) lookups instead of N+1 queries
+    return goals.map(goal => {
+      if (!goal.linkedPortfolioId) {
+        return { ...goal, portfolioValue: null, portfolioName: null };
+      }
+
+      const portfolio = portfolioMap.get(goal.linkedPortfolioId);
+      if (!portfolio || portfolio.userId !== userId) {
+        return { ...goal, portfolioValue: null, portfolioName: null };
+      }
+
+      const holdings = holdingsByPortfolio.get(goal.linkedPortfolioId) || [];
+      const simpleHoldings = simpleHoldingsByPortfolio.get(goal.linkedPortfolioId) || [];
+
+      // Calculate holdings value with currency conversion
+      const holdingsValue = holdings.reduce((sum, h) => {
+        const rawValue = (h.shares || 0) * (h.currentPrice || 0);
+        if (h.currency === "GBp") {
+          return sum + (rawValue / 100);
         }
+        return sum + rawValue;
+      }, 0);
 
-        const portfolio = await ctx.db.get(goal.linkedPortfolioId);
-        if (!portfolio || portfolio.userId !== userId) {
-          return { ...goal, portfolioValue: null, portfolioName: null };
-        }
+      const simpleHoldingsValue = simpleHoldings.reduce((sum, s) => sum + (s.value || 0), 0);
+      const portfolioValue = holdingsValue + simpleHoldingsValue;
 
-        // Calculate portfolio total value
-        const holdings = await ctx.db
-          .query("holdings")
-          .withIndex("by_portfolio", q =>
-            q.eq("userId", userId).eq("portfolioId", goal.linkedPortfolioId!)
-          )
-          .collect();
-
-        const simpleHoldings = await ctx.db
-          .query("simpleHoldings")
-          .withIndex("by_portfolio", q =>
-            q.eq("userId", userId).eq("portfolioId", goal.linkedPortfolioId!)
-          )
-          .collect();
-
-        // Calculate holdings value with currency conversion
-        // GBp (pence) needs to be divided by 100 to get GBP
-        // Note: USD/EUR to GBP conversion is not implemented - values remain in original currency
-        const holdingsValue = holdings.reduce((sum, h) => {
-          const rawValue = (h.shares || 0) * (h.currentPrice || 0);
-          // Convert GBp to GBP
-          if (h.currency === "GBp") {
-            return sum + (rawValue / 100);
-          }
-          return sum + rawValue;
-        }, 0);
-
-        // Simple holdings are already in GBP per schema
-        const simpleHoldingsValue = simpleHoldings.reduce((sum, s) => sum + (s.value || 0), 0);
-        const portfolioValue = holdingsValue + simpleHoldingsValue;
-
-        return {
-          ...goal,
-          portfolioValue,
-          portfolioName: portfolio.name,
-        };
-      })
-    );
-
-    return goalsWithPortfolio;
+      return {
+        ...goal,
+        portfolioValue,
+        portfolioName: portfolio.name,
+      };
+    });
   },
 });
 

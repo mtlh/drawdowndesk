@@ -315,7 +315,7 @@ export default function OneOffCashflow() {
 
   return (
     <div className="flex h-screen bg-background">
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-8 space-y-8">
           {/* Header */}
           <div className="space-y-2"></div>
@@ -386,7 +386,7 @@ export default function OneOffCashflow() {
                         value={data.yearsToSpread.toString()}
                         onValueChange={(value) => setData({ ...data, yearsToSpread: Number(value) })}
                       >
-                        <SelectTrigger className="w-[60px]">
+                        <SelectTrigger className="w-[60px]" aria-label="Select years to spread">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -478,7 +478,7 @@ export default function OneOffCashflow() {
 
                     {/* Net Amount Comparison */}
                     <div className="space-y-3">
-                      <h4 className="font-semibold">Net Amount After Tax</h4>
+                      <h2 className="font-semibold">Net Amount After Tax</h2>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 rounded-lg border bg-destructive/5">
                           <div className="flex justify-between text-sm mb-1">
@@ -502,7 +502,7 @@ export default function OneOffCashflow() {
                     <div className="grid md:grid-cols-2 gap-8">
                       {/* Income Tax Breakdown */}
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-lg">Income Tax ({isRetired ? "Pension" : "Employment"} Rates)</h4>
+                        <h2 className="font-semibold text-lg">Income Tax ({isRetired ? "Pension" : "Employment"} Rates)</h2>
                         <div className="space-y-2 text-sm border rounded-lg p-4">
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Current Income:</span>
@@ -594,7 +594,7 @@ export default function OneOffCashflow() {
 
                       {/* Capital Gains Tax Breakdown */}
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-lg">Capital Gains Tax</h4>
+                        <h2 className="font-semibold text-lg">Capital Gains Tax</h2>
                         <div className="space-y-2 text-sm border rounded-lg p-4">
                           {singleyearcapitalGainsBreakdown}
                           <Separator />
@@ -629,7 +629,7 @@ export default function OneOffCashflow() {
                     <div className="grid md:grid-cols-2 gap-8">
                       {/* Income Tax Breakdown */}
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-lg">Income Tax ({isRetired ? "Pension" : "Employment"} Rates) - {data.yearsToSpread} years</h4>
+                        <h2 className="font-semibold text-lg">Income Tax ({isRetired ? "Pension" : "Employment"} Rates) - {data.yearsToSpread} years</h2>
                         <div className="space-y-2 text-sm border rounded-lg p-4">
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Annual Income:</span>
@@ -723,7 +723,7 @@ export default function OneOffCashflow() {
 
                       {/* Capital Gains Tax Breakdown */}
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-lg">Capital Gains Tax</h4>
+                        <h2 className="font-semibold text-lg">Capital Gains Tax</h2>
                         <div className="space-y-2 text-sm border rounded-lg p-4">
                           {multicapitalGainsBreakdown}
                           <Separator />

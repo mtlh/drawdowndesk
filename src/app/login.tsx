@@ -2,9 +2,9 @@
 
 import { SignIn } from "@/components/SignIn"
 import { Button } from "@/components/ui/button"
-import { Github, TrendingUp, BarChart3, Target, Wallet, Calculator, TrendingDown } from "lucide-react"
+import { Github, TrendingUp, Target, Wallet } from "lucide-react"
 import Image from "next/image"
-import favicon from "../app/favicon.ico"
+import favicon from "./favicon.ico"
 import {
   PieChart,
   Pie,
@@ -19,7 +19,7 @@ import {
   Bar,
 } from "recharts"
 
-export default function SignInPage() {
+export default function Login() {
   // Sample data for charts
   const portfolioData = [
     { name: "Stocks", value: 45, color: "#4F46E5" },
@@ -44,16 +44,16 @@ export default function SignInPage() {
   ]
 
   const performanceData = [
-    { month: "W1", value: 100000 },
-    { month: "W2", value: 102500 },
-    { month: "W3", value: 101800 },
-    { month: "W4", value: 104200 },
-    { month: "W5", value: 106500 },
-    { month: "W6", value: 108000 },
+    { month: "Jan", value: 100000 },
+    { month: "Feb", value: 105000 },
+    { month: "Mar", value: 103000 },
+    { month: "Apr", value: 108000 },
+    { month: "May", value: 112000 },
+    { month: "Jun", value: 115000 },
   ]
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 lg:p-10 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-6 lg:p-10 relative overflow-hidden bg-[#0f172a]">
       {/* Background with dark overlay */}
       <div className="absolute inset-0 bg-[#0f172a]">
         <div
@@ -64,35 +64,33 @@ export default function SignInPage() {
       </div>
 
       {/* Main card - improved contrast */}
-      <div className="relative w-[80vw] h-[85vh] min-w-[1000px] min-h-[700px] bg-white/5 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row">
+      <div className="relative w-full lg:w-[90vw] xl:w-[70vw] bg-white/5 backdrop-blur-md rounded-2xl lg:rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row">
         {/* Left side - Login */}
-        <div className="lg:w-5/12 p-8 lg:p-12 flex flex-col bg-white/5 overflow-hidden">
+        <div className="w-full lg:w-6/12 p-6 lg:p-12 flex flex-col bg-white/5 overflow-hidden lg:min-h-[600px]">
           {/* Logo with favicon - at top */}
-          <div className="flex items-center gap-4">
-            <Image src={favicon} alt="Drawdown Desk" width={48} height={48} className="rounded-xl" />
-            <span className="text-3xl font-bold text-white">Drawdown Desk</span>
+          <div className="flex items-center gap-3 mb-6">
+            <Image src={favicon} alt="Drawdown Desk" width={36} height={36} className="rounded-xl lg:w-12 lg:h-12" />
+            <span className="text-xl lg:text-3xl font-bold text-white">Drawdown Desk</span>
           </div>
 
-          {/* Heading + Buttons - centered in middle */}
-          <div className="mt-auto mb-auto">
-            <div className="mb-8">
-              <h1 className="text-5xl font-bold mb-3 text-white">
-                Welcome back
-              </h1>
-              <p className="text-slate-300 text-lg">
-                Sign in to track your investments.
-              </p>
-            </div>
+          {/* Heading + Buttons - centered vertically on desktop */}
+          <div className="flex-1 flex flex-col justify-center">
+            <h1 className="text-2xl lg:text-5xl font-bold text-white">
+              Welcome back
+            </h1>
+            <p className="text-slate-300 text-sm lg:text-lg mt-2 mb-6">
+              Sign in to track your investments.
+            </p>
 
-            {/* Sign in buttons - same width */}
-            <div className="space-y-4 w-full">
+            {/* Sign in buttons - limited width */}
+            <div className="space-y-3 w-full max-w-sm">
             <div className="w-full">
               <div className="group">
                 <SignIn />
               </div>
             </div>
             <a href="https://github.com/mtlh/drawdowndesk" target="_blank" rel="noopener noreferrer" className="block w-full">
-              <Button variant="outline" className="w-full gap-2 border-white/20 h-12 text-base hover:border-white/50 hover:bg-white/10 text-white bg-black/70 transition-all font-semibold shadow-md hover:shadow-lg">
+              <Button style={{ backgroundColor: '#000000', borderColor: '#374151' }} className="w-full gap-2 h-12 text-base hover:bg-gray-800 text-white transition-all font-semibold shadow-md">
                 <Github className="w-5 h-5" />
                 View on GitHub
               </Button>
@@ -101,14 +99,14 @@ export default function SignInPage() {
           </div>
         </div>
 
-        {/* Right side - Dashboard preview */}
-        <div className="lg:w-7/12 bg-white/5 p-8 lg:p-12 overflow-hidden">
+        {/* Right side - Dashboard preview - hidden on mobile */}
+        <div className="hidden lg:flex lg:w-6/12 bg-white/5 overflow-hidden">
           {/* Dashboard preview card */}
-          <div className="bg-white rounded-2xl border border-white/50 shadow-lg overflow-hidden h-full">
+          <div className="bg-white border-l-0 border border-white/50 shadow-lg overflow-hidden h-full w-full">
             {/* Dashboard header */}
             <div className="bg-slate-100/80 px-6 py-4 border-b border-slate-200/50 flex items-center justify-between">
               <span className="text-sm font-semibold text-slate-700">Portfolio Overview</span>
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5" aria-hidden="true">
                 <div className="w-3 h-3 rounded-full bg-red-400"></div>
                 <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
@@ -149,34 +147,32 @@ export default function SignInPage() {
               </div>
 
               {/* Performance Chart */}
-              <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-5">
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">Portfolio Performance</h4>
-                <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
-                  <ResponsiveContainer width="100%" height={120}>
-                    <AreaChart data={performanceData}>
-                      <defs>
-                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v) => `£${v/1000}k`} />
+              <div className="bg-slate-50/80 rounded-xl p-5">
+                <h2 className="text-sm font-semibold text-slate-700 mb-4">Portfolio Performance</h2>
+                <ResponsiveContainer width="100%" height={120}>
+                  <AreaChart data={performanceData}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="month" stroke="#64748b" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+                    <YAxis hide />
                     <Tooltip
-                      contentStyle={{ backgroundColor: "var(--background)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", color: "var(--foreground)" }}
-                      labelStyle={{ color: "var(--foreground)" }}
+                      contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px", color: "#1e293b", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                      labelStyle={{ color: "#64748b", fontSize: "11px", marginBottom: "4px" }}
                       formatter={(value: number) => [`£${value.toLocaleString()}`, "Value"]}
                     />
                     <Area type="monotone" dataKey="value" stroke="#4F46E5" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                  </div>
-                </div>
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
 
               {/* Middle row - Allocation & Cashflow */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50/80 rounded-xl p-4">
-                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Asset Allocation</h4>
+                  <h2 className="text-sm font-semibold text-slate-700 mb-3">Asset Allocation</h2>
                   <div className="flex items-center gap-3">
                     <ResponsiveContainer width={100} height={100}>
                       <PieChart>
@@ -207,66 +203,42 @@ export default function SignInPage() {
                   </div>
                 </div>
 
-                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-4">
-                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Monthly Cashflow</h4>
-                  <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
-                    <ResponsiveContainer width="100%" height={100}>
-                      <BarChart data={cashflowData}>
-                        <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                        <YAxis stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v) => `£${v/1000}k`} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "6px", fontSize: "11px", color: "hsl(var(--foreground))" }}
-                          labelStyle={{ color: "hsl(var(--foreground))" }}
-                        />
-                        <Bar dataKey="value" fill="#4F46E5" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                <div className="bg-slate-50/80 rounded-xl p-4">
+                  <h2 className="text-sm font-semibold text-slate-700 mb-3">Monthly Cashflow</h2>
+                  <ResponsiveContainer width="100%" height={100}>
+                    <BarChart data={cashflowData}>
+                      <XAxis dataKey="month" stroke="#64748b" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+                      <YAxis hide />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "11px", color: "#1e293b", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                        labelStyle={{ color: "#64748b", fontSize: "11px", marginBottom: "2px" }}
+                      />
+                      <Bar dataKey="value" fill="#4F46E5" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Goals */}
-              <div className="bg-slate-50/80 rounded-xl p-5">
-                <h4 className="text-sm font-semibold text-slate-700 mb-4">Financial Goals</h4>
-                <div className="space-y-3">
-                  {goalsData.map((goal, index) => (
-                    <div key={index}>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-500">{goal.name}</span>
-                        <span className="font-medium text-slate-700">{goal.progress}%</span>
-                      </div>
-                      <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#4F46E5] rounded-full"
-                          style={{ width: `${goal.progress}%` }}
-                        ></div>
-                      </div>
+              {/* Goals - top goal only */}
+              <div className="bg-slate-50/80 rounded-xl p-4">
+                <h2 className="text-sm font-semibold text-slate-700 mb-3">Financial Goal</h2>
+                {goalsData.slice(0, 1).map((goal, index) => (
+                  <div key={index}>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-slate-500">{goal.name}</span>
+                      <span className="font-medium text-slate-700">{goal.progress}%</span>
                     </div>
-                  ))}
-                </div>
+                    <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#4F46E5] rounded-full"
+                        style={{ width: `${goal.progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              {/* Bottom row - Quick actions */}
-              <div className="grid grid-cols-4 gap-3">
-                <div className="bg-slate-50/80 rounded-xl p-3 text-center">
-                  <Calculator className="w-5 h-5 text-[#4F46E5] mx-auto mb-2" />
-                  <span className="text-xs text-slate-600">Cashflow</span>
-                </div>
-                <div className="bg-slate-50/80 rounded-xl p-3 text-center">
-                  <BarChart3 className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
-                  <span className="text-xs text-slate-600">Monte Carlo</span>
-                </div>
-                <div className="bg-slate-50/80 rounded-xl p-3 text-center">
-                  <TrendingDown className="w-5 h-5 text-amber-500 mx-auto mb-2" />
-                  <span className="text-xs text-slate-600">CGT Calc</span>
-                </div>
-                <div className="bg-slate-50/80 rounded-xl p-3 text-center">
-                  <Target className="w-5 h-5 text-purple-500 mx-auto mb-2" />
-                  <span className="text-xs text-slate-600">Goals</span>
-                </div>
-              </div>
-            </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
