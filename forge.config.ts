@@ -4,7 +4,6 @@ import { MakerZIP } from '@electron-forge/maker-zip';
 const config: ForgeConfig = {
   packagerConfig: {
     name: 'DrawdownDesk',
-    icon: './src/app/favicon',
   },
   makers: [
     new MakerZIP({}, ['win32']),

@@ -12,7 +12,7 @@
     "electron:compile": "tsc -p electron/tsconfig.json",
     "electron:dev": "npm run electron:compile && concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:start": "npm run electron:compile && electron .",
-    "electron:make": "npm run build && npm run electron:compile && electron-forge package --platform=win32 --arch=x64"
+    "electron:make": "npm run build && npm run electron:compile && electron-forge package --platform=win32 --arch=x64 && node -e \"const fs=require('fs');const path=require('path');const src='out/DrawdownDesk-win32-x64';const dest='release';if(!fs.existsSync(dest))fs.mkdirSync(dest);fs.cpSync(path.join(src,'DrawdownDesk.exe'),path.join(dest,'DrawdownDesk.exe'));console.log('Copied to release/')\""
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.91",
