@@ -120,7 +120,7 @@ export function AppHeader() {
         variant="ghost"
         size="icon"
         onClick={toggleTheme}
-        className="shrink-0"
+        className="shrink-0 transition-transform hover:scale-110 active:scale-95"
       >
         {theme === "light" ? (
           <Moon className="h-4 w-4" />

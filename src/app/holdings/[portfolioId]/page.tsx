@@ -49,6 +49,7 @@ export default function PortfolioHoldingsPage() {
   const [simpleHoldings, setSimpleHoldings] = useState<SimpleHolding[]>([]);
   const [selectedHoldingId, setSelectedHoldingId] = useState<string | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editedValues, setEditedValues] = useState<Partial<Holding>>({});
   const [editedSimpleValues, setEditedSimpleValues] = useState<Partial<SimpleHolding>>({});
 
@@ -147,6 +148,7 @@ export default function PortfolioHoldingsPage() {
       return;
     }
 
+    setIsSaving(true);
     try {
       if (isCreatingNew) {
         await updateHoldingMutation({
@@ -192,9 +194,8 @@ export default function PortfolioHoldingsPage() {
       setSelectedHoldingId(null);
       setIsCreatingNew(false);
       setEditedValues({});
-    } catch (error) {
-      console.error("Failed to save holding:", error);
-      alert("Failed to save holding. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -221,6 +222,7 @@ export default function PortfolioHoldingsPage() {
       return;
     }
 
+    setIsSaving(true);
     try {
       if (isCreatingNew) {
         await updateSimpleHoldingMutation({
@@ -254,9 +256,8 @@ export default function PortfolioHoldingsPage() {
       setSelectedHoldingId(null);
       setIsCreatingNew(false);
       setEditedSimpleValues({});
-    } catch (error) {
-      console.error("Failed to save holding:", error);
-      alert("Failed to save holding. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -477,6 +478,7 @@ export default function PortfolioHoldingsPage() {
                     onSave={saveSimpleHolding}
                     onDelete={isCreatingNew ? undefined : deleteSimpleHolding}
                     isCreating={isCreatingNew}
+                    isSaving={isSaving}
                   />
                 ) : (
                   <LiveHoldingForm
@@ -485,6 +487,7 @@ export default function PortfolioHoldingsPage() {
                     onSave={saveHolding}
                     onDelete={isCreatingNew ? undefined : deleteHolding}
                     isCreating={isCreatingNew}
+                    isSaving={isSaving}
                   />
                 )}
               </CardContent>
@@ -503,12 +506,14 @@ function SimpleHoldingForm({
   onSave,
   onDelete,
   isCreating,
+  isSaving,
 }: {
   editedValues: Partial<SimpleHolding>;
   setEditedValues: (values: Partial<SimpleHolding>) => void;
   onSave: () => void;
   onDelete?: () => void;
   isCreating: boolean;
+  isSaving: boolean;
 }) {
   const simpleEdited = editedValues as Partial<SimpleHolding>;
 
@@ -574,9 +579,9 @@ function SimpleHoldingForm({
         />
       </div>
       <div className="flex gap-2">
-        <Button onClick={onSave} className="gap-2">
+        <Button onClick={onSave} disabled={isSaving} className="gap-2">
           <Save className="h-4 w-4" />
-          {isCreating ? "Create" : "Save"}
+          {isSaving ? "Saving..." : isCreating ? "Create" : "Save"}
         </Button>
         {onDelete && (
           <Button variant="destructive" onClick={onDelete} className="gap-2">
@@ -596,12 +601,14 @@ function LiveHoldingForm({
   onSave,
   onDelete,
   isCreating,
+  isSaving,
 }: {
   editedValues: Partial<Holding>;
   setEditedValues: (values: Partial<Holding>) => void;
   onSave: () => void;
   onDelete?: () => void;
   isCreating: boolean;
+  isSaving: boolean;
 }) {
   const liveEdited = editedValues as Partial<Holding>;
 
@@ -743,9 +750,9 @@ function LiveHoldingForm({
         </div>
       </div>
       <div className="flex gap-2">
-        <Button onClick={onSave} className="gap-2">
+        <Button onClick={onSave} disabled={isSaving} className="gap-2">
           <Save className="h-4 w-4" />
-          {isCreating ? "Create" : "Save"}
+          {isSaving ? "Saving..." : isCreating ? "Create" : "Save"}
         </Button>
         {onDelete && (
           <Button variant="destructive" onClick={onDelete} className="gap-2">

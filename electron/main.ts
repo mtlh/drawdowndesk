@@ -1,6 +1,27 @@
-import { app, BrowserWindow, shell, Menu, Tray, nativeImage, NativeImage, protocol } from 'electron';
+import { app, BrowserWindow, shell, Menu, Tray, nativeImage, NativeImage, ipcMain } from 'electron';
 import path from 'path';
+import Store from 'electron-store';
 import { APP_VERSION, GITHUB_REPO, DOWNLOAD_FILENAME } from './version';
+
+// Window state store
+interface WindowState {
+  width: number;
+  height: number;
+  x?: number;
+  y?: number;
+  isMaximized?: boolean;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const store: any = new Store({
+  name: 'window-state',
+  defaults: {
+    windowState: {
+      width: 1400,
+      height: 900,
+    },
+  },
+});
 
 // Use production URL when packaged, development URL otherwise
 const isDev = !app.isPackaged;
@@ -22,6 +43,28 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 
 function createWindow() {
+  // Load saved window state with validation
+  const defaultState = { width: 1400, height: 900 };
+  let windowState = store.get('windowState') || defaultState;
+
+  // Validate window state - ensure it's on screen
+  const { screen } = require('electron');
+  const displays = screen.getAllDisplays();
+  const isOnScreen = displays.some((display: Electron.Display) => {
+    const bounds = display.bounds;
+    return windowState.x !== undefined &&
+           windowState.y !== undefined &&
+           windowState.x >= bounds.x - 100 &&
+           windowState.x < bounds.x + bounds.width &&
+           windowState.y >= bounds.y - 100 &&
+           windowState.y < bounds.y + bounds.height;
+  });
+
+  // Reset position if not on any screen
+  if (!isOnScreen) {
+    windowState = { ...windowState, x: undefined, y: undefined };
+  }
+
   // Try to load icon, fallback to undefined if not found
   let icon: NativeImage | undefined;
   try {
@@ -34,8 +77,10 @@ function createWindow() {
   }
 
   const windowOptions: Electron.BrowserWindowConstructorOptions = {
-    width: 1400,
-    height: 900,
+    width: windowState.width,
+    height: windowState.height,
+    x: windowState.x,
+    y: windowState.y,
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
@@ -43,6 +88,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       webviewTag: true,
+      sandbox: true,
     },
     show: false,
     backgroundColor: '#0a0a0a',
@@ -55,6 +101,32 @@ function createWindow() {
 
   mainWindow = new BrowserWindow(windowOptions);
 
+  // Restore maximized state if it was saved
+  if (windowState.isMaximized) {
+    mainWindow.maximize();
+  }
+
+  // Debounced window state save
+  let saveTimeout: NodeJS.Timeout | null = null;
+  const saveWindowState = () => {
+    if (!mainWindow) return;
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      if (!mainWindow) return;
+      const bounds = mainWindow.getBounds();
+      store.set('windowState', {
+        width: bounds.width,
+        height: bounds.height,
+        x: bounds.x,
+        y: bounds.y,
+        isMaximized: mainWindow.isMaximized(),
+      } as WindowState);
+    }, 500);
+  };
+
+  mainWindow.on('resize', saveWindowState);
+  mainWindow.on('move', saveWindowState);
+
   // Load the app
   const url = isDev ? DEV_URL : PROD_URL;
   mainWindow.loadURL(url);
@@ -63,6 +135,8 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
     console.log(`DrawdownDesk loaded: ${url}`);
+    // Create tray after window is shown (optimized startup)
+    createTray();
   });
 
   // Handle popup windows - open in new Electron window for OAuth
@@ -90,6 +164,19 @@ function createWindow() {
 
   // Handle navigation - allow auth redirects to stay within webview
   mainWindow.webContents.on('will-navigate', (event, url) => {
+    // Block non-http(s) protocols except our custom protocol
+    try {
+      const parsedUrl = new URL(url);
+      const allowedProtocols = ['https:', 'http:', 'drawdowndesk:'];
+      if (!allowedProtocols.includes(parsedUrl.protocol)) {
+        event.preventDefault();
+        return;
+      }
+    } catch {
+      event.preventDefault();
+      return;
+    }
+
     // Allow all Convex and auth-related domains
     const isAuthRelated = url.includes('convex.cloud') ||
                           url.includes('convex.site') ||
@@ -109,8 +196,8 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Open DevTools in development
-  if (isDev) {
+  // Open DevTools in development only when explicitly requested
+  if (isDev && process.env.ELECTRON_OPEN_DEVTOOLS === 'true') {
     mainWindow.webContents.openDevTools();
   }
 }
@@ -152,7 +239,7 @@ function createTray() {
     },
   ]);
 
-  tray.setToolTip('DrawdownDesk');
+  tray.setToolTip(`DrawdownDesk ${APP_VERSION}`);
   tray.setContextMenu(contextMenu);
 
   tray.on('double-click', () => {
@@ -168,40 +255,44 @@ function createMenu() {
     {
       label: 'File',
       submenu: [
-        { role: 'quit' },
+        {
+          label: 'Quit',
+          accelerator: 'CmdOrCtrl+Q',
+          click: () => app.quit(),
+        },
       ],
     },
     {
       label: 'Edit',
       submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
+        { role: 'undo', accelerator: 'CmdOrCtrl+Z' },
+        { role: 'redo', accelerator: 'Shift+CmdOrCtrl+Z' },
         { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' },
+        { role: 'cut', accelerator: 'CmdOrCtrl+X' },
+        { role: 'copy', accelerator: 'CmdOrCtrl+C' },
+        { role: 'paste', accelerator: 'CmdOrCtrl+V' },
+        { role: 'selectAll', accelerator: 'CmdOrCtrl+A' },
       ],
     },
     {
       label: 'View',
       submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
+        { role: 'reload', accelerator: 'CmdOrCtrl+R' },
+        { role: 'forceReload', accelerator: 'CmdOrCtrl+Shift+R' },
+        { role: 'toggleDevTools', accelerator: 'F12' },
         { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
+        { role: 'resetZoom', accelerator: 'CmdOrCtrl+0' },
+        { role: 'zoomIn', accelerator: 'CmdOrCtrl+=' },
+        { role: 'zoomOut', accelerator: 'CmdOrCtrl+-' },
         { type: 'separator' },
-        { role: 'togglefullscreen' },
+        { role: 'togglefullscreen', accelerator: 'F11' },
       ],
     },
     {
       label: 'Window',
       submenu: [
-        { role: 'minimize' },
-        { role: 'close' },
+        { role: 'minimize', accelerator: 'CmdOrCtrl+M' },
+        { role: 'close', accelerator: 'CmdOrCtrl+W' },
       ],
     },
     {
@@ -213,12 +304,45 @@ function createMenu() {
             await shell.openExternal('https://drawdowndesk.com');
           },
         },
+        {
+          label: `Version ${APP_VERSION}`,
+          enabled: false,
+        },
       ],
     },
   ];
 
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
+}
+
+// IPC Handlers for renderer communication
+function setupIpcHandlers() {
+  ipcMain.handle('get-app-version', () => {
+    return APP_VERSION;
+  });
+
+  ipcMain.handle('open-external', async (event, url: string) => {
+    // Validate URL before opening
+    try {
+      const parsedUrl = new URL(url);
+      // Only allow http/https
+      if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+        await shell.openExternal(url);
+        return { success: true };
+      }
+      return { success: false, error: 'Invalid protocol' };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
+  ipcMain.on('show-notification', (event, { title, body }) => {
+    const { Notification } = require('electron');
+    if (Notification.isSupported()) {
+      new Notification({ title, body }).show();
+    }
+  });
 }
 
 // Register custom protocol for OAuth callback
@@ -258,9 +382,9 @@ if (!gotTheLock) {
 }
 
 app.whenReady().then(() => {
+  setupIpcHandlers();
   createMenu();
   createWindow();
-  createTray();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -25,6 +25,7 @@ import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
 import { CHART_COLORS_MAIN, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 import { ChartTooltip, PieChartTooltip } from "@/components/chart-tooltip"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { ErrorDisplay } from "@/components/ui/error-display"
 
 const COLORS = CHART_COLORS_MAIN
 
@@ -83,7 +84,7 @@ export default function PortfolioOverview() {
 
   // Handle error state
   if (!portfolioData.success) {
-    return <div>Error: {portfolioData.error}</div>;
+    return <ErrorDisplay message={portfolioData.error} />;
   }
 
   // Handle case where portfolioSummary is null (no holdings)
