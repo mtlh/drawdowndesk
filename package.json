@@ -60,5 +60,9 @@
   },
   "config": {
     "forge": "./forge.config.ts"
+  },
+  "overrides": {
+    "glob": "^13.0.0",
+    "tar": "^7.0.0"
   }
 }
