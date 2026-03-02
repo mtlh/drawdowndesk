@@ -29,6 +29,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.25.4",
+    "electron-store": "^11.0.2",
     "lucide-react": "^0.525.0",
     "next": "15.4.10",
     "react": "19.1.0",
@@ -74,7 +75,9 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
