@@ -81,3 +81,46 @@ Required in `.env.local`:
 - `NEXT_PUBLIC_CONVEX_URL` - Convex URL
 - `ALPHAVANTAGE_API_KEY` - Primary Alpha Vantage API key (for ticker prices)
 - `ALPHAVANTAGE_API_KEY_2`, `ALPHAVANTAGE_API_KEY_3` - Backup keys
+
+## Desktop App (Electron)
+
+The app can be packaged as a desktop application using Electron. This runs the web app in a Chromium webview, connecting to the cloud API.
+
+### Commands
+
+```bash
+npm run electron:dev     # Run Electron with local dev server
+npm run electron:build   # Build desktop app to release/DrawdownDesk-win32-x64/
+npm run electron:start   # Run Electron locally (requires dev server running)
+```
+
+### Configuration
+
+- **Development:** Loads from `http://localhost:3000`
+- **Production:** Loads from `electron/main.ts` (default: `https://drawdowndesk.vercel.app`)
+
+### Version & Release
+
+Update version in both files before releasing:
+- `src/lib/app-config.ts` - used by web app
+- `electron/version.ts` - used by Electron
+
+```typescript
+export const APP_VERSION = 'v0.1.0';
+export const GITHUB_REPO = 'mtlh/drawdowndesk';
+export const DOWNLOAD_FILENAME = 'DrawdownDesk-win32-x64.tar.gz';
+```
+
+### Build & Release
+
+```bash
+npm run electron:build
+# Creates release/DrawdownDesk-win32-x64/
+# Create tar.gz and upload to GitHub releases
+```
+
+### Notes
+
+- The desktop app requires internet to connect to Convex and Yahoo Finance
+- Auth flow works within Electron (popup window)
+- The release folder is gitignored - do not commit built files

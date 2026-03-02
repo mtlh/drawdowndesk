@@ -42,3 +42,9 @@ next-env.d.ts
 
 # Claude
 .claude
+
+# Electron builds
+/release/
+/public/downloads/
+/electron-config.json
+/dist-electron/

@@ -86,12 +86,52 @@ The application uses Convex with the following main tables:
 - **taxYears**, **taxBands**, **personalAllowances**, **capitalGainsTax** - UK tax configuration
 - **historicalReturns** - Historical market data for simulations
 
+## Desktop App (Electron)
+
+The app can also be run as a desktop application using Electron. This wraps the web app in a Chromium webview.
+
+### Running Electron
+
+```bash
+# Development - runs Electron with local dev server
+npm run electron:dev
+
+# Build production Electron app
+npm run electron:build
+
+# Run Electron against a running dev server
+npm run electron:start
+```
+
+### Building for Release
+
+1. Run `npm run electron:build` - creates `release/DrawdownDesk-win32-x64/`
+2. Create tar.gz:
+   ```bash
+   cd release
+   tar -cvf - DrawdownDesk-win32-x64 | gzip -9 > DrawdownDesk-win32-x64.tar.gz
+   ```
+3. Upload to GitHub releases
+
+### Version Management
+
+Update version in `src/lib/app-config.ts` before releasing:
+```typescript
+export const APP_VERSION = 'v0.1.0';
+export const GITHUB_REPO = 'mtlh/drawdowndesk';
+export const DOWNLOAD_FILENAME = 'DrawdownDesk-win32-x64.tar.gz';
+```
+
+The download URL is auto-generated from these values and shown in Settings > Appearance.
+
 ## Scripts
 
 - `npm run dev` - Start development server with Turbopack
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
+- `npm run electron:dev` - Run Electron with local dev server
+- `npm run electron:build` - Build Electron desktop app
 
 ## License
 

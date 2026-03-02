@@ -1,7 +1,19 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo } from "react";
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts";
 import type { TreemapNode } from "./treeMapNode";
+
+// Type for Recharts Treemap content props
+interface TreemapContentProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  name?: string;
+  value?: number;
+  index?: number;
+  depth?: number;
+  colors?: string[];
+}
 
 // ============================================================================
 // Constants
@@ -68,7 +80,7 @@ const SingleAccount: React.FC<SingleAccountProps> = ({ name, value, holdings, co
   const isSingleHolding = sortedHoldings.length === 1;
 
   // Custom treemap content renderer
-  const renderContent = (props: any): React.ReactElement => {
+  const renderContent = (props: TreemapContentProps): React.ReactElement => {
     const { x = 0, y = 0, width = 0, height = 0, name = "", value = 0, index = 0 } = props;
     const hasSpace = width > 40 && height > 20;
     const fontSize = Math.max(10, Math.min(width * 0.05, height * 0.16));
@@ -123,17 +135,17 @@ const SingleAccount: React.FC<SingleAccountProps> = ({ name, value, holdings, co
     const payload = props.payload[0].payload;
     const pct = ((payload.value / value) * 100).toFixed(1);
     return (
-      <div className="bg-slate-800 text-white px-3 py-2 rounded-lg shadow-xl border border-slate-600">
+      <div className="bg-card text-card-foreground px-3 py-2 rounded-lg shadow-xl border border-border">
         <div className="font-semibold text-sm">{payload.name}</div>
-        <div className="text-xs text-slate-300">£{payload.value.toLocaleString()} ({pct}%)</div>
+        <div className="text-xs text-muted-foreground">£{payload.value.toLocaleString()} ({pct}%)</div>
       </div>
     );
   };
 
   return (
-    <div className={`min-w-0 border-r border-b border-white ${isLarge ? "row-span-2" : ""}`}>
+    <div className={`min-w-0 border-r border-border ${isLarge ? "row-span-2" : ""}`}>
       {/* Account Header */}
-      <div className="px-3 py-2 text-white font-semibold text-sm text-center" style={{ backgroundColor: color }}>
+      <div className="px-3 py-2 font-semibold text-sm text-center" style={{ backgroundColor: color }}>
         <div className="truncate">{name}</div>
         <div className="text-xs opacity-90">{formatValue(value)} ({percentage}%)</div>
       </div>
@@ -145,10 +157,10 @@ const SingleAccount: React.FC<SingleAccountProps> = ({ name, value, holdings, co
             data={sortedHoldings}
             dataKey="value"
             aspectRatio={1.5}
-            stroke="#fff"
-            content={renderContent as any}
+            stroke="var(--background)"
+            content={renderContent as unknown as React.ComponentProps<typeof Treemap>["content"]}
           >
-            <Tooltip content={renderTooltip as any} />
+            <Tooltip content={renderTooltip as unknown as React.ComponentProps<typeof Tooltip>["content"]} />
           </Treemap>
         </ResponsiveContainer>
       </div>

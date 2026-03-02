@@ -117,6 +117,12 @@ export const updateAccount = mutation({
 
     const { id, ...updates } = args;
 
+    // Verify ownership before updating
+    const account = await ctx.db.get(id);
+    if (!account || account.userId !== userId) {
+      return { error: "Account not found or access denied." };
+    }
+
     // Add lastUpdated timestamp
     await ctx.db.patch(id, { ...updates, lastUpdated: new Date().toISOString() });
 
@@ -133,6 +139,12 @@ export const deleteAccount = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       return { error: "User not found." };
+    }
+
+    // Verify ownership before deleting
+    const account = await ctx.db.get(args.id);
+    if (!account || account.userId !== userId) {
+      return { error: "Account not found or access denied." };
     }
 
     await ctx.db.delete(args.id);

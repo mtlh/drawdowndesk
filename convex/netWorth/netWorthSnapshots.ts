@@ -74,18 +74,6 @@ export const calculateAndSaveNetWorthSnapshot = mutation({
       lastUpdated: new Date().toISOString(),
     });
 
-    console.log("Net Worth Calculation:", {
-      holdingsCount: allHoldings.length,
-      holdingsValues: allHoldings.map(h => ({ symbol: h.symbol, shares: h.shares, price: h.currentPrice, currency: h.currency, value: h.shares * (h.currency === "GBp" ? h.currentPrice / 100 : h.currentPrice) })),
-      simpleHoldingsCount: allSimpleHoldings.length,
-      simpleHoldingsValues: allSimpleHoldings.map(s => ({ name: s.name, value: s.value })),
-      accountsCount: accounts.length,
-      accountsValues: accounts.map(a => ({ name: a.name, value: a.value })),
-      investmentsValue,
-      accountsValue,
-      netWorth,
-    });
-
     return { success: true, investmentsValue, accountsValue, netWorth };
   },
 });

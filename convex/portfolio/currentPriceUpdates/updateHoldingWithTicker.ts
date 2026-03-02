@@ -4,8 +4,8 @@ import { v } from "convex/values";
 export const getAllHoldings = query({
   handler: async (ctx) => {
 
-    const oneDayMs = 24 * 60 * 60 * 1000; 
-    const cutoff = Date.now() - oneDayMs; 
+    const sixHoursMs = 6 * 60 * 60 * 1000;
+    const cutoff = Date.now() - sixHoursMs; 
     
     const holdings = await ctx.db
       .query("holdings")

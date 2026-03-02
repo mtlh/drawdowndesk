@@ -5,12 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Settings as SettingsIcon, RotateCcw, Pencil, Check, X } from "lucide-react"
+import { Settings as SettingsIcon, RotateCcw, Pencil, Check, X, Moon, Sun } from "lucide-react"
 import { useQuery, useMutation, Authenticated } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
+import { useUserTheme } from "@/hooks/useUserTheme"
+import { useIsElectron } from "@/hooks/useIsElectron"
+import { DOWNLOAD_URL } from "@/lib/app-config"
 
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
@@ -52,6 +55,8 @@ interface CgtRate {
 
 function SettingsContent() {
   const user = useCurrentUser()
+  const { theme, setTheme } = useUserTheme()
+  const isElectron = useIsElectron()
   const userOverrides = useQuery(
     api.tax.userTaxOverrides.getUserTaxOverrides,
     user ? { userId: user._id as Id<"users">, taxYear: CURRENT_TAX_YEAR } : "skip"
@@ -310,12 +315,90 @@ function SettingsContent() {
           )}
 
           <Tabs defaultValue="allowance" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="appearance">Appearance</TabsTrigger>
               <TabsTrigger value="allowance">Personal Allowance</TabsTrigger>
               <TabsTrigger value="bands">Tax Bands</TabsTrigger>
               <TabsTrigger value="cgt">Capital Gains Tax</TabsTrigger>
               <TabsTrigger value="statePension">State Pension</TabsTrigger>
             </TabsList>
+
+            {/* Appearance Tab */}
+            <TabsContent value="appearance">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Appearance</CardTitle>
+                  <CardDescription>
+                    Customize how DrawdownDesk looks. Choose your preferred color theme.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => {
+                        setTheme("dark")
+                        document.documentElement.classList.add("dark")
+                      }}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                        theme === "dark"
+                          ? "border-primary bg-accent"
+                          : "border-border hover:border-muted-foreground"
+                      }`}
+                    >
+                      <div className="w-20 h-14 rounded bg-slate-900 flex items-center justify-center">
+                        <Moon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className="text-sm font-medium">Dark</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTheme("light")
+                        document.documentElement.classList.remove("dark")
+                      }}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                        theme === "light"
+                          ? "border-primary bg-accent"
+                          : "border-border hover:border-muted-foreground"
+                      }`}
+                    >
+                      <div className="w-20 h-14 rounded bg-white border flex items-center justify-center">
+                        <Sun className="w-6 h-6 text-slate-900" />
+                      </div>
+                      <span className="text-sm font-medium">Light</span>
+                    </button>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-4">
+                    Your preference is saved automatically and synced across your devices.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Desktop App Section - Only show on web */}
+              {!isElectron && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Desktop App</CardTitle>
+                    <CardDescription>
+                      Install DrawdownDesk on your computer for a native experience.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Download the app, extract the zip, and run DrawdownDesk.exe.
+                      Works offline with automatic sync when connected.
+                    </p>
+                    <a
+                      href={DOWNLOAD_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                    >
+                      Download for Windows
+                    </a>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
 
             {/* Personal Allowance Tab */}
             <TabsContent value="allowance">
