@@ -144,7 +144,7 @@ export default function PortfolioOverview() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
         {/* Header Row with Total Value and Quick Stats */}
-        <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div className="mb-6 flex items-center justify-between gap-4 flex-wrap min-h-[88px]">
           {/* Total Value - Left */}
           <div className="flex items-center gap-4">
             <div>

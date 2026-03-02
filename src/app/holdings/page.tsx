@@ -255,7 +255,7 @@ export default function HoldingsPage() {
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
-          <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+          <div className="mb-6 flex items-center justify-between gap-4 flex-wrap min-h-[40px]">
             {/* Filters */}
             {portfolios.length > 0 && (
               <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-lg">

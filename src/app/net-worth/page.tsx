@@ -311,9 +311,9 @@ export default function NetWorthPage() {
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
-          <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+          <div className="mb-8 flex items-center justify-between gap-4 flex-wrap min-h-[88px]">
             {/* Net Worth - Left */}
-            <div>
+            <div className="flex flex-col justify-center">
               <div className="text-sm text-muted-foreground">Net Worth</div>
               <div className="text-3xl font-bold">
                 £{totalNetWorth.toLocaleString("en-US", { minimumFractionDigits: 2 })}
