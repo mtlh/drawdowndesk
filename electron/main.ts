@@ -34,7 +34,16 @@ const PROD_URL = process.env.PROD_URL || 'https://drawdowndesk.vercel.app';
 const DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/${APP_VERSION}/${DOWNLOAD_FILENAME}`;
 
 // Icon path - uses favicon.ico from the app folder
-const ICON_PATH = path.join(__dirname, '..', 'src', 'app', 'favicon.ico');
+// Use app.getAppPath() for proper path in both dev and production
+const getIconPath = () => {
+  const { app } = require('electron');
+  // In development, app.getAppPath() returns project root
+  // In production, it returns the app.asar location
+  const appPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'app')
+    : app.getAppPath();
+  return path.join(appPath, 'src', 'app', 'favicon.ico');
+};
 
 // Custom protocol for auth callback
 const PROTOCOL_NAME = 'drawdowndesk';
@@ -68,7 +77,8 @@ function createWindow() {
   // Try to load icon, fallback to undefined if not found
   let icon: NativeImage | undefined;
   try {
-    icon = nativeImage.createFromPath(ICON_PATH);
+    const iconPath = getIconPath();
+    icon = nativeImage.createFromPath(iconPath);
     if (icon.isEmpty()) {
       icon = undefined;
     }
@@ -206,7 +216,8 @@ function createTray() {
   // Try to load tray icon, fallback to empty if not found
   let trayIcon: NativeImage;
   try {
-    trayIcon = nativeImage.createFromPath(ICON_PATH);
+    const iconPath = getIconPath();
+    trayIcon = nativeImage.createFromPath(iconPath);
     if (trayIcon.isEmpty()) {
       // Create a simple 16x16 default icon if file not found
       trayIcon = nativeImage.createEmpty();
