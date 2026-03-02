@@ -3,12 +3,11 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 
-// Get all buy/sell events for the current user with optional pagination
+// Get all buy/sell events for the current user with optional limit
 export const getBuySellEvents = query({
   args: {
     portfolioId: v.optional(v.id("portfolios")),
     limit: v.optional(v.number()),
-    cursor: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -19,33 +18,22 @@ export const getBuySellEvents = query({
     const limit = args.limit ?? 100; // Default to 100, max 500
     const safeLimit = Math.min(limit, 500);
 
-    let query = ctx.db
+    const events = await ctx.db
       .query("buySellEvents")
       .withIndex(args.portfolioId ? "by_userPortfolio" : "by_user", q =>
         args.portfolioId
           ? q.eq("userId", userId).eq("portfolioId", args.portfolioId!)
           : q.eq("userId", userId)
-      );
-
-    // Apply cursor if provided
-    if (args.cursor) {
-      query = query.withCursor(args.cursor);
-    }
-
-    // Use take() instead of collect() for pagination
-    const events = await query.take(safeLimit);
+      )
+      .take(safeLimit);
 
     // Sort by date descending (most recent first)
     const sortedEvents = events.sort((a, b) =>
       new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime()
     );
 
-    // Return events and cursor for next page
     return {
       events: sortedEvents,
-      // If we got as many events as requested, there's likely more data
-      nextCursor: events.length === safeLimit ? events[events.length - 1]?._id : null,
-      hasMore: events.length === safeLimit,
     };
   },
 });

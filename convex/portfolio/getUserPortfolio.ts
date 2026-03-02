@@ -27,8 +27,10 @@ export const getUserPortfolio = query({
         .collect();
 
     // Group holdings by portfolioId in memory (O(n) instead of N+1 queries)
+    // Filter out holdings with undefined portfolioId
     const holdingsByPortfolio = new Map<string, typeof allHoldings>();
     for (const holding of allHoldings) {
+        if (!holding.portfolioId) continue;
         const existing = holdingsByPortfolio.get(holding.portfolioId) || [];
         existing.push(holding);
         holdingsByPortfolio.set(holding.portfolioId, existing);

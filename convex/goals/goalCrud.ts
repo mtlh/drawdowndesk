@@ -153,6 +153,7 @@ export const getGoalsWithPortfolio = query({
     const portfolioMap = new Map(portfolios.map(p => [p._id, p]));
     const holdingsByPortfolio = new Map<string, typeof allHoldings>();
     for (const h of allHoldings) {
+      if (!h.portfolioId) continue;
       const existing = holdingsByPortfolio.get(h.portfolioId) || [];
       existing.push(h);
       holdingsByPortfolio.set(h.portfolioId, existing);
