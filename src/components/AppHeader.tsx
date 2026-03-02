@@ -15,7 +15,11 @@ interface PageInfo {
 
 const pageInfo: Record<string, PageInfo> = {
   "/": {
-    title: "Portfolio Overview",
+    title: "Sign In",
+    subtitle: "Sign in to access your portfolio",
+  },
+  "/holdings-overview": {
+    title: "Holdings Overview",
     subtitle: "Track your investments across all accounts",
   },
   "/net-worth": {
@@ -62,10 +66,10 @@ export function AppHeader() {
   const { theme, setTheme } = useUserTheme();
 
   useEffect(() => {
-    // Apply theme from database on mount
+    // Apply theme from database once loaded (skip when undefined to let layout script handle it)
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
-    } else {
+    } else if (theme === "light") {
       document.documentElement.classList.remove("dark");
     }
   }, [theme]);

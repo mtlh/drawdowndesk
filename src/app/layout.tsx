@@ -18,29 +18,37 @@ export const metadata: Metadata = {
   description: "A tool for calculating taxes and withdrawals for retirement income.",
 };
 
+// Blocking theme script - runs before any React renders
+const themeScript = `
+(function() {
+  try {
+    // Force light mode on login page to prevent hydration mismatch
+    var path = window.location.pathname;
+    if (path === '/login' || path === '/') {
+      document.documentElement.classList.remove('dark');
+      return;
+    }
+    var theme = localStorage.getItem('theme');
+    if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (e) {
+    document.documentElement.classList.add('dark');
+  }
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning >
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const theme = localStorage.getItem('theme');
-                  // Default to dark mode if no preference set
-                  if (theme === 'dark' || !theme) {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        ></script>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

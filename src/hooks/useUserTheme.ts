@@ -37,9 +37,28 @@ export function useUserTheme() {
     }
   }, [user, isInitialized, ensureSettings])
 
-  const theme = userSettings?.theme ?? "dark"
+  // Only use theme from DB when it's actually loaded (not during initial loading)
+  // This prevents overwriting localStorage with default "dark" before DB value arrives
+  const theme = userSettings !== undefined ? userSettings?.theme ?? "dark" : undefined
+
+  // Sync theme to localStorage only when we have a confirmed value from DB
+  useEffect(() => {
+    if (theme) {
+      try {
+        localStorage.setItem('theme', theme)
+      } catch {
+        // localStorage not available
+      }
+    }
+  }, [theme])
 
   const setTheme = (newTheme: "light" | "dark") => {
+    // Also save to localStorage immediately for flash prevention
+    try {
+      localStorage.setItem('theme', newTheme)
+    } catch {
+      // localStorage not available
+    }
     if (user) {
       updateTheme({
         userId: user._id as Id<"users">,
