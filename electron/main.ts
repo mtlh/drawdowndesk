@@ -392,6 +392,11 @@ if (!gotTheLock) {
   });
 }
 
+// Set Windows app user model ID for proper icon handling
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.drawdowndesk.app');
+}
+
 app.whenReady().then(() => {
   setupIpcHandlers();
   createMenu();
