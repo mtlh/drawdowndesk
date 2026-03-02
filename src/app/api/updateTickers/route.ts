@@ -123,7 +123,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
 
-  // @ts-expect-error - Convex API type instantiation is excessively deep
   const getAllHoldings = api.portfolio.currentPriceUpdates.updateHoldingWithTicker.getAllHoldings;
   const holdings: HoldingPriceInfo[] = await convex.query(getAllHoldings, {});
 
