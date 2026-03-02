@@ -92,7 +92,7 @@ function PleaseSignIn() {
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/";
+  const isLoginPage = pathname === "/" || pathname === null;
 
   return (
     <ConvexAuthProvider client={convex}>

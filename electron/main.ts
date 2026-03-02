@@ -187,6 +187,14 @@ function createWindow() {
       return;
     }
 
+    // Allow navigation within the app's own domain (development and production)
+    const appUrl = isDev ? DEV_URL : PROD_URL;
+    const parsedAppUrl = new URL(appUrl);
+    const parsedNavUrl = new URL(url);
+
+    // Check if the URL is on the app's domain (same host)
+    const isInternalNavigation = parsedNavUrl.host === parsedAppUrl.host;
+
     // Allow all Convex and auth-related domains
     const isAuthRelated = url.includes('convex.cloud') ||
                           url.includes('convex.site') ||
@@ -195,11 +203,12 @@ function createWindow() {
                           url.includes('accounts.google') ||
                           url.includes('google.com/');
 
-    // Only block truly external non-auth sites
-    if (!isAuthRelated && !url.startsWith('file://')) {
+    // Only open externally if it's NOT internal navigation AND NOT auth-related AND NOT a file URL
+    if (!isInternalNavigation && !isAuthRelated && !url.startsWith('file://')) {
       event.preventDefault();
       shell.openExternal(url);
     }
+    // If it's internal navigation or auth-related, let it proceed normally (do nothing)
   });
 
   mainWindow.on('closed', () => {
