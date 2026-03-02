@@ -154,7 +154,7 @@ export function AppSidebar() {
           <Authenticated>
             <Link href="/settings" className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded-md w-full">
               <User className="h-4 w-4" />
-              Profile / Settings
+              Settings
             </Link>
             <SignOut />
           </Authenticated>

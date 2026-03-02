@@ -4,7 +4,8 @@ import { usePathname } from "next/navigation";
 import { Moon, Sun, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useUserTheme } from "@/hooks/useUserTheme";
 
 interface PageInfo {
   title: string
@@ -58,19 +59,25 @@ const pageInfo: Record<string, PageInfo> = {
 export function AppHeader() {
   const pathname = usePathname();
   const { toggleSidebar, state } = useSidebar();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const { theme, setTheme } = useUserTheme();
 
   useEffect(() => {
-    // Check initial theme
-    const isDark = document.documentElement.classList.contains("dark");
-    setTheme(isDark ? "dark" : "light");
-  }, []);
+    // Apply theme from database on mount
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
-    document.documentElement.classList.toggle("dark");
-    localStorage.setItem("theme", newTheme);
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   };
 
   // Handle dynamic routes

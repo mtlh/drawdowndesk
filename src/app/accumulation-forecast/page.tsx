@@ -394,12 +394,20 @@ export default function AccumulationForecast() {
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="age"
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))" }}
                 tickMargin={5}
                 tickFormatter={(v) => v.toString()}
+                tickLine={false}
+                axisLine={false}
               />
               <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))" }}
                 tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
                 width={50}
+                tickLine={false}
+                axisLine={false}
               />
               <ChartTooltip
                 cursor={false}

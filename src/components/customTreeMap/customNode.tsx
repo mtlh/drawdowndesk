@@ -103,8 +103,8 @@ export const CustomNode: React.FC<CustomNodeProps> = (props) => {
 
   const centerY = y + height / 2;
 
-  const strokeW = isAccount ? 3 : (isAssetType ? 2 : 1);
-  const strokeC = isAccount ? "#fff" : (isAssetType ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)");
+  const strokeW = isAccount ? 2 : (isAssetType ? 1 : 0);
+  const strokeC = isAccount ? "var(--background)" : (isAssetType ? "var(--background)" : "transparent");
 
   return (
     <g>

@@ -149,27 +149,29 @@ export default function SignInPage() {
               </div>
 
               {/* Performance Chart */}
-              <div className="bg-slate-50/80 rounded-xl p-5">
-                <h4 className="text-sm font-semibold text-slate-700 mb-4">Portfolio Performance</h4>
-                <ResponsiveContainer width="100%" height={120}>
-                  <AreaChart data={performanceData}>
-                    <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="month" stroke="#94a3b8" style={{ fontSize: "11px" }} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94a3b8" style={{ fontSize: "11px" }} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v/1000}k`} />
+              <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-5">
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">Portfolio Performance</h4>
+                <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
+                  <ResponsiveContainer width="100%" height={120}>
+                    <AreaChart data={performanceData}>
+                      <defs>
+                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v) => `£${v/1000}k`} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }}
-                      labelStyle={{ color: "#475569" }}
+                      contentStyle={{ backgroundColor: "var(--background)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px", color: "var(--foreground)" }}
+                      labelStyle={{ color: "var(--foreground)" }}
                       formatter={(value: number) => [`£${value.toLocaleString()}`, "Value"]}
                     />
                     <Area type="monotone" dataKey="value" stroke="#4F46E5" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+                    </AreaChart>
+                  </ResponsiveContainer>
+                  </div>
+                </div>
 
               {/* Middle row - Allocation & Cashflow */}
               <div className="grid grid-cols-2 gap-4">
@@ -205,19 +207,21 @@ export default function SignInPage() {
                   </div>
                 </div>
 
-                <div className="bg-slate-50/80 rounded-xl p-4">
-                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Monthly Cashflow</h4>
-                  <ResponsiveContainer width="100%" height={100}>
-                    <BarChart data={cashflowData}>
-                      <XAxis dataKey="month" stroke="#94a3b8" style={{ fontSize: "10px" }} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#94a3b8" style={{ fontSize: "10px" }} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v/1000}k`} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "11px" }}
-                        labelStyle={{ color: "#475569" }}
-                      />
-                      <Bar dataKey="value" fill="#4F46E5" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-4">
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Monthly Cashflow</h4>
+                  <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
+                    <ResponsiveContainer width="100%" height={100}>
+                      <BarChart data={cashflowData}>
+                        <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v) => `£${v/1000}k`} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "6px", fontSize: "11px", color: "hsl(var(--foreground))" }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
+                        />
+                        <Bar dataKey="value" fill="#4F46E5" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
 

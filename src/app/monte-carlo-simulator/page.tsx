@@ -128,13 +128,21 @@ export default function MonteCarloSimulator() {
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="year"
+                  stroke="hsl(var(--muted-foreground))"
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
                   tickMargin={1}
                   domain={['auto', 'auto']}
-                  label={{ value: 'Year', angle: 0, position: 'insideBottom' }}
+                  label={{ value: 'Year', angle: 0, position: 'insideBottom', fill: "hsl(var(--muted-foreground))" }}
+                  tickLine={false}
+                  axisLine={false}
                 />
                 <YAxis
-                  label={{ value: 'Return %', angle: -90, position: 'insideLeft' }}
+                  stroke="hsl(var(--muted-foreground))"
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  label={{ value: 'Return %', angle: -90, position: 'insideLeft', fill: "hsl(var(--muted-foreground))" }}
                   domain={['auto', 'auto']}
+                  tickLine={false}
+                  axisLine={false}
                 />
                 <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                 {/* Dynamically render lines for each case */}

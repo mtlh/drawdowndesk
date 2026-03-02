@@ -337,7 +337,7 @@ export default function RetirementCashflowCalculator() {
 
   if (taxBandInformation && 'error' in taxBandInformation && taxBandInformation.error) {
     return (
-      <div className="flex h-screen bg-background items-center justify-center">
+      <div className="flex min-h-screen bg-background items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
@@ -369,7 +369,7 @@ export default function RetirementCashflowCalculator() {
   } satisfies ChartConfig;
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 space-y-8">
           {/* Header */}
@@ -591,8 +591,8 @@ export default function RetirementCashflowCalculator() {
                 <ChartContainer config={incomeConfig} className="h-[300px] w-full">
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="age" tickLine={false} tickMargin={8} />
-                    <YAxis tickLine={false} tickMargin={8} tickFormatter={(v) => `£${(v/1000).toFixed(0)}k`} />
+                    <XAxis dataKey="age" stroke="hsl(var(--muted-foreground))" tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} tickMargin={8} axisLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} tickMargin={8} tickFormatter={(v) => `£${(v/1000).toFixed(0)}k`} axisLine={false} />
                     <ChartTooltip
                       content={<ChartTooltipContent />}
                       formatter={(value: number, name: string) => [
@@ -621,8 +621,8 @@ export default function RetirementCashflowCalculator() {
                 <ChartContainer config={potConfig} className="h-[300px] w-full">
                   <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="age" tickLine={false} tickMargin={8} />
-                    <YAxis tickLine={false} tickMargin={8} tickFormatter={(v) => `£${(v/1000000).toFixed(1)}M`} />
+                    <XAxis dataKey="age" stroke="hsl(var(--muted-foreground))" tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} tickMargin={8} axisLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} tickMargin={8} tickFormatter={(v) => `£${(v/1000000).toFixed(1)}M`} axisLine={false} />
                     <ChartTooltip
                       content={<ChartTooltipContent />}
                       formatter={(value: number, name: string) => [

@@ -252,7 +252,7 @@ export default function HoldingsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
           <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
@@ -298,7 +298,7 @@ export default function HoldingsPage() {
 
           {/* New Portfolio Form Modal */}
           {showNewPortfolioForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
               <Card className="w-full max-w-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                   <h2 className="text-xl font-semibold">Create New Portfolio</h2>
@@ -402,7 +402,7 @@ export default function HoldingsPage() {
                 const allocationData = getPortfolioAllocationData(portfolioExpanded.id, portfolioExpanded.portfolio.portfolioType)
 
                 return (
-                  <Card key={portfolioExpanded.id} className="flex flex-col hover:shadow-lg transition-shadow duration-200">
+                  <Card key={portfolioExpanded.id} className="flex flex-col hover:shadow-lg transition-shadow duration-200 !border-0">
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -417,6 +417,7 @@ export default function HoldingsPage() {
                             <Input
                               value={portfolioExpanded.portfolio.name}
                               onChange={(e) => updatePortfolioName(portfolioExpanded.id, e.target.value)}
+                              style={{ backgroundColor: 'transparent', border: 'none' }}
                               className="border-none p-0 text-lg font-semibold shadow-none focus-visible:ring-0 bg-transparent"
                             />
                           </div>
@@ -671,7 +672,7 @@ export default function HoldingsPage() {
 
                     {/* Chart */}
                     {hasData ? (
-                      <div className="relative">
+                      <div className="relative [&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
                         <ResponsiveContainer width="100%" height={280}>
                           <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <defs>
@@ -684,7 +685,7 @@ export default function HoldingsPage() {
                             <XAxis
                               dataKey="date"
                               stroke="hsl(var(--muted-foreground))"
-                              tick={{ fontSize: 11 }}
+                              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                               tickLine={false}
                               axisLine={false}
                               dy={10}
@@ -692,7 +693,7 @@ export default function HoldingsPage() {
                             <YAxis
                               stroke="hsl(var(--muted-foreground))"
                               tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
-                              tick={{ fontSize: 11 }}
+                              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                               tickLine={false}
                               axisLine={false}
                               dx={-10}

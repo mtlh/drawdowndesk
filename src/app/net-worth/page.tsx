@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { Plus, Trash2, X, Link as LinkIcon } from "lucide-react"
 import { StatCard } from "@/components/ui/stat-card"
-import { Account, AccountType, Portfolio, PortfolioWithHoldings } from "@/types/portfolios"
+import { Account, AccountType, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
 import { api } from "../../../convex/_generated/api"
@@ -55,9 +55,8 @@ export default function NetWorthPage() {
 
   const [accounts, setAccounts] = useState<AccountWithPortfolio[]>([])
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
-  const [portfolioHoldings, setPortfolioHoldings] = useState<{portfolioId: string, portfolioName: string, value: number, tags: string[]}[]>([])
+  const [portfolioHoldings, setPortfolioHoldings] = useState<{accountName: string, portfolios: { id: string, name: string }[], value: number}[]>([])
   const [showNewAccountForm, setShowNewAccountForm] = useState(false)
-  const [showInvestments, setShowInvestments] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [filterType, setFilterType] = useState<AccountType | "all">("all")
   const [filterTag, setFilterTag] = useState<string>("all")
@@ -92,55 +91,72 @@ export default function NetWorthPage() {
 
   const totalNetWorth = useMemo(() => totalAccountsValue + totalInvestments, [totalAccountsValue, totalInvestments])
 
-  // Calculate investment values from portfolio holdings
+  // Calculate investment values from portfolio holdings - grouped by accountName and merged
   useEffect(() => {
     if (getUserPortfolio && !('error' in getUserPortfolio)) {
-      const holdingsByPortfolio = getUserPortfolio.map((portfolio: PortfolioWithHoldings) => {
-        let totalValue = 0
-        const tags = new Set<string>()
+      // Collect all holdings by accountName, merging across portfolios
+      type AccountEntry = { accountName: string, portfolios: { id: string, name: string }[], value: number }
+      const accountValues: Map<string, AccountEntry> = new Map()
 
-        // Add live holdings value (shares * currentPrice), converted to GBP
+      for (const portfolio of getUserPortfolio) {
+        const portfolioId = portfolio._id
+        const portfolioName = portfolio.name
+
+        // Process live holdings
         if (portfolio.holdings && portfolio.holdings.length > 0) {
           for (const holding of portfolio.holdings) {
             const currency = holding.currency || "GBP"
-            // Use getPriceInPounds logic: convert GBp (pence) to GBP (pounds)
             const holdingValue = (holding.shares || 0) * (holding.currentPrice || 0)
             const gbpValue = currency === 'GBp' ? holdingValue / 100 : holdingValue
-            totalValue += gbpValue
 
-            // Collect all accountName values from holdings
-            if (holding.accountName) {
-              tags.add(holding.accountName)
+            const accountName = holding.accountName || "Unassigned"
+
+            let existing = accountValues.get(accountName)
+            if (!existing) {
+              existing = {
+                accountName,
+                portfolios: [] as { id: string, name: string }[],
+                value: 0
+              }
+              accountValues.set(accountName, existing)
+            }
+            existing.value += gbpValue
+            // Add portfolio if not already present
+            if (!existing.portfolios.some(p => p.id === String(portfolioId))) {
+              existing.portfolios.push({ id: String(portfolioId), name: portfolioName })
             }
           }
         }
 
-        // Add simple holdings value (already in GBP per schema)
+        // Process simple holdings
         if (portfolio.simpleHoldings && portfolio.simpleHoldings.length > 0) {
           for (const holding of portfolio.simpleHoldings) {
-            totalValue += holding.value || 0
+            const accountName = holding.accountName || holding.holdingType || "Unassigned"
 
-            // Collect all accountName and holdingType from simple holdings
-            if (holding.accountName) {
-              tags.add(holding.accountName)
-            } else if (holding.holdingType) {
-              tags.add(holding.holdingType)
+            let existing = accountValues.get(accountName)
+            if (!existing) {
+              existing = {
+                accountName,
+                portfolios: [] as { id: string, name: string }[],
+                value: 0
+              }
+              accountValues.set(accountName, existing)
             }
+            existing.value += holding.value || 0
+            if (!existing.portfolios.some(p => p.id === String(portfolioId))) {
+              existing.portfolios.push({ id: String(portfolioId), name: portfolioName })
+            }
+            accountValues.set(accountName, existing)
           }
         }
+      }
 
-        // Get unique tags array, fallback to ["Investment"]
-        const tagsArray = tags.size > 0 ? Array.from(tags) : ["Investment"]
+      // Convert to array and filter out zero values
+      const holdingsByAccount = Array.from(accountValues.values())
+        .filter(item => item.value > 0)
+        .sort((a, b) => b.value - a.value)
 
-        return {
-          portfolioId: portfolio._id,
-          portfolioName: portfolio.name,
-          value: totalValue,
-          tags: tagsArray,
-        }
-      }).filter((p) => p.value > 0)
-
-      setPortfolioHoldings(holdingsByPortfolio)
+      setPortfolioHoldings(holdingsByAccount)
     }
   }, [getUserPortfolio])
 
@@ -292,7 +308,7 @@ export default function NetWorthPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
           <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
@@ -412,16 +428,15 @@ export default function NetWorthPage() {
                     <tr>
                       <th className="text-left p-3 text-sm font-medium">Account</th>
                       <th className="text-left p-3 text-sm font-medium">Type</th>
-                      <th className="text-left p-3 text-sm font-medium">Tag</th>
+                      <th className="text-left p-3 text-sm font-medium">Portfolio</th>
                       <th className="text-right p-3 text-sm font-medium">Value</th>
-                      <th className="text-left p-3 text-sm font-medium">Linked Portfolio</th>
                       <th className="p-3"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAccounts.length === 0 ? (
+                    {filteredAccounts.length === 0 && portfolioHoldings.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="p-12 text-center">
+                        <td colSpan={5} className="p-12 text-center">
                           <div className="flex flex-col items-center">
                             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                               <span className="text-3xl">🏦</span>
@@ -456,7 +471,7 @@ export default function NetWorthPage() {
                       </tr>
                     ) : (
                       filteredAccounts.map(account => (
-                        <tr key={account._id} className="border-b hover:bg-muted/50 transition-colors">
+                        <tr key={account._id} className="border-b">
                           <td className="p-3">
                             <div className="font-medium">{account.name}</div>
                             {account.notes && <div className="text-xs text-muted-foreground">{account.notes}</div>}
@@ -468,7 +483,14 @@ export default function NetWorthPage() {
                             </span>
                           </td>
                           <td className="p-3">
-                            {account.tag ? (
+                            {account.portfolioId ? (
+                              <Link
+                                href={`/holdings/${account.portfolioId}`}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
+                              >
+                                {account.portfolioName || "Portfolio"}
+                              </Link>
+                            ) : account.tag ? (
                               <span className="inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-xs font-medium">
                                 {account.tag}
                               </span>
@@ -485,19 +507,6 @@ export default function NetWorthPage() {
                               className="w-32 text-right inline-flex"
                             />
                           </td>
-                          <td className="p-3">
-                            {account.portfolioId ? (
-                              <a
-                                href={`/holdings/${account.portfolioId}`}
-                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                              >
-                                <LinkIcon className="h-3 w-3" />
-                                {account.portfolioName || "Portfolio"}
-                              </a>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </td>
                           <td className="p-3 text-right">
                             <Button
                               variant="ghost"
@@ -511,76 +520,43 @@ export default function NetWorthPage() {
                       ))
                     )}
 
-                    {/* Investment rows - automatically managed from holdings */}
-                    {portfolioHoldings.length > 0 && (
-                      <>
-                        <tr
-                          className="border-t cursor-pointer hover:bg-muted/50"
-                          onClick={() => setShowInvestments(!showInvestments)}
-                        >
-                          <td colSpan={6} className="p-3 text-sm font-semibold text-muted-foreground bg-muted/30">
-                            <span className="flex items-center gap-2">
-                              <span>{showInvestments ? "▼" : "▶"}</span>
-                              <span>Investments ({portfolioHoldings.length})</span>
-                              <span className="font-medium">£{totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
-                            </span>
-                          </td>
-                        </tr>
-                        {showInvestments && portfolioHoldings.map(portfolio => (
-                          <tr key={portfolio.portfolioId} className="border-b hover:bg-muted/30">
-                            <td className="p-3">
-                              <div>{portfolio.portfolioName}</div>
-                            </td>
-                            <td className="p-3">
-                              <span className="inline-flex items-center gap-1">
-                                📈 Investment
-                              </span>
-                            </td>
-                            <td className="p-3">
-                              <div className="flex flex-wrap gap-1">
-                                {portfolio.tags.map((tag, idx) => {
-                                  // Get colour based on tag type
-                                  const tagLower = tag.toLowerCase()
-                                  let colorClass = "bg-primary/10 text-primary"
-                                  if (tagLower.includes("pension") || tagLower.includes("sipp")) {
-                                    colorClass = "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                                  } else if (tagLower.includes("isa")) {
-                                    colorClass = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                                  } else if (tagLower.includes("saving") || tagLower.includes("cash")) {
-                                    colorClass = "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
-                                  } else if (tagLower.includes("crypto")) {
-                                    colorClass = "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
-                                  } else if (tagLower.includes("fund")) {
-                                    colorClass = "bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300"
-                                  }
-                                  return (
-                                    <span
-                                      key={idx}
-                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}
-                                    >
-                                      {tag}
-                                    </span>
-                                  )
-                                })}
-                              </div>
-                            </td>
-                            <td className="p-3 text-right font-medium">
-                              £{portfolio.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                            </td>
-                            <td className="p-3">
-                              <a
-                                href={`/holdings/${portfolio.portfolioId}`}
-                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                              >
-                                <LinkIcon className="h-3 w-3" />
-                                View
-                              </a>
-                            </td>
-                            <td className="p-3"></td>
-                          </tr>
-                        ))}
-                      </>
+                    {/* Divider between manual accounts and investments */}
+                    {portfolioHoldings.length > 0 && filteredAccounts.length > 0 && (
+                      <tr>
+                        <td colSpan={5} className="border-t-2 border-dashed border-muted-foreground/30 p-2"></td>
+                      </tr>
                     )}
+
+                    {/* Investment rows - automatically managed from holdings */}
+                    {portfolioHoldings.map(item => (
+                      <tr key={item.accountName} className="border-b">
+                        <td className="p-3">
+                          <div className="font-medium">{item.accountName}</div>
+                        </td>
+                        <td className="p-3">
+                          <span className="inline-flex items-center gap-1">
+                            📈 Investment
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-wrap gap-1">
+                            {item.portfolios.map((portfolio, idx) => (
+                              <Link
+                                key={idx}
+                                href={`/holdings/${portfolio.id}`}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
+                              >
+                                {portfolio.name}
+                              </Link>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="p-3 text-right font-medium">
+                          £{item.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="p-3"></td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -595,20 +571,27 @@ export default function NetWorthPage() {
                 <CardDescription>Track your total wealth including investments and accounts</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={getSnapshots} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis
                       dataKey="snapshotDate"
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                       tickFormatter={(value) => {
                         const date = new Date(value);
                         return date.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
                       }}
-                      className="text-xs"
+                      tickLine={false}
+                      axisLine={false}
                     />
                     <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                       tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
-                      className="text-xs"
+                      tickLine={false}
+                      axisLine={false}
                       width={60}
                     />
                     <Tooltip
@@ -656,6 +639,7 @@ export default function NetWorthPage() {
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -682,7 +666,7 @@ export default function NetWorthPage() {
 
           {/* New Account Form Modal */}
           {showNewAccountForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
               <Card className="w-full max-w-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                   <h2 className="text-xl font-semibold">Add New Account</h2>

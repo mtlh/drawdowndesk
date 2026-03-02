@@ -135,11 +135,11 @@ export default function PortfolioOverview() {
 
   // Tooltip for percentage-based charts
   const PercentTooltip = ChartTooltip({
-    formatter: (value: number) => [`${value.toFixed(1)}%`, "Value"],
+    formatter: (value: number) => `${value.toFixed(1)}%`,
   })
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
         {/* Header Row with Total Value and Quick Stats */}
@@ -204,6 +204,7 @@ export default function PortfolioOverview() {
             </CardHeader>
             <CardContent>
               {hasSnapshots ? (
+                <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={performanceData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
@@ -216,16 +217,16 @@ export default function PortfolioOverview() {
                     <XAxis
                       dataKey="date"
                       stroke="hsl(var(--muted-foreground))"
-                      tick={{ fontSize: 12 }}
                       tickLine={false}
                       axisLine={false}
+                      tick={{ fill: "currentColor", fontSize: 12 }}
                     />
                     <YAxis
                       stroke="hsl(var(--muted-foreground))"
                       tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
-                      tick={{ fontSize: 12 }}
                       tickLine={false}
                       axisLine={false}
+                      tick={{ fill: "currentColor", fontSize: 12 }}
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Line
@@ -238,6 +239,7 @@ export default function PortfolioOverview() {
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               ) : (
                 <div className="h-[280px] flex flex-col items-center justify-center text-center p-6">
                   <p className="text-muted-foreground">
@@ -335,31 +337,39 @@ export default function PortfolioOverview() {
               <CardDescription>By type</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={assetTypeData} barGap={8} barCategoryGap="30%">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis
                     dataKey="name"
                     stroke="hsl(var(--muted-foreground))"
-                    tick={{ fontSize: 11 }}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
                     stroke="hsl(var(--muted-foreground))"
                     tickFormatter={(value) => `${value.toFixed(0)}%`}
-                    tick={{ fontSize: 11 }}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <Tooltip content={PercentTooltip} />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>
+                  <Bar
+                    dataKey="value"
+                    radius={[6, 6, 0, 0]}
+                    barSize={40}
+                    isAnimationActive={false}
+                    activeBar={<rect fill="currentColor" fillOpacity={0.8} rx={6} />}
+                  >
                     {assetTypeData.map((entry, index) => (
                       <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>

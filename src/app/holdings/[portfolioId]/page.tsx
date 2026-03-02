@@ -84,7 +84,7 @@ export default function PortfolioHoldingsPage() {
 
   if (!portfolio) {
     return (
-      <div className="flex h-screen bg-background">
+      <div className="flex min-h-screen bg-background">
         <main className="flex-1 overflow-y-auto">
           <div className="p-8">
             <div className="mb-4">
@@ -333,7 +333,7 @@ export default function PortfolioHoldingsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 space-y-6">
           {/* Header */}

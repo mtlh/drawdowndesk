@@ -32,7 +32,8 @@ export default function RootLayout({
               (function() {
                 try {
                   const theme = localStorage.getItem('theme');
-                  if (theme === 'dark') {
+                  // Default to dark mode if no preference set
+                  if (theme === 'dark' || !theme) {
                     document.documentElement.classList.add('dark');
                   }
                 } catch (e) {}
