@@ -61,7 +61,7 @@ export function RefreshButton({
       variant="outline"
       onClick={handleClick}
       disabled={loading}
-      className="flex items-center gap-2"
+      className="flex items-center gap-2 bg-background hover:bg-muted border-border hover:border-muted-foreground"
     >
       <RotateCcw
         className={`h-4 w-4 transition-transform duration-500 ${

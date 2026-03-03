@@ -36,5 +36,12 @@ export function SignIn() {
 
 export function SignOut() {
   const { signOut } = useAuthActions();
-  return <Button onClick={() => void signOut()}>Sign out</Button>;
+  return (
+    <button
+      onClick={() => void signOut()}
+      className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 transition-colors"
+    >
+      Sign out
+    </button>
+  );
 }

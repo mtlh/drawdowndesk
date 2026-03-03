@@ -27,7 +27,7 @@ export function LoadingSpinner({
     <div role="status" aria-live="polite" aria-busy="true">
       <div
         className={cn(
-          "animate-spin rounded-full border-b-2 border-primary",
+          "animate-spin rounded-full border-b-2 border-muted-foreground",
           sizeClasses[size],
           className
         )}
