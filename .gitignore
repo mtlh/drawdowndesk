@@ -48,3 +48,6 @@ next-env.d.ts
 /public/downloads/
 /electron-config.json
 /dist-electron/
+
+# Playwright screenshots
+/screenshots/
