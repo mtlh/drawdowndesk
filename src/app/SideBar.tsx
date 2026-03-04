@@ -102,7 +102,8 @@ export function AppSidebar() {
     if (url === "/") {
       return pathname === "/"
     }
-    return pathname.startsWith(url)
+    // Use exact match or match with trailing slash to prevent /holdings-overview matching /holdings
+    return pathname === url || pathname === url + "/"
   }
 
   return (
