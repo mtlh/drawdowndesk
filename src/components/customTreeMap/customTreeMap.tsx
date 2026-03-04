@@ -109,7 +109,6 @@ const SingleAccount: React.FC<SingleAccountProps> = ({ name, value, holdings, co
               fill="var(--treemap-text, #fff)"
               fontSize={fontSize}
               fontWeight="600"
-              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}
             >
               {name.length > 12 ? name.slice(0, 10) + ".." : name}
             </text>
@@ -119,7 +118,6 @@ const SingleAccount: React.FC<SingleAccountProps> = ({ name, value, holdings, co
               textAnchor={textAnchor}
               fill="rgba(255,255,255,0.9)"
               fontSize={fontSize - 2}
-              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}
             >
               {formatValue(value)}
             </text>
@@ -157,7 +155,7 @@ const SingleAccount: React.FC<SingleAccountProps> = ({ name, value, holdings, co
             data={sortedHoldings}
             dataKey="value"
             aspectRatio={1.5}
-            stroke="var(--background)"
+            stroke="#fff"
             content={renderContent as unknown as React.ComponentProps<typeof Treemap>["content"]}
           >
             <Tooltip content={renderTooltip as unknown as React.ComponentProps<typeof Tooltip>["content"]} />
@@ -192,7 +190,7 @@ export const CustomTreemap: React.FC<CustomTreemapProps> = ({ data }) => {
 
   return (
     <div
-      className="w-full rounded-lg overflow-hidden border-2 border-white"
+      className="w-full rounded-lg overflow-hidden"
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${cols}, 1fr)`,

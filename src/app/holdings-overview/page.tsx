@@ -2,7 +2,6 @@
 
 import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, Wallet, PieChartIcon, BarChart3 } from "lucide-react"
 import {
   PieChart,
   Pie,
@@ -17,6 +16,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts"
+import { Building2, TrendingUp, PieChart as PieChartIcon, BarChart3, Wallet } from "lucide-react"
 import { calculatePortfolioSummary, normalizePortfolios, calculateAssetTypeAllocation, generateHoldingsTreemapData, getAccountAllocationData, getPortfolioAllocationData } from "../../lib/calculatePortfolioOverview"
 import { api } from "../../../convex/_generated/api"
 import { useQuery } from "convex/react"
@@ -142,65 +142,81 @@ export default function PortfolioOverview() {
   return (
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="p-4 lg:p-8">
-        {/* Header Row with Total Value and Quick Stats */}
-        <div className="mb-6 flex items-center justify-between gap-4 flex-wrap min-h-[88px]">
-          {/* Total Value - Left */}
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground">Total Value</div>
-              <div className="text-3xl font-bold">
-                £{summary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+        <div className="p-4 lg:p-8 space-y-6">
+          {/* Header Section */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            {/* Total Value Display */}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20">
+                <Wallet className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">Total Holdings Value</div>
+                <div className="text-4xl font-bold tracking-tight">
+                  £{summary.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  {summary.totalChangePercent >= 0 ? (
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <TrendingUp className="w-4 h-4 text-red-600 rotate-180" />
+                  )}
+                  <span className={`text-sm font-medium ${summary.totalChangePercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {summary.totalChangePercent >= 0 ? "+" : ""}{summary.totalChangePercent.toFixed(1)}%
+                  </span>
+                  <span className="text-sm text-muted-foreground">all time</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Quick Stats - Right Side */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[130px] bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
-              <Wallet className="h-5 w-5 text-primary" />
-              <div>
-                <div className="text-xs text-muted-foreground">Accounts</div>
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 lg:max-w-3xl">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Portfolios</span>
+                </div>
                 <div className="text-2xl font-bold">{summary.portfolios.length}</div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[130px] bg-gradient-to-br from-emerald-500/5 to-transparent border-emerald-500/20">
-              <PieChartIcon className="h-5 w-5 text-emerald-600" />
-              <div>
-                <div className="text-xs text-muted-foreground">Holdings</div>
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <PieChartIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Holdings</span>
+                </div>
                 <div className="text-2xl font-bold">
                   {summary.portfolios.reduce((acc, portfolio) => acc + portfolio.holdings.length, 0)}
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[130px] bg-gradient-to-br from-blue-500/5 to-transparent border-blue-500/20">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-              <div>
-                <div className="text-xs text-muted-foreground">YTD</div>
-                <div className={`text-2xl font-bold ${ytdData !== null && ytdData >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {ytdData !== null ? (ytdData >= 0 ? "+" : "") + ytdData.toFixed(2) + "%" : "—"}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <BarChart3 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">YTD</span>
+                </div>
+                <div className={`text-2xl font-bold ${ytdData !== null && ytdData >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                  {ytdData !== null ? (ytdData >= 0 ? "+" : "") + ytdData.toFixed(1) + "%" : "—"}
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 border rounded-md px-4 py-2.5 min-w-[130px] bg-gradient-to-br from-violet-500/5 to-transparent border-violet-500/20">
-              <TrendingUp className="h-5 w-5 text-violet-600" />
-              <div>
-                <div className="text-xs text-muted-foreground">Growth</div>
-                <div className={`text-2xl font-bold ${summary.totalChangePercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {summary.totalChangePercent >= 0 ? "+" : ""}
-                  {summary.totalChangePercent.toFixed(2)}%
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Growth</span>
+                </div>
+                <div className={`text-2xl font-bold ${summary.totalChangePercent >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                  {summary.totalChangePercent >= 0 ? "+" : ""}{summary.totalChangePercent.toFixed(1)}%
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
         {/* Charts Grid */}
         <div className="grid gap-6 lg:grid-cols-8">
           {/* Portfolio Performance - Line Chart */}
           <Card className="lg:col-span-5">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Performance</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+                Performance
+              </CardTitle>
               <CardDescription>{hasSnapshots ? "12-month history" : "Track your portfolio over time"}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -243,8 +259,12 @@ export default function PortfolioOverview() {
                 </div>
               ) : (
                 <div className="h-[280px] flex flex-col items-center justify-center text-center p-6">
-                  <p className="text-muted-foreground">
-                    No performance data yet. Visit the Holdings page to refresh prices.
+                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <TrendingUp className="w-7 h-7 text-muted-foreground" />
+                  </div>
+                  <p className="text-lg font-semibold mb-2">No performance data yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    Visit the Holdings page to refresh prices.
                   </p>
                 </div>
               )}
@@ -254,7 +274,10 @@ export default function PortfolioOverview() {
           {/* Portfolio Split - Donut Chart */}
           <Card className="lg:col-span-3">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">By Portfolio</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <PieChartIcon className="w-5 h-5 text-emerald-600" />
+                By Portfolio
+              </CardTitle>
               <CardDescription>Distribution</CardDescription>
             </CardHeader>
             <CardContent>
@@ -297,7 +320,10 @@ export default function PortfolioOverview() {
           {/* Account Split - Donut Chart */}
           <Card className="lg:col-span-3">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">By Account</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-purple-600" />
+                By Account
+              </CardTitle>
               <CardDescription>Holdings value</CardDescription>
             </CardHeader>
             <CardContent>
@@ -334,11 +360,14 @@ export default function PortfolioOverview() {
           {/* Asset Distribution - Bar Chart */}
           <Card className="lg:col-span-5">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Asset Allocation</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-amber-600" />
+                Asset Allocation
+              </CardTitle>
               <CardDescription>By type</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
+              <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground" suppressHydrationWarning>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={assetTypeData} barGap={8} barCategoryGap="30%">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -362,7 +391,17 @@ export default function PortfolioOverview() {
                     radius={[6, 6, 0, 0]}
                     barSize={40}
                     isAnimationActive={false}
-                    activeBar={<rect fill="currentColor" fillOpacity={0.8} rx={6} />}
+                    activeBar={(props: { x?: number; y?: number; width?: number; height?: number }) => (
+                      <rect
+                        fill="currentColor"
+                        fillOpacity={0.8}
+                        rx={6}
+                        x={props.x}
+                        y={props.y}
+                        width={props.width}
+                        height={props.height}
+                      />
+                    )}
                   >
                     {assetTypeData.map((entry, index) => (
                       <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
@@ -378,7 +417,10 @@ export default function PortfolioOverview() {
         {/* Holdings Treemap */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Holdings by Account</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-violet-600" />
+              Holdings by Account
+            </CardTitle>
             <CardDescription>Stock/bond split within each account</CardDescription>
           </CardHeader>
           <CardContent>
