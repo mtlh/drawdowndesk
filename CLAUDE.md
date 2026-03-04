@@ -124,3 +124,7 @@ npm run electron:build
 - The desktop app requires internet to connect to Convex and Yahoo Finance
 - Auth flow works within Electron (popup window)
 - The release folder is gitignored - do not commit built files
+
+## Screenshots
+
+When taking screenshots with Playwright, save them to the `screenshots/` directory (use relative path like `screenshots/filename.png`).
