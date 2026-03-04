@@ -104,6 +104,52 @@
     @apply bg-background text-foreground;
     background-color: oklch(0.141 0.005 285.823);
   }
+
+  /* Custom Scrollbar */
+  :root {
+    --scrollbar-track: oklch(0.967 0.001 286.375);
+    --scrollbar-thumb: oklch(0.705 0.015 286.067);
+    --scrollbar-thumb-hover: oklch(0.552 0.016 285.938);
+  }
+
+  .dark {
+    --scrollbar-track: oklch(0.274 0.006 286.033);
+    --scrollbar-thumb: oklch(0.439 0 0);
+    --scrollbar-thumb-hover: oklch(0.552 0.016 285.938);
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  /* WebKit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  /* Scrollbar for horizontal containers */
+  .scrollbar-h::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
   :root {
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
