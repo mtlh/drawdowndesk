@@ -8,22 +8,35 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
 import { Plus, Trash2, X, Link as LinkIcon } from "lucide-react"
-import { StatCard } from "@/components/ui/stat-card"
 import { Account, AccountType, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend
+  Legend,
+  Area,
+  AreaChart
 } from "recharts"
+import { 
+  Wallet, 
+  PiggyBank, 
+  TrendingUp, 
+  TrendingDown, 
+  CalendarDays,
+  Building2,
+  Landmark,
+  Banknote,
+  Coins,
+  Folder,
+  Filter,
+  ArrowUpDown
+} from "lucide-react"
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
   { value: "bank", label: "Bank Account" },
@@ -33,15 +46,6 @@ const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
   { value: "cash", label: "Cash" },
   { value: "other", label: "Other" },
 ]
-
-const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
-  bank: "🏦",
-  savings: "💰",
-  pension: "🏖️",
-  crypto: "₿",
-  cash: "💵",
-  other: "📁",
-}
 
 type AccountWithPortfolio = Account & { portfolioName?: string }
 
@@ -320,143 +324,188 @@ export default function NetWorthPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="p-4 lg:p-8">
-          <div className="mb-8 flex items-center justify-between gap-4 flex-wrap min-h-[88px]">
-            {/* Net Worth - Left */}
-            <div className="flex flex-col justify-center">
-              <div className="text-sm text-muted-foreground">Net Worth</div>
-              <div className="text-3xl font-bold">
-                £{totalNetWorth.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+        <div className="p-4 lg:p-8 space-y-6">
+          {/* Header Section */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            {/* Net Worth Display */}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20">
+                <Wallet className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">Total Net Worth</div>
+                <div className="text-4xl font-bold tracking-tight">
+                  £{totalNetWorth.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  {growthPercent >= 0 ? (
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-600" />
+                  )}
+                  <span className={`text-sm font-medium ${growthPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {growthPercent >= 0 ? "+" : ""}{growthPercent.toFixed(1)}% 
+                  </span>
+                  <span className="text-sm text-muted-foreground">last 12 months</span>
+                </div>
               </div>
             </div>
 
-            {/* Quick Stats Cards */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <StatCard
-                icon="🏦"
-                label="Accounts"
-                value={`${accounts.length}`}
-                className="from-primary/5 border-primary/20"
-              />
-              <StatCard
-                icon="📈"
-                label="Investments"
-                value={`£${totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-                className="from-emerald-500/5 border-emerald-500/20"
-              />
-              <StatCard
-                icon="💰"
-                label="Cash"
-                value={`£${totalAccountsValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-                className="from-blue-500/5 border-blue-500/20"
-              />
-              <StatCard
-                icon="📊"
-                label="Growth"
-                value={`${growthPercent >= 0 ? "+" : ""}${growthPercent.toFixed(1)}%`}
-                valueColor={growthPercent >= 0 ? "text-emerald-600" : "text-red-600"}
-                className="from-amber-500/5 border-amber-500/20"
-              />
-              <StatCard
-                icon="📅"
-                label="YTD"
-                value={`${ytdPercent >= 0 ? "+" : ""}${ytdPercent.toFixed(1)}%`}
-                valueColor={ytdPercent >= 0 ? "text-emerald-600" : "text-red-600"}
-                className="from-purple-500/5 border-purple-500/20"
-              />
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 lg:max-w-3xl">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Accounts</span>
+                </div>
+                <div className="text-2xl font-bold">{accounts.length}</div>
+              </div>
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Investments</span>
+                </div>
+                <div className="text-2xl font-bold">£{totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <PiggyBank className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Cash</span>
+                </div>
+                <div className="text-2xl font-bold">£{totalAccountsValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <CalendarDays className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400">YTD</span>
+                </div>
+                <div className={`text-2xl font-bold ${ytdPercent >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                  {ytdPercent >= 0 ? "+" : ""}{ytdPercent.toFixed(1)}%
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="mb-6 flex gap-3 items-center flex-wrap">
-            <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-lg">
-              {portfoliosWithAccounts.length > 0 && (
-                <Select value={filterPortfolio} onValueChange={(v: string) => setFilterPortfolio(v)}>
-                  <SelectTrigger className="w-[150px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Filter by portfolio">
-                    <SelectValue placeholder="Portfolio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Portfolios</SelectItem>
-                    {portfoliosWithAccounts.map(p => (
-                      <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <div className="w-px h-6 bg-border" />
-              <Select value={filterType} onValueChange={(v: AccountType | "all") => setFilterType(v)}>
-                <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Filter by account type">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {ACCOUNT_TYPES.map(type => (
-                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {uniqueTags.length > 0 && (
-                <>
-                  <div className="w-px h-6 bg-border" />
-                  <Select value={filterTag} onValueChange={(v: string) => setFilterTag(v)}>
-                    <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Filter by tag">
-                      <SelectValue placeholder="Tag" />
+          {/* Filters Bar */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                <Filter className="w-4 h-4" />
+                Filters
+              </div>
+              <div className="flex items-center gap-1 bg-muted/50 dark:bg-muted/30 p-1 rounded-lg">
+                {portfoliosWithAccounts.length > 0 && (
+                  <Select value={filterPortfolio} onValueChange={(v: string) => setFilterPortfolio(v)}>
+                    <SelectTrigger className="w-[140px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Filter by portfolio">
+                      <SelectValue placeholder="Portfolio" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Tags</SelectItem>
-                      {uniqueTags.map(tag => (
-                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                      <SelectItem value="all">All Portfolios</SelectItem>
+                      {portfoliosWithAccounts.map(p => (
+                        <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </>
+                )}
+                <div className="w-px h-5 bg-border" />
+                <Select value={filterType} onValueChange={(v: AccountType | "all") => setFilterType(v)}>
+                  <SelectTrigger className="w-[120px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Filter by account type">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {ACCOUNT_TYPES.map(type => (
+                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {uniqueTags.length > 0 && (
+                  <>
+                    <div className="w-px h-5 bg-border" />
+                    <Select value={filterTag} onValueChange={(v: string) => setFilterTag(v)}>
+                      <SelectTrigger className="w-[120px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Filter by tag">
+                        <SelectValue placeholder="Tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Tags</SelectItem>
+                        {uniqueTags.map(tag => (
+                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <ArrowUpDown className="w-4 h-4" />
+                <Select value={sortBy} onValueChange={(v: "value" | "name" | "type") => setSortBy(v)}>
+                  <SelectTrigger className="w-[90px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm font-normal" aria-label="Sort by">
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="value">Value</SelectItem>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="type">Type</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(filterType !== "all" || filterTag !== "all" || filterPortfolio !== "all") && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setFilterType("all")
+                    setFilterTag("all")
+                    setFilterPortfolio("all")
+                  }}
+                  className="text-xs h-7 text-muted-foreground hover:text-foreground"
+                >
+                  Clear filters
+                </Button>
               )}
-              <div className="w-px h-6 bg-border" />
-              <Select value={sortBy} onValueChange={(v: "value" | "name" | "type") => setSortBy(v)}>
-                <SelectTrigger className="w-[100px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Sort by">
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="value">Value</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="type">Type</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
-            <Button onClick={() => setShowNewAccountForm(true)} className="gap-2 ml-auto">
+            <Button onClick={() => setShowNewAccountForm(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Add Account
             </Button>
           </div>
 
           {/* Accounts Table */}
-          <Card className="mb-8">
+          <Card className="overflow-hidden">
+            <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Accounts & Investments</h3>
+                <p className="text-sm text-muted-foreground">
+                  {filteredAccounts.length + portfolioHoldings.length} total • £{filteredTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })} filtered
+                </p>
+              </div>
+            </div>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="border-b bg-muted/50">
+                  <thead className="border-b bg-muted/30">
                     <tr>
-                      <th className="text-left p-3 text-sm font-medium">Account</th>
-                      <th className="text-left p-3 text-sm font-medium">Type</th>
-                      <th className="text-left p-3 text-sm font-medium">Portfolio</th>
-                      <th className="text-right p-3 text-sm font-medium">Value</th>
-                      <th className="p-3"></th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Portfolio</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Value</th>
+                      <th className="px-6 py-3 w-10"></th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border">
                     {filteredAccounts.length === 0 && portfolioHoldings.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-12 text-center">
-                          <div className="flex flex-col items-center">
-                            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                              <span className="text-3xl" aria-hidden="true">🏦</span>
+                        <td colSpan={5} className="px-6 py-16 text-center">
+                          <div className="flex flex-col items-center max-w-sm mx-auto">
+                            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                              <Wallet className="w-7 h-7 text-muted-foreground" />
                             </div>
-                            <p className="text-lg font-medium mb-2">
+                            <p className="text-lg font-semibold mb-2">
                               {accounts.length === 0
                                 ? "No accounts yet"
                                 : "No accounts match your filters"}
                             </p>
-                            <p className="text-muted-foreground mb-6">
+                            <p className="text-sm text-muted-foreground mb-6 text-center">
                               {accounts.length === 0
                                 ? "Add your first account to start tracking your net worth."
                                 : "Try adjusting your filter criteria."}
@@ -481,49 +530,55 @@ export default function NetWorthPage() {
                       </tr>
                     ) : (
                       filteredAccounts.map(account => (
-                        <tr key={account._id} className="border-b">
-                          <td className="p-3">
+                        <tr key={account._id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-6 py-4">
                             <div className="font-medium">{account.name}</div>
-                            {account.notes && <div className="text-xs text-muted-foreground">{account.notes}</div>}
+                            {account.notes && <div className="text-xs text-muted-foreground mt-0.5">{account.notes}</div>}
                           </td>
-                          <td className="p-3">
-                            <span className="inline-flex items-center gap-1">
-                              {ACCOUNT_TYPE_ICONS[account.accountType]}
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center gap-1.5 text-sm">
+                              {account.accountType === "bank" && <Landmark className="w-4 h-4 text-blue-600" />}
+                              {account.accountType === "savings" && <PiggyBank className="w-4 h-4 text-emerald-600" />}
+                              {account.accountType === "pension" && <Coins className="w-4 h-4 text-amber-600" />}
+                              {account.accountType === "crypto" && <Coins className="w-4 h-4 text-purple-600" />}
+                              {account.accountType === "cash" && <Banknote className="w-4 h-4 text-green-600" />}
+                              {account.accountType === "other" && <Folder className="w-4 h-4 text-gray-600" />}
                               {ACCOUNT_TYPES.find(t => t.value === account.accountType)?.label}
                             </span>
                           </td>
-                          <td className="p-3">
+                          <td className="px-6 py-4">
                             {account.portfolioId ? (
                               <Link
                                 href={`/holdings/${account.portfolioId}`}
-                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
+                                className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                               >
                                 {account.portfolioName || "Portfolio"}
                               </Link>
                             ) : account.tag ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-xs font-medium">
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-medium">
                                 {account.tag}
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">-</span>
+                              <span className="text-muted-foreground text-sm">-</span>
                             )}
                           </td>
-                          <td className="p-3 text-right">
+                          <td className="px-6 py-4 text-right">
                             <Input
                               type="number"
                               step="0.01"
                               value={account.value}
                               onChange={(e) => updateAccountValue(account._id, parseFloat(e.target.value) || 0)}
-                              className="w-32 text-right inline-flex"
+                              className="w-32 text-right inline-flex h-9"
                             />
                           </td>
-                          <td className="p-3 text-right">
+                          <td className="px-6 py-4 text-right">
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
                               onClick={() => deleteAccount(account._id)}
+                              className="hover:bg-destructive/10 hover:text-destructive"
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </td>
                         </tr>
@@ -533,38 +588,44 @@ export default function NetWorthPage() {
                     {/* Divider between manual accounts and investments */}
                     {portfolioHoldings.length > 0 && filteredAccounts.length > 0 && (
                       <tr>
-                        <td colSpan={5} className="border-t-2 border-dashed border-muted-foreground/30 p-2"></td>
+                        <td colSpan={5} className="border-t-2 border-dashed border-muted-foreground/20 px-6 py-2">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Investment Holdings</span>
+                        </td>
                       </tr>
                     )}
 
                     {/* Investment rows - automatically managed from holdings */}
                     {portfolioHoldings.map(item => (
-                      <tr key={item.accountName} className="border-b">
-                        <td className="p-3">
-                          <div className="font-medium">{item.accountName}</div>
+                      <tr key={item.accountName} className="hover:bg-muted/30 transition-colors bg-muted/10">
+                        <td className="px-6 py-4">
+                          <div className="font-medium flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-emerald-600" />
+                            {item.accountName}
+                          </div>
                         </td>
-                        <td className="p-3">
-                          <span className="inline-flex items-center gap-1" aria-hidden="true">
-                            📈 Investment
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center gap-1.5 text-sm">
+                            <TrendingUp className="w-4 h-4 text-emerald-600" />
+                            Investment
                           </span>
                         </td>
-                        <td className="p-3">
+                        <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-1">
                             {item.portfolios.map((portfolio, idx) => (
                               <Link
                                 key={idx}
                                 href={`/holdings/${portfolio.id}`}
-                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20"
+                                className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
                               >
                                 {portfolio.name}
                               </Link>
                             ))}
                           </div>
                         </td>
-                        <td className="p-3 text-right font-medium">
+                        <td className="px-6 py-4 text-right font-semibold">
                           £{item.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="p-3"></td>
+                        <td className="px-6 py-4"></td>
                       </tr>
                     ))}
                   </tbody>
@@ -575,16 +636,37 @@ export default function NetWorthPage() {
 
           {/* Net Worth Over Time Chart */}
           {getSnapshots && !('error' in getSnapshots) && getSnapshots.length > 0 && (
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle className="text-lg">Net Worth Over Time</CardTitle>
-                <CardDescription>Track your total wealth including investments and accounts</CardDescription>
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                      Net Worth Over Time
+                    </CardTitle>
+                    <CardDescription>Track your total wealth including investments and accounts</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={getSnapshots} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart data={getSnapshots} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorInvestments" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorAccounts" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#9333ea" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#9333ea" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
                     <XAxis
                       dataKey="snapshotDate"
                       stroke="hsl(var(--muted-foreground))"
@@ -595,6 +677,7 @@ export default function NetWorthPage() {
                       }}
                       tickLine={false}
                       axisLine={false}
+                      dy={10}
                     />
                     <YAxis
                       stroke="hsl(var(--muted-foreground))"
@@ -612,9 +695,12 @@ export default function NetWorthPage() {
                             <div className="font-semibold mb-1">
                               {new Date(label).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
                             </div>
-                            {payload.map((entry: { dataKey?: string | number; value?: number | string | (string | number)[] }) => (
+                            {payload.map((entry: { dataKey?: string | number; value?: number | string | (string | number)[]; color?: string }) => (
                               <div key={String(entry.dataKey)} className="flex justify-between gap-4">
-                                <span className="text-muted-foreground">{entry.dataKey === "netWorth" ? "Net Worth" : entry.dataKey === "investmentsValue" ? "Investments" : "Accounts"}:</span>
+                                <span className="text-muted-foreground flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                                  {entry.dataKey === "netWorth" ? "Net Worth" : entry.dataKey === "investmentsValue" ? "Investments" : "Accounts"}
+                                </span>
                                 <span className="font-medium">£{(entry.value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
                               </div>
                             ))}
@@ -622,32 +708,41 @@ export default function NetWorthPage() {
                         );
                       }}
                     />
-                    <Legend />
-                    <Line
+                    <Legend 
+                      wrapperStyle={{ paddingTop: "20px" }}
+                      formatter={(value) => <span className="text-sm font-medium text-foreground">{value}</span>}
+                    />
+                    <Area
                       type="monotone"
                       dataKey="netWorth"
                       name="Net Worth"
                       stroke="#2563eb"
                       strokeWidth={2}
+                      fill="url(#colorNetWorth)"
                       dot={false}
+                      activeDot={{ r: 4, strokeWidth: 2 }}
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="investmentsValue"
                       name="Investments"
                       stroke="#16a34a"
                       strokeWidth={2}
+                      fill="url(#colorInvestments)"
                       dot={false}
+                      activeDot={{ r: 4, strokeWidth: 2 }}
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="accountsValue"
                       name="Accounts"
                       stroke="#9333ea"
                       strokeWidth={2}
+                      fill="url(#colorAccounts)"
                       dot={false}
+                      activeDot={{ r: 4, strokeWidth: 2 }}
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -656,11 +751,13 @@ export default function NetWorthPage() {
 
           {/* Portfolio Banner */}
           {selectedPortfolio && (
-            <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <LinkIcon className="h-5 w-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                  <LinkIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
                 <div>
-                  <Link href={`/holdings/${selectedPortfolio._id}`} className="font-semibold hover:underline">
+                  <Link href={`/holdings/${selectedPortfolio._id}`} className="font-semibold hover:underline text-foreground">
                     {selectedPortfolio.name}
                   </Link>
                   <div className="text-sm text-muted-foreground">
@@ -668,7 +765,7 @@ export default function NetWorthPage() {
                   </div>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setFilterPortfolio("all")}>
+              <Button variant="outline" size="sm" onClick={() => setFilterPortfolio("all")} className="gap-1.5">
                 View All
               </Button>
             </div>
@@ -676,15 +773,25 @@ export default function NetWorthPage() {
 
           {/* New Account Form Modal */}
           {showNewAccountForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <Card className="w-full max-w-md">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                  <h2 className="text-xl font-semibold">Add New Account</h2>
-                  <button onClick={resetForm} className="text-muted-foreground hover:text-foreground">
-                    <X className="h-4 w-4" />
-                  </button>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <Card className="w-full max-w-md mx-4 shadow-2xl">
+                <CardHeader className="pb-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <Wallet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-semibold">Add New Account</h2>
+                        <p className="text-sm text-muted-foreground">Track a new asset or account</p>
+                      </div>
+                    </div>
+                    <button onClick={resetForm} className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg p-2 transition-colors">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="pt-6 space-y-5">
                   <div>
                     <label htmlFor="account-name" className="text-sm font-medium">Account Name</label>
                     <Input
@@ -692,48 +799,50 @@ export default function NetWorthPage() {
                       placeholder="e.g., NatWest Current Account"
                       value={newAccountName}
                       onChange={(e) => setNewAccountName(e.target.value)}
-                      className="mt-2"
+                      className="mt-1.5"
                     />
                   </div>
-                  <div>
-                    <label htmlFor="account-type" className="text-sm font-medium">Account Type</label>
-                    <Select value={newAccountType} onValueChange={(v: AccountType) => setNewAccountType(v)}>
-                      <SelectTrigger id="account-type" className="mt-2" aria-label="Select account type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ACCOUNT_TYPES.map(type => (
-                          <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="account-type" className="text-sm font-medium">Account Type</label>
+                      <Select value={newAccountType} onValueChange={(v: AccountType) => setNewAccountType(v)}>
+                        <SelectTrigger id="account-type" className="mt-1.5" aria-label="Select account type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ACCOUNT_TYPES.map(type => (
+                            <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label htmlFor="account-value" className="text-sm font-medium">Current Value (£)</label>
+                      <Input
+                        id="account-value"
+                        type="number"
+                        step="0.01"
+                        placeholder="1000.00"
+                        value={newAccountValue}
+                        onChange={(e) => setNewAccountValue(e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <label htmlFor="account-tag" className="text-sm font-medium">Purpose Tag (optional)</label>
+                    <label htmlFor="account-tag" className="text-sm font-medium">Purpose Tag <span className="text-muted-foreground font-normal">(optional)</span></label>
                     <Input
                       id="account-tag"
                       placeholder="e.g., Emergency Fund, House Fund"
                       value={newAccountTag}
                       onChange={(e) => setNewAccountTag(e.target.value)}
-                      className="mt-2"
+                      className="mt-1.5"
                     />
                   </div>
                   <div>
-                    <label htmlFor="account-value" className="text-sm font-medium">Current Value (£)</label>
-                    <Input
-                      id="account-value"
-                      type="number"
-                      step="0.01"
-                      placeholder="1000.00"
-                      value={newAccountValue}
-                      onChange={(e) => setNewAccountValue(e.target.value)}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="account-portfolio" className="text-sm font-medium">Link to Portfolio (optional)</label>
+                    <label htmlFor="account-portfolio" className="text-sm font-medium">Link to Portfolio <span className="text-muted-foreground font-normal">(optional)</span></label>
                     <Select value={newAccountPortfolioId || "none"} onValueChange={(v) => setNewAccountPortfolioId(v === "none" ? "" : v)}>
-                      <SelectTrigger id="account-portfolio" className="mt-2" aria-label="Select portfolio to link">
+                      <SelectTrigger id="account-portfolio" className="mt-1.5" aria-label="Select portfolio to link">
                         <SelectValue placeholder="Select a portfolio" />
                       </SelectTrigger>
                       <SelectContent>
@@ -743,24 +852,33 @@ export default function NetWorthPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1.5">
                       Link to a portfolio to easily import holdings
                     </p>
                   </div>
                   <div>
-                    <label htmlFor="account-notes" className="text-sm font-medium">Notes (optional)</label>
+                    <label htmlFor="account-notes" className="text-sm font-medium">Notes <span className="text-muted-foreground font-normal">(optional)</span></label>
                     <Input
                       id="account-notes"
                       placeholder="Any additional notes"
                       value={newAccountNotes}
                       onChange={(e) => setNewAccountNotes(e.target.value)}
-                      className="mt-2"
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={resetForm}>Cancel</Button>
-                    <Button onClick={addAccount} disabled={isSaving || !newAccountName.trim() || !newAccountValue}>
-                      {isSaving ? "Adding..." : "Add Account"}
+                  <div className="flex gap-3 pt-2">
+                    <Button variant="outline" onClick={resetForm} className="flex-1">
+                      Cancel
+                    </Button>
+                    <Button onClick={addAccount} disabled={isSaving || !newAccountName.trim() || !newAccountValue} className="flex-1">
+                      {isSaving ? (
+                        <>
+                          <LoadingSpinner className="w-4 h-4 mr-2" />
+                          Adding...
+                        </>
+                      ) : (
+                        "Add Account"
+                      )}
                     </Button>
                   </div>
                 </CardContent>

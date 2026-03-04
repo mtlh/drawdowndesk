@@ -21,9 +21,7 @@ import {
   ChartConfig,
   ChartContainer,
   ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
-  ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
   Bar,
@@ -371,83 +369,76 @@ export default function RetirementCashflowCalculator() {
   return (
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="p-8 space-y-8">
-          {/* Header */}
-          <div className="space-y-2"></div>
+        <div className="p-4 lg:p-8 space-y-6">
+          {/* Header Section */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-600/20">
+                <TrendingUp className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">Retirement Cashflow</div>
+                <div className="text-4xl font-bold tracking-tight">
+                  £{totalPortfolio.toLocaleString("en-US", { minimumFractionDigits: 0 })}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  Starting at age {startAge}
+                </div>
+              </div>
+            </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <PoundSterling className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Total Take Home</span>
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 lg:max-w-3xl">
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <PoundSterling className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Total Take Home</span>
                 </div>
-                <div className="text-2xl font-bold">£{summary.totalTakeHome.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">over retirement</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Total Tax Paid</span>
+                <div className="text-2xl font-bold">£{(summary.totalTakeHome / 1000).toFixed(0)}k</div>
+              </div>
+              <div className="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border border-red-200/50 dark:border-red-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <PoundSterling className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <span className="text-xs font-medium text-red-600 dark:text-red-400">Total Tax</span>
                 </div>
-                <div className="text-2xl font-bold text-destructive">£{summary.totalTax.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">income tax + NI</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Money Lasts Until</span>
+                <div className="text-2xl font-bold">£{(summary.totalTax / 1000).toFixed(0)}k</div>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Money Lasts</span>
                 </div>
                 <div className="text-2xl font-bold">
-                  {summary.yearsUntilDepleted > 100 - startAge ? "Never" : `Age ${startAge + summary.yearsUntilDepleted}`}
+                  {summary.yearsUntilDepleted > 100 - startAge ? "Forever" : `${summary.yearsUntilDepleted} yrs`}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {summary.yearsUntilDepleted > 100 - startAge
-                    ? "pot survives full period"
-                    : `${summary.yearsUntilDepleted} years`}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="h-4 w-4" style={{ color: "var(--chart-1)" }} />
-                  <span className="text-sm text-muted-foreground">Pension Total</span>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400">At Age 100</span>
                 </div>
-                <div className="text-2xl font-bold">£{summary.pensionTotal.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">taxed income</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <PiggyBank className="h-4 w-4" style={{ color: "var(--chart-2)" }} />
-                  <span className="text-sm text-muted-foreground">ISA + GIA Total</span>
+                <div className="text-2xl font-bold">
+                  {summary.finalTotalValue > 0 ? `£${(summary.finalTotalValue / 1000000).toFixed(1)}M` : "£0"}
                 </div>
-                <div className="text-2xl font-bold">£{(summary.isaTotal + summary.giaTotal).toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">tax-free + taxed</p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Account Inputs */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Balances</CardTitle>
-              <CardDescription>Enter the value of each account type</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Card className="overflow-hidden">
+            <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Account Balances</h3>
+                <p className="text-sm text-muted-foreground">Enter the value of each account type</p>
+              </div>
+            </div>
+            <CardContent className="p-6">
               <div className="grid md:grid-cols-3 gap-6">
                 {/* Pension */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="pensionValue" className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" style={{ color: "var(--chart-1)" }} />
-                    Pension Pot (£)
+                    <Building2 className="h-4 w-4" style={{ color: "#22c55e" }} />
+                    <span className="font-medium">Pension Pot</span>
                   </Label>
                   <Input
                     id="pensionValue"
@@ -455,15 +446,16 @@ export default function RetirementCashflowCalculator() {
                     step="10000"
                     value={pensionValue}
                     onChange={(e) => setPensionValue(Number(e.target.value))}
+                    className="text-lg h-11"
                   />
                   <p className="text-xs text-muted-foreground">25% tax-free, rest taxed as income</p>
                 </div>
 
                 {/* ISA */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="isaValue" className="flex items-center gap-2">
-                    <PiggyBank className="h-4 w-4" style={{ color: "var(--chart-2)" }} />
-                    ISA Value (£)
+                    <PiggyBank className="h-4 w-4" style={{ color: "#3b82f6" }} />
+                    <span className="font-medium">ISA Value</span>
                   </Label>
                   <Input
                     id="isaValue"
@@ -471,15 +463,16 @@ export default function RetirementCashflowCalculator() {
                     step="10000"
                     value={isaValue}
                     onChange={(e) => setIsaValue(Number(e.target.value))}
+                    className="text-lg h-11"
                   />
                   <p className="text-xs text-muted-foreground">Completely tax-free withdrawals</p>
                 </div>
 
                 {/* GIA */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="giaValue" className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4" style={{ color: "var(--chart-4)" }} />
-                    GIA Value (£)
+                    <Wallet className="h-4 w-4" style={{ color: "#f97316" }} />
+                    <span className="font-medium">GIA Value</span>
                   </Label>
                   <Input
                     id="giaValue"
@@ -487,31 +480,34 @@ export default function RetirementCashflowCalculator() {
                     step="10000"
                     value={giaValue}
                     onChange={(e) => setGiaValue(Number(e.target.value))}
+                    className="text-lg h-11"
                   />
                   <p className="text-xs text-muted-foreground">Taxed on gains within income brackets</p>
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-muted rounded-lg">
+              <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Total Portfolio:</span>
-                  <span className="text-xl font-bold">£{totalPortfolio.toLocaleString()}</span>
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Total Portfolio</span>
+                  <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">£{totalPortfolio.toLocaleString()}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Other Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Retirement Settings</CardTitle>
-              <CardDescription>Configure your retirement timeline and assumptions</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Card className="overflow-hidden">
+            <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Retirement Settings</h3>
+                <p className="text-sm text-muted-foreground">Configure your retirement timeline and assumptions</p>
+              </div>
+            </div>
+            <CardContent className="p-6">
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Starting Age */}
-                <div>
-                  <Label htmlFor="startAge">Retirement Start Age</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="startAge" className="font-medium">Retirement Start Age</Label>
                   <Input
                     id="startAge"
                     type="number"
@@ -519,34 +515,34 @@ export default function RetirementCashflowCalculator() {
                     max={80}
                     value={startAge}
                     onChange={(e) => setStartAge(Number(e.target.value))}
-                    className="mt-2"
+                    className="h-11"
                   />
                 </div>
 
                 {/* State Pension Settings - Link to Settings */}
-                <div className="space-y-2">
-                  <Label>State Pension</Label>
-                  <div className="p-3 bg-muted rounded-lg">
+                <div className="space-y-3">
+                  <Label className="font-medium">State Pension</Label>
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/50 rounded-xl">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="font-medium">£{statePension.toLocaleString()} / year</p>
-                        <p className="text-sm text-muted-foreground">Starting at age {statePensionAge}</p>
+                        <p className="font-semibold text-lg">£{statePension.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">Age {statePensionAge}</p>
                       </div>
                       <a
                         href="/settings"
-                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                        className="text-sm text-purple-600 hover:text-purple-800 hover:underline font-medium"
                       >
-                        Edit in Settings
+                        Edit
                       </a>
                     </div>
                   </div>
                 </div>
 
                 {/* Growth Rate */}
-                <div>
-                  <Label htmlFor="growthRate">Annual Growth Rate (%)</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="growthRate" className="font-medium">Annual Growth Rate</Label>
                   <Select value={growthRate.toString()} onValueChange={(v) => setGrowthRate(Number(v))}>
-                    <SelectTrigger className="mt-2" aria-label="Select growth rate">
+                    <SelectTrigger className="h-11" aria-label="Select growth rate">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -560,10 +556,10 @@ export default function RetirementCashflowCalculator() {
                 </div>
 
                 {/* Withdrawal Rate */}
-                <div>
-                  <Label htmlFor="withdrawalRate">Annual Withdrawal Rate (%)</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="withdrawalRate" className="font-medium">Annual Withdrawal Rate</Label>
                   <Select value={withdrawalRate.toString()} onValueChange={(v) => setWithdrawalRate(Number(v))}>
-                    <SelectTrigger className="mt-2" aria-label="Select withdrawal rate">
+                    <SelectTrigger className="h-11" aria-label="Select withdrawal rate">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -583,24 +579,61 @@ export default function RetirementCashflowCalculator() {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Income Chart */}
             <Card>
-              <CardHeader>
-                <CardTitle>Annual Income by Source (£)</CardTitle>
-                <CardDescription>Income from each account type</CardDescription>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <PoundSterling className="w-5 h-5 text-emerald-600" />
+                      Annual Income by Source
+                    </CardTitle>
+                    <CardDescription>Income from each account type</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={incomeConfig} className="h-[300px] w-full">
+                <ChartContainer config={incomeConfig} className="h-[320px] w-full">
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="age" stroke="hsl(var(--muted-foreground))" tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} tickMargin={8} axisLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} tickMargin={8} tickFormatter={(v) => `£${(v/1000).toFixed(0)}k`} axisLine={false} />
-                    <ChartTooltip
-                      content={<ChartTooltipContent />}
-                      formatter={(value: number, name: string) => [
-                        `£${value.toLocaleString()}`,
-                        incomeConfig[name as keyof typeof incomeConfig]?.label || name
-                      ]}
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="age" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} 
+                      tickLine={false} 
+                      tickMargin={8} 
+                      axisLine={false} 
                     />
-                    <ChartLegend content={<ChartLegendContent />} />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))" 
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} 
+                      tickLine={false} 
+                      tickMargin={8} 
+                      tickFormatter={(v) => `£${(v/1000).toFixed(0)}k`} 
+                      axisLine={false}
+                      width={55}
+                    />
+                    <ChartTooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null;
+                        return (
+                          <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm">
+                            <div className="font-semibold mb-1">Age {label}</div>
+                            {payload.map((entry: { dataKey?: string | number; value?: number | string | (string | number)[]; color?: string }) => (
+                              <div key={String(entry.dataKey)} className="flex justify-between gap-4">
+                                <span className="text-muted-foreground flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                                  {incomeConfig[String(entry.dataKey) as keyof typeof incomeConfig]?.label || String(entry.dataKey)}
+                                </span>
+                                <span className="font-medium">£{(entry.value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }}
+                    />
+                    <ChartLegend 
+                      wrapperStyle={{ paddingTop: "16px" }}
+                      formatter={(value) => <span className="text-sm font-medium text-foreground">{incomeConfig[String(value) as keyof typeof incomeConfig]?.label || value}</span>}
+                    />
                     <Bar dataKey="takeHomePay" stackId="a" fill="#22c55e" radius={[0, 0, 2, 2]} />
                     <Bar dataKey="isaWithdrawal" stackId="a" fill="#3b82f6" />
                     <Bar dataKey="giaWithdrawal" stackId="a" fill="#f97316" />
@@ -613,24 +646,75 @@ export default function RetirementCashflowCalculator() {
 
             {/* Pot Value Chart */}
             <Card>
-              <CardHeader>
-                <CardTitle>Account Values Over Time (£)</CardTitle>
-                <CardDescription>Projected value of each account</CardDescription>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                      Account Values Over Time
+                    </CardTitle>
+                    <CardDescription>Projected value of each account</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={potConfig} className="h-[300px] w-full">
+                <ChartContainer config={potConfig} className="h-[320px] w-full">
                   <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="age" stroke="hsl(var(--muted-foreground))" tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} tickMargin={8} axisLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} tickMargin={8} tickFormatter={(v) => `£${(v/1000000).toFixed(1)}M`} axisLine={false} />
-                    <ChartTooltip
-                      content={<ChartTooltipContent />}
-                      formatter={(value: number, name: string) => [
-                        `£${value.toLocaleString()}`,
-                        potConfig[name as keyof typeof potConfig]?.label || name
-                      ]}
+                    <defs>
+                      <linearGradient id="colorPension" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.15}/>
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorISA" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorGIA" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.15}/>
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="age" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} 
+                      tickLine={false} 
+                      tickMargin={8} 
+                      axisLine={false} 
                     />
-                    <ChartLegend content={<ChartLegendContent />} />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))" 
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} 
+                      tickLine={false} 
+                      tickMargin={8} 
+                      tickFormatter={(v) => `£${(v/1000000).toFixed(1)}M`} 
+                      axisLine={false}
+                      width={55}
+                    />
+                    <ChartTooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null;
+                        return (
+                          <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm">
+                            <div className="font-semibold mb-1">Age {label}</div>
+                            {payload.map((entry: { dataKey?: string | number; value?: number | string | (string | number)[]; color?: string }) => (
+                              <div key={String(entry.dataKey)} className="flex justify-between gap-4">
+                                <span className="text-muted-foreground flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                                  {potConfig[String(entry.dataKey) as keyof typeof potConfig]?.label || String(entry.dataKey)}
+                                </span>
+                                <span className="font-medium">£{(entry.value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }}
+                    />
+                    <ChartLegend 
+                      wrapperStyle={{ paddingTop: "16px" }}
+                      formatter={(value) => <span className="text-sm font-medium text-foreground">{potConfig[String(value) as keyof typeof potConfig]?.label || value}</span>}
+                    />
                     <Line type="monotone" dataKey="pensionPot" stroke="#22c55e" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="isaPot" stroke="#3b82f6" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="giaPot" stroke="#f97316" strokeWidth={2} dot={false} />
@@ -641,37 +725,39 @@ export default function RetirementCashflowCalculator() {
           </div>
 
           {/* Detailed Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Year-by-Year Breakdown</CardTitle>
-              <CardDescription>Detailed projection by age</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Card className="overflow-hidden">
+            <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Year-by-Year Breakdown</h3>
+                <p className="text-sm text-muted-foreground">Detailed projection by age</p>
+              </div>
+            </div>
+            <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-2">Age</th>
-                      <th className="text-right py-2 px-2">Pension</th>
-                      <th className="text-right py-2 px-2">ISA</th>
-                      <th className="text-right py-2 px-2">GIA</th>
-                      <th className="text-right py-2 px-2">Total Pot</th>
-                      <th className="text-right py-2 px-2">Withdrawal</th>
-                      <th className="text-right py-2 px-2">Tax</th>
-                      <th className="text-right py-2 px-2">Take Home</th>
+                  <thead className="bg-muted/30">
+                    <tr>
+                      <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Age</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pension</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">ISA</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">GIA</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Pot</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Withdrawal</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tax</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Take Home</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border">
                     {chartData.filter((_, i) => i % 5 === 0 || i === chartData.length - 1).map((year) => (
-                      <tr key={year.age} className="border-b">
-                        <td className="py-2 px-2 font-medium">{year.age}</td>
-                        <td className="text-right py-2 px-2">£{year.pensionPot.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                        <td className="text-right py-2 px-2">£{year.isaPot.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                        <td className="text-right py-2 px-2">£{year.giaPot.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                        <td className="text-right py-2 px-2 font-medium">£{year.totalPot.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                        <td className="text-right py-2 px-2">£{year.totalWithdrawal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                        <td className="text-right py-2 px-2 text-destructive">£{year.incomeTax.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                        <td className="text-right py-2 px-2 font-medium">£{year.takeHomePay.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                      <tr key={year.age} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-6 py-3 font-medium">{year.age}</td>
+                        <td className="text-right px-6 py-3">£{year.pensionPot.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                        <td className="text-right px-6 py-3">£{year.isaPot.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                        <td className="text-right px-6 py-3">£{year.giaPot.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                        <td className="text-right px-6 py-3 font-medium">£{year.totalPot.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                        <td className="text-right px-6 py-3">£{year.totalWithdrawal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                        <td className="text-right px-6 py-3 text-destructive">£{year.incomeTax.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                        <td className="text-right px-6 py-3 font-semibold text-emerald-600 dark:text-emerald-400">£{year.takeHomePay.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -681,47 +767,55 @@ export default function RetirementCashflowCalculator() {
           </Card>
 
           {/* Assumptions & Disclaimers */}
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="assumptions">
-              <AccordionTrigger>Model Assumptions</AccordionTrigger>
-              <AccordionContent>
-                <ul className="list-disc pl-4 space-y-1 text-sm text-muted-foreground">
-                  <li><strong>Pension:</strong> 25% tax-free lump sum, remaining 75% taxed as income</li>
-                  <li><strong>ISA:</strong> Completely tax-free withdrawals (contributions already taxed)</li>
-                  <li><strong>GIA:</strong> Entire withdrawal treated as taxable income (simplified)</li>
-                  <li>Growth is applied annually before withdrawals</li>
-                  <li>Withdrawals are taken proportionally from each account</li>
-                  <li>State pension begins at the specified age and continues for life</li>
-                  <li>All figures are in today&apos;s pounds (inflation not explicitly modeled)</li>
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="limitations">
-              <AccordionTrigger>Limitations</AccordionTrigger>
-              <AccordionContent>
-                <ul className="list-disc pl-4 space-y-1 text-sm text-muted-foreground">
-                  <li>Market volatility is not modeled - returns are assumed constant</li>
-                  <li>Sequence of returns risk is not accounted for</li>
-                  <li>Tax rates may change in future years</li>
-                  <li>State pension age and amount may change</li>
-                  <li>GIA calculation is simplified - only gains should be taxed, not original contributions</li>
-                  <li>ISA allowance limits not considered</li>
-                  <li>No allowance for investment fees or advice costs</li>
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="disclaimer">
-              <AccordionTrigger>Important Disclaimer</AccordionTrigger>
-              <AccordionContent>
-                <p className="text-sm text-muted-foreground">
-                  This calculator provides illustrative projections based on the assumptions you enter.
-                  It is not financial advice and should not be used as the sole basis for retirement decisions.
-                  Results are not guaranteed and your actual outcomes may differ significantly.
-                  Please consult a qualified financial adviser for personalized advice.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          <Card className="overflow-hidden">
+            <Accordion type="single" collapsible className="w-full border-0">
+              <AccordionItem value="assumptions" className="border-b-0">
+                <AccordionTrigger className="px-6 hover:no-underline hover:bg-muted/50 px-6 py-4">
+                  <span className="font-semibold">Model Assumptions</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-4">
+                  <ul className="list-disc pl-4 space-y-2 text-sm text-muted-foreground">
+                    <li><span className="font-medium text-foreground">Pension:</span> 25% tax-free lump sum, remaining 75% taxed as income</li>
+                    <li><span className="font-medium text-foreground">ISA:</span> Completely tax-free withdrawals (contributions already taxed)</li>
+                    <li><span className="font-medium text-foreground">GIA:</span> Entire withdrawal treated as taxable income (simplified)</li>
+                    <li>Growth is applied annually before withdrawals</li>
+                    <li>Withdrawals are taken proportionally from each account</li>
+                    <li>State pension begins at the specified age and continues for life</li>
+                    <li>All figures are in today&apos;s pounds (inflation not explicitly modeled)</li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="limitations" className="border-b-0">
+                <AccordionTrigger className="px-6 hover:no-underline hover:bg-muted/50 py-4">
+                  <span className="font-semibold">Limitations</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-4">
+                  <ul className="list-disc pl-4 space-y-2 text-sm text-muted-foreground">
+                    <li>Market volatility is not modeled - returns are assumed constant</li>
+                    <li>Sequence of returns risk is not accounted for</li>
+                    <li>Tax rates may change in future years</li>
+                    <li>State pension age and amount may change</li>
+                    <li>GIA calculation is simplified - only gains should be taxed, not original contributions</li>
+                    <li>ISA allowance limits not considered</li>
+                    <li>No allowance for investment fees or advice costs</li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="disclaimer" className="border-b-0">
+                <AccordionTrigger className="px-6 hover:no-underline hover:bg-muted/50 py-4">
+                  <span className="font-semibold">Important Disclaimer</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-4">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    This calculator provides illustrative projections based on the assumptions you enter.
+                    It is not financial advice and should not be used as the sole basis for retirement decisions.
+                    Results are not guaranteed and your actual outcomes may differ significantly.
+                    Please consult a qualified financial adviser for personalized advice.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </Card>
         </div>
       </main>
     </div>

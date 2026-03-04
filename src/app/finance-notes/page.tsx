@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
-import { FileText, Keyboard, Check, AlertCircle, Plus, Trash2, Eye, Edit3, Loader2 } from "lucide-react"
+import { FileText, Keyboard, Check, AlertCircle, Plus, Trash2, Eye, Edit3, Loader2, StickyNote } from "lucide-react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import ReactMarkdown from "react-markdown"
@@ -183,10 +183,19 @@ export default function FinanceNotesPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       {/* Sidebar - Note List */}
       <aside className="w-64 md:w-72 border-r bg-card flex flex-col shrink-0">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20">
+              <StickyNote className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-lg">Planning Notes</h2>
+              <p className="text-xs text-muted-foreground">{notes.length} note{notes.length !== 1 ? "s" : ""}</p>
+            </div>
+          </div>
           <Button onClick={handleCreateNote} className="w-full gap-2" size="sm">
             <Plus className="h-4 w-4" />
             New Note
@@ -207,10 +216,12 @@ export default function FinanceNotesPage() {
               ))}
             </div>
           ) : notes.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
-              <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No notes yet</p>
-              <p className="text-xs">Click &quot;New Note&quot; to create one</p>
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                <FileText className="h-7 w-7 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium">No notes yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Click &quot;New Note&quot; to create your first planning note</p>
             </div>
           ) : (
             <div className="p-2 space-y-1">
@@ -218,9 +229,9 @@ export default function FinanceNotesPage() {
                 <div
                   key={note._id}
                   onClick={() => setSelectedNoteId(note._id)}
-                  className={`group p-3 rounded-lg cursor-pointer transition-colors ${
+                  className={`group p-3 rounded-lg cursor-pointer transition-all ${
                     selectedNoteId === note._id
-                      ? "bg-primary/10 border border-primary/20"
+                      ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50"
                       : "hover:bg-muted/50 border border-transparent"
                   }`}
                 >
@@ -229,18 +240,18 @@ export default function FinanceNotesPage() {
                       <p className="font-medium text-sm truncate">
                         {note.title || "Untitled Note"}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {note.content.slice(0, 50) || "No content"}
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {note.content.slice(0, 60) || "No content"}
                       </p>
                       {note.lastUpdated && (
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1.5">
                           {formatLastSaved(note.lastUpdated)}
                         </p>
                       )}
                     </div>
                     <button
                       onClick={(e) => handleDeleteNote(note._id, e)}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/10 hover:text-destructive rounded transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-all"
                       title="Delete note"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -255,127 +266,148 @@ export default function FinanceNotesPage() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="p-3 md:p-4 space-y-3">
-          {/* Compact status indicator */}
-          <div className="flex items-center gap-2 text-xs">
-            {isSaving ? (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin text-amber-500" />
-                <span className="text-amber-600 dark:text-amber-400">Saving...</span>
-              </>
-            ) : hasChanges ? (
-              <>
-                <AlertCircle className="h-3 w-3 text-amber-500" />
-                <span className="text-amber-600 dark:text-amber-400">Unsaved</span>
-              </>
-            ) : (
-              <>
-                <Check className="h-3 w-3 text-emerald-500" />
-                <span className="text-muted-foreground">Saved</span>
-              </>
-            )}
-            {lastSaved && !isSaving && (
-              <span className="text-muted-foreground ml-1">
-                {formatLastSaved(lastSaved)}
-              </span>
+        <div className="p-4 lg:p-8 space-y-6">
+          {/* Status Bar */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">Saving...</span>
+                </>
+              ) : hasChanges ? (
+                <>
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">Unsaved changes</span>
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  <span className="text-muted-foreground">All changes saved</span>
+                </>
+              )}
+              {lastSaved && !isSaving && (
+                <span className="text-muted-foreground ml-2">
+                  Last saved {formatLastSaved(lastSaved)}
+                </span>
+              )}
+            </div>
+            {selectedNoteId && (
+              <div className="text-sm text-muted-foreground">
+                {wordCount} {wordCount === 1 ? "word" : "words"}
+              </div>
             )}
           </div>
 
           {isLoading ? (
             <Card>
-              <CardContent className="py-6 space-y-4">
-                <Skeleton className="h-8 w-1/2 rounded" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full rounded" />
-                  <Skeleton className="h-4 w-full rounded" />
-                  <Skeleton className="h-4 w-3/4 rounded" />
-                  <Skeleton className="h-4 w-5/6 rounded" />
-                  <Skeleton className="h-4 w-full rounded" />
-                  <Skeleton className="h-4 w-2/3 rounded" />
+              <CardContent className="py-12 space-y-6">
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-1/2 rounded-lg" />
+                  <Skeleton className="h-6 w-3/4 rounded-lg" />
+                  <div className="space-y-3 pt-4">
+                    <Skeleton className="h-4 w-full rounded" />
+                    <Skeleton className="h-4 w-full rounded" />
+                    <Skeleton className="h-4 w-5/6 rounded" />
+                    <Skeleton className="h-4 w-4/5 rounded" />
+                    <Skeleton className="h-4 w-full rounded" />
+                    <Skeleton className="h-4 w-2/3 rounded" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ) : !selectedNoteId ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="flex items-center justify-center text-muted-foreground">
-                  <div className="text-center space-y-4">
-                    <FileText className="h-12 w-12 mx-auto opacity-50" />
-                    <p>Select a note or create a new one</p>
-                    <Button onClick={handleCreateNote} variant="outline" size="sm" className="gap-2">
-                      <Plus className="h-4 w-4" />
-                      Create Note
-                    </Button>
+            <Card className="border-dashed">
+              <CardContent className="py-16">
+                <div className="flex flex-col items-center justify-center text-center max-w-sm mx-auto">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 flex items-center justify-center mb-4">
+                    <StickyNote className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                   </div>
+                  <p className="text-lg font-semibold mb-2">No note selected</p>
+                  <p className="text-sm text-muted-foreground mb-6">Select a note from the sidebar or create a new one to get started.</p>
+                  <Button onClick={handleCreateNote} variant="outline" size="sm" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Note
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
             <>
-              {/* Title Input - compact */}
+              {/* Title Input */}
               <Input
                 id="title"
                 placeholder="Note title..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="text-base font-medium"
+                className="text-xl font-semibold bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 rounded-none px-0 pb-3"
               />
 
-              {/* Mode toggle button */}
-              <div className="mb-2">
-                <Button
-                  onClick={() => setIsPreviewMode(!isPreviewMode)}
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1 h-7 px-2"
-                >
-                  {isPreviewMode ? (
-                    <>
-                      <Edit3 className="h-3 w-3" />
-                      <span className="text-xs">Edit</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-3 w-3" />
-                      <span className="text-xs">Preview</span>
-                    </>
-                  )}
-                </Button>
+              {/* Toolbar */}
+              <div className="flex items-center justify-between border-b pb-3">
+                <div className="flex items-center gap-2 bg-muted/50 dark:bg-muted/30 p-1 rounded-lg">
+                  <Button
+                    onClick={() => setIsPreviewMode(false)}
+                    variant={!isPreviewMode ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-1.5"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    <span className="text-xs">Edit</span>
+                  </Button>
+                  <Button
+                    onClick={() => setIsPreviewMode(true)}
+                    variant={isPreviewMode ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-1.5"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    <span className="text-xs">Preview</span>
+                  </Button>
+                </div>
+                <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
+                  <Keyboard className="h-3 w-3" />
+                  <span>Ctrl+S to save</span>
+                  <span className="text-muted-foreground/50">|</span>
+                  <span># for headers, - for lists</span>
+                </div>
               </div>
 
-              {/* Content Editor/Preview with border */}
-              <div className="relative flex flex-col min-h-[300px] md:min-h-[400px] border rounded-lg">
+              {/* Content Editor/Preview */}
+              <Card className="overflow-hidden mt-4">
                 {isPreviewMode ? (
-                  <>
-                    {/* Click anywhere on preview to edit */}
-                    <div
-                      onClick={() => setIsPreviewMode(false)}
-                      className="flex-1 overflow-y-auto p-4 min-h-[250px] md:min-h-[350px] text-sm space-y-2 cursor-text"
-                    >
-                      {content ? (
-                        <ReactMarkdown
-                          components={{
-                            h1: ({ children }) => <h1 className="text-xl font-bold mt-4 mb-2">{children}</h1>,
-                            h2: ({ children }) => <h2 className="text-lg font-semibold mt-3 mb-2">{children}</h2>,
-                            h3: ({ children }) => <h3 className="text-base font-semibold mt-2 mb-1">{children}</h3>,
-                            p: ({ children }) => <p className="mb-2">{children}</p>,
-                            ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                            li: ({ children }) => <li>{children}</li>,
-                            blockquote: ({ children }) => <blockquote className="border-l-2 border-muted-foreground pl-3 italic text-muted-foreground">{children}</blockquote>,
-                            code: ({ children }) => <code className="bg-muted px-1 py-0.5 rounded text-xs">{children}</code>,
-                            pre: ({ children }) => <pre className="bg-muted p-3 rounded-lg overflow-x-auto mb-2">{children}</pre>,
-                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                            em: ({ children }) => <em>{children}</em>,
-                          }}
-                        >
-                          {content}
-                        </ReactMarkdown>
-                      ) : (
-                        <p className="text-muted-foreground italic">Click to add notes...</p>
-                      )}
-                    </div>
-                  </>
+                  <div
+                    onClick={() => setIsPreviewMode(false)}
+                    className="flex-1 overflow-y-auto p-6 min-h-[400px] cursor-text"
+                  >
+                    {content ? (
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-3 pb-2 border-b">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-xl font-semibold mt-5 mb-2">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
+                          p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
+                          ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1.5">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1.5">{children}</ol>,
+                          li: ({ children }) => <li className="ml-2">{children}</li>,
+                          blockquote: ({ children }) => <blockquote className="border-l-4 border-blue-500 pl-4 italic text-muted-foreground my-4">{children}</blockquote>,
+                          code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>,
+                          pre: ({ children }) => <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-3 text-sm">{children}</pre>,
+                          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                          em: ({ children }) => <em>{children}</em>,
+                          a: ({ href, children }) => <a href={href} className="text-blue-600 hover:underline">{children}</a>,
+                        }}
+                      >
+                        {content}
+                      </ReactMarkdown>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground">
+                        <Edit3 className="h-10 w-10 mb-3 opacity-30" />
+                        <p className="text-lg font-medium">Click to start writing...</p>
+                        <p className="text-sm opacity-60">Your markdown notes will appear here</p>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <>
                     <Textarea
@@ -397,23 +429,11 @@ export default function FinanceNotesPage() {
 2. Work well too`}
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
-                      className="flex-1 min-h-[250px] md:min-h-[350px] resize-none text-sm"
+                      className="flex-1 min-h-[400px] resize-none border-0 rounded-none focus:ring-0 p-6 text-base"
                     />
-                    {/* Bottom bar: word count left, shortcuts right */}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground px-1 py-2 border-t">
-                      <span>
-                        {wordCount} {wordCount === 1 ? "word" : "words"}
-                      </span>
-                      <div className="hidden md:flex items-center gap-2">
-                        <Keyboard className="h-3 w-3" />
-                        <span>Ctrl+S</span>
-                        <span className="text-muted-foreground/50">|</span>
-                        <span># headers, - lists</span>
-                      </div>
-                    </div>
                   </>
                 )}
-              </div>
+              </Card>
             </>
           )}
         </div>

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Info, AlertCircle } from "lucide-react"
+import { TrendingUp, TrendingDown, Info, AlertCircle, Calculator, Wallet, ArrowDownToLine, ArrowUpFromLine } from "lucide-react"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
@@ -316,9 +316,56 @@ export default function OneOffCashflow() {
   return (
     <div className="flex h-screen bg-background">
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="p-8 space-y-8">
-          {/* Header */}
-          <div className="space-y-2"></div>
+        <div className="p-4 lg:p-8 space-y-6">
+          {/* Header Section */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <Calculator className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">One-Off CGT Calculator</div>
+                <div className="text-3xl font-bold tracking-tight">
+                  Capital Gains Tax
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                  <TrendingDown className="w-4 h-4" />
+                  Calculate and compare tax strategies
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 lg:max-w-3xl lg:justify-end">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <ArrowDownToLine className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Capital Gains</span>
+                </div>
+                <div className="text-2xl font-bold">£{(data.capitalGains ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}</div>
+              </div>
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Single Year Tax</span>
+                </div>
+                <div className="text-2xl font-bold text-destructive">£{(singleYearCalc?.capitalGainsTax ?? 0).toLocaleString()}</div>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <ArrowUpFromLine className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{data.yearsToSpread}-Year Tax</span>
+                </div>
+                <div className="text-2xl font-bold text-emerald-600">£{(multiYearCalc?.capitalGainsTax ?? 0).toLocaleString()}</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Wallet className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Potential Savings</span>
+                </div>
+                <div className="text-2xl font-bold text-primary">£{(savings ?? 0).toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
 
           {/* Main Content - Vertical Stack */}
           <div className="space-y-6">
@@ -332,14 +379,14 @@ export default function OneOffCashflow() {
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-3 gap-6">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="currentIncome">Current Annual Income (£)</Label>
                     <Input
                       id="currentIncome"
                       type="number"
                       value={data.currentIncome}
                       placeholder="e.g. 30000"
-                      className="mt-2"
+                      className="h-10"
                       onChange={(e) => {
                           const value = e.target.value;
                           setData({ ...data, currentIncome: value === "" ? undefined : Number(value) });
@@ -347,30 +394,30 @@ export default function OneOffCashflow() {
                     />
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="capitalGains">Capital Gains (£)</Label>
                     <Input
                       id="capitalGains"
                       type="number"
                       value={data.capitalGains}
                       placeholder="e.g. 100000"
-                      className="mt-2"
+                      className="h-10"
                       onChange={(e) => {
                           const value = e.target.value;
                           setData({ ...data, capitalGains: value === "" ? undefined : Number(value) });
                       }}
                     />
                     {TAX_RATES && !('error' in TAX_RATES) && TAX_RATES.capitalGainsTax && ((TAX_RATES.capitalGainsTax[0]?.annualExemptAmount ?? 0) > 0) &&
-                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Info className="h-3 w-3" />
                         £{(TAX_RATES.capitalGainsTax[0]?.annualExemptAmount ?? 0).toLocaleString()} allowance
                       </p>
                     }
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label>Spread Over Years</Label>
-                    <div className="flex gap-1 mt-2">
+                    <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map((year) => (
                         <Button
                           key={year}
@@ -398,7 +445,7 @@ export default function OneOffCashflow() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground">
                       {data.yearsToSpread} year{data.yearsToSpread > 1 ? "s" : ""}
                     </p>
                   </div>
@@ -411,11 +458,11 @@ export default function OneOffCashflow() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
                     Tax Calculation Results
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="py-12">
                   <LoadingSpinner message="Loading tax rates..." />
                 </CardContent>
               </Card>
@@ -435,7 +482,7 @@ export default function OneOffCashflow() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
                   Tax Calculation Results
                 </CardTitle>
                 <CardDescription>Compare single year vs multi-year withdrawal strategies</CardDescription>
@@ -451,21 +498,23 @@ export default function OneOffCashflow() {
                   <TabsContent value="comparison" className="space-y-6 mt-6">
                     {/* Summary Cards */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-4 rounded-lg border bg-card">
-                        <p className="text-sm text-muted-foreground">Single Year CGT</p>
-                        <p className="text-2xl font-bold text-destructive">
+                      <div className="text-center p-5 rounded-xl border bg-destructive/5">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Single Year CGT</p>
+                        <p className="text-3xl font-bold text-destructive">
                           £{(singleYearCalc?.capitalGainsTax ?? 0).toLocaleString()}
                         </p>
+                        <p className="text-xs text-muted-foreground mt-1">All in one tax year</p>
                       </div>
-                      <div className="text-center p-4 rounded-lg border bg-card">
-                        <p className="text-sm text-muted-foreground">{data.yearsToSpread}-Year CGT</p>
-                        <p className="text-2xl font-bold text-emerald-600">
+                      <div className="text-center p-5 rounded-xl border bg-emerald-600/5">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">{data.yearsToSpread}-Year CGT</p>
+                        <p className="text-3xl font-bold text-emerald-600">
                           £{(multiYearCalc?.capitalGainsTax ?? 0).toLocaleString()}
                         </p>
+                        <p className="text-xs text-muted-foreground mt-1">Spread across years</p>
                       </div>
-                      <div className="text-center p-4 rounded-lg border-2 border-primary bg-primary/5">
-                        <p className="text-sm text-muted-foreground">Potential Savings</p>
-                        <p className="text-2xl font-bold text-primary">
+                      <div className="text-center p-5 rounded-xl border-2 border-primary bg-primary/5">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Potential Savings</p>
+                        <p className="text-3xl font-bold text-primary">
                           £{(savings ?? 0).toLocaleString()}
                         </p>
                         {savings > 0 && singleYearCalc?.capitalGainsTax > 0 && (
@@ -478,19 +527,21 @@ export default function OneOffCashflow() {
 
                     {/* Net Amount Comparison */}
                     <div className="space-y-3">
-                      <h2 className="font-semibold">Net Amount After Tax</h2>
+                      <h2 className="font-semibold text-lg">Net Amount After Tax</h2>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-lg border bg-destructive/5">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-muted-foreground">Single Year:</span>
+                        <div className="p-5 rounded-xl border bg-destructive/5">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium text-muted-foreground">Single Year:</span>
+                            <TrendingDown className="w-4 h-4 text-destructive" />
                           </div>
-                          <div className="text-xl font-bold">£{(singleYearCalc?.netAmount ?? 0).toLocaleString()}</div>
+                          <div className="text-2xl font-bold">£{(singleYearCalc?.netAmount ?? 0).toLocaleString()}</div>
                         </div>
-                        <div className="p-4 rounded-lg border bg-emerald-600/5">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-muted-foreground">{data.yearsToSpread} Years:</span>
+                        <div className="p-5 rounded-xl border bg-emerald-600/5">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium text-muted-foreground">{data.yearsToSpread} Years:</span>
+                            <ArrowUpFromLine className="w-4 h-4 text-emerald-600" />
                           </div>
-                          <div className="text-xl font-bold text-emerald-600">
+                          <div className="text-2xl font-bold text-emerald-600">
                             £{(((data.currentIncome || 0) * data.yearsToSpread + (data.capitalGains || 0) - (multiYearCalc?.totalTax ?? 0))).toLocaleString()}
                           </div>
                         </div>

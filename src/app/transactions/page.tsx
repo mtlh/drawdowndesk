@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Info, CirclePlus, X } from "lucide-react";
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Info, CirclePlus, X, ArrowLeftRight, TrendingUp, TrendingDown, Filter } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Portfolio, Holding, isPortfolioArray } from "@/types/portfolios";
 import { useQuery, useMutation } from "convex/react";
@@ -420,87 +420,153 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="p-8 space-y-6 bg-background">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Bought</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrencyValue(totals.totalBought)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Sold</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{formatCurrencyValue(totals.totalSold)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Net</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${totals.net >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {formatCurrencyValue(totals.net)}
+    <div className="flex min-h-screen bg-background">
+      <main className="flex-1 overflow-y-auto bg-background">
+        <div className="p-4 lg:p-8 space-y-6">
+          {/* Header Section */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            {/* Transaction Summary */}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20">
+                <ArrowLeftRight className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">Total Transactions</div>
+                <div className="text-4xl font-bold tracking-tight">
+                  {filteredEvents.length}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  {totals.net >= 0 ? (
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-600" />
+                  )}
+                  <span className={`text-sm font-medium ${totals.net >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    Net: {formatCurrencyValue(totals.net)}
+                  </span>
+                </div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Filters and Add Button */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          <Select value={selectedPortfolioId} onValueChange={setSelectedPortfolioId}>
-            <SelectTrigger className="w-[180px]" aria-label="Filter by portfolio">
-              <SelectValue placeholder="All Portfolios" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Portfolios</SelectItem>
-              {portfolios.map(p => (<SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>))}
-            </SelectContent>
-          </Select>
-          <Select value={dateFilter} onValueChange={(v: DateFilter) => setDateFilter(v)}>
-            <SelectTrigger className="w-[150px]" aria-label="Filter by date range">
-              <SelectValue placeholder="Date Range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Time</SelectItem>
-              <SelectItem value="this_year">This Year</SelectItem>
-              <SelectItem value="last_year">Last Year</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={handleOpenAddDialog} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Transaction
-        </Button>
-      </div>
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 lg:max-w-2xl">
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Total Bought</span>
+                </div>
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrencyValue(totals.totalBought)}</div>
+              </div>
+              <div className="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border border-red-200/50 dark:border-red-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <span className="text-xs font-medium text-red-600 dark:text-red-400">Total Sold</span>
+                </div>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{formatCurrencyValue(totals.totalSold)}</div>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4 sm:col-span-1 col-span-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <ArrowLeftRight className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Net Total</span>
+                </div>
+                <div className={`text-2xl font-bold ${totals.net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                  {formatCurrencyValue(totals.net)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters and Add Button */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                <Filter className="w-4 h-4" />
+                Filters
+              </div>
+              <div className="flex items-center gap-1 bg-muted/50 dark:bg-muted/30 p-1 rounded-lg">
+                <Select value={selectedPortfolioId} onValueChange={setSelectedPortfolioId}>
+                  <SelectTrigger className="w-[160px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Filter by portfolio">
+                    <SelectValue placeholder="Portfolio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Portfolios</SelectItem>
+                    {portfolios.map(p => (<SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+                <div className="w-px h-5 bg-border" />
+                <Select value={dateFilter} onValueChange={(v: DateFilter) => setDateFilter(v)}>
+                  <SelectTrigger className="w-[120px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Filter by date range">
+                    <SelectValue placeholder="Date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="this_year">This Year</SelectItem>
+                    <SelectItem value="last_year">Last Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(selectedPortfolioId !== "all" || dateFilter !== "all") && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => { setSelectedPortfolioId("all"); setDateFilter("all"); }}
+                  className="text-xs h-7 text-muted-foreground hover:text-foreground"
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+            <Button onClick={handleOpenAddDialog} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Transaction
+            </Button>
+          </div>
 
       {/* Transactions Table */}
-      <Card>
+      <Card className="overflow-hidden">
+        <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold">Transaction History</h3>
+            <p className="text-sm text-muted-foreground">
+              {filteredEvents.length} transaction{filteredEvents.length !== 1 ? "s" : ""} • Net: {formatCurrencyValue(totals.net)}
+            </p>
+          </div>
+        </div>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="text-left p-3"><button className="flex items-center font-medium" onClick={() => handleSort("purchaseDate")}>Date <SortIcon field="purchaseDate" /></button></th>
-                  <th className="text-left p-3"><button className="flex items-center font-medium" onClick={() => handleSort("symbol")}>Symbol <SortIcon field="symbol" /></button></th>
-                  <th className="text-left p-3">Portfolio</th>
-                  <th className="text-left p-3">Type</th>
-                  <th className="text-right p-3"><button className="flex items-center font-medium ml-auto" onClick={() => handleSort("buyShares")}>Shares <SortIcon field="buyShares" /></button></th>
-                  <th className="text-right p-3"><button className="flex items-center font-medium ml-auto" onClick={() => handleSort("pricePerShare")}>Price <SortIcon field="pricePerShare" /></button></th>
-                  <th className="text-right p-3"><button className="flex items-center font-medium ml-auto" onClick={() => handleSort("totalValue")}>Total <SortIcon field="totalValue" /></button></th>
-                  <th className="text-left p-3">Notes</th>
-                  <th className="p-3 w-[50px]"></th>
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><button className="flex items-center gap-1" onClick={() => handleSort("purchaseDate")}>Date <SortIcon field="purchaseDate" /></button></th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><button className="flex items-center gap-1" onClick={() => handleSort("symbol")}>Symbol <SortIcon field="symbol" /></button></th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Portfolio</th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><button className="flex items-center gap-1 ml-auto" onClick={() => handleSort("buyShares")}>Shares <SortIcon field="buyShares" /></button></th>
+                  <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><button className="flex items-center gap-1 ml-auto" onClick={() => handleSort("pricePerShare")}>Price <SortIcon field="pricePerShare" /></button></th>
+                  <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><button className="flex items-center gap-1 ml-auto" onClick={() => handleSort("totalValue")}>Total <SortIcon field="totalValue" /></button></th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notes</th>
+                  <th className="px-6 py-3 w-10"></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border">
                 {filteredEvents.length === 0 ? (
-                  <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No transactions found</td></tr>
+                  <tr>
+                    <td colSpan={9} className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center max-w-sm mx-auto">
+                        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                          <ArrowLeftRight className="w-7 h-7 text-muted-foreground" />
+                        </div>
+                        <p className="text-lg font-semibold mb-2">No transactions yet</p>
+                        <p className="text-sm text-muted-foreground mb-6 text-center">
+                          Add your first transaction to start tracking your trades.
+                        </p>
+                        <Button onClick={handleOpenAddDialog} className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          Add Transaction
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
                 ) : (
                   filteredEvents.map((event) => {
                     const currency = event.currency || holdingCurrencyMap[event.holdingId || ""] || "GBP";
@@ -508,16 +574,16 @@ export default function TransactionsPage() {
                     const totalInGBP = getPriceInPounds(total, currency);
                     const priceInGBP = getPriceInPounds(event.pricePerShare, currency);
                     return (
-                      <tr key={event._id} className="border-b hover:bg-muted/30">
-                        <td className="p-3">{formatDate(event.purchaseDate)}</td>
-                        <td className="p-3 font-medium">{event.symbol}</td>
-                        <td className="p-3 text-muted-foreground">{event.portfolioId ? portfolioMap[event.portfolioId] || "Unknown" : "-"}</td>
-                        <td className="p-3"><span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${event.buyShares > 0 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"}`}>{event.buyShares > 0 ? "Buy" : "Sell"}</span></td>
-                        <td className="p-3 text-right font-mono">{Math.abs(event.buyShares).toLocaleString("en-GB", { maximumFractionDigits: 4 })}</td>
-                        <td className="p-3 text-right font-mono">{formatCurrencyValue(priceInGBP)}</td>
-                        <td className="p-3 text-right font-mono font-medium">{formatCurrencyValue(totalInGBP)}</td>
-                        <td className="p-3 text-muted-foreground text-sm max-w-[150px] truncate">{event.notes || "-"}</td>
-                        <td className="p-3"><Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Delete transaction" onClick={() => event._id && handleDeleteEvent(event._id)}><Trash2 className="h-4 w-4" /></Button></td>
+                      <tr key={event._id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-6 py-4">{formatDate(event.purchaseDate)}</td>
+                        <td className="px-6 py-4 font-medium">{event.symbol}</td>
+                        <td className="px-6 py-4 text-muted-foreground">{event.portfolioId ? portfolioMap[event.portfolioId] || "Unknown" : "-"}</td>
+                        <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${event.buyShares > 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>{event.buyShares > 0 ? "Buy" : "Sell"}</span></td>
+                        <td className="px-6 py-4 text-right font-mono">{Math.abs(event.buyShares).toLocaleString("en-GB", { maximumFractionDigits: 4 })}</td>
+                        <td className="px-6 py-4 text-right font-mono">{formatCurrencyValue(priceInGBP)}</td>
+                        <td className="px-6 py-4 text-right font-mono font-semibold">{formatCurrencyValue(totalInGBP)}</td>
+                        <td className="px-6 py-4 text-muted-foreground text-sm max-w-[150px] truncate">{event.notes || "-"}</td>
+                        <td className="px-6 py-4 text-right"><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive" aria-label="Delete transaction" onClick={() => event._id && handleDeleteEvent(event._id)}><Trash2 className="h-4 w-4" /></Button></td>
                       </tr>
                     );
                   })
@@ -531,13 +597,22 @@ export default function TransactionsPage() {
       {/* Add Transaction Dialog */}
       <Dialog open={showAddForm} onOpenChange={(open) => { if (!open) handleCloseDialog(); }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl">
-              Add Transaction{transactionQueue.length > 0 ? `s (${transactionQueue.length} queued)` : ""}
-            </DialogTitle>
-            <DialogDescription>
-              Select a holding and enter transaction details. You can add multiple transactions at once.
-            </DialogDescription>
+          <DialogHeader className="pb-4 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <ArrowLeftRight className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl">
+                    Add Transaction{transactionQueue.length > 0 ? `s (${transactionQueue.length} queued)` : ""}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm">
+                    Select a holding and enter transaction details. You can add multiple transactions at once.
+                  </DialogDescription>
+                </div>
+              </div>
+            </div>
           </DialogHeader>
 
           {/* Progress Bar */}
@@ -749,6 +824,8 @@ export default function TransactionsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </div>
+      </main>
     </div>
   );
 }

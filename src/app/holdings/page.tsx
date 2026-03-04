@@ -3,11 +3,11 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, X, LineChart as LineChartIcon } from "lucide-react"
+import { Plus, X, LineChart as LineChartIcon, TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon, Building2, Filter, ArrowUpDown } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -84,6 +84,27 @@ export default function HoldingsPage() {
       return { totalValue, totalCost, totalGain, totalGainPercent }
     }
   }, [holdings, simpleHoldings])
+
+  // Calculate total holdings value across all portfolios
+  const totalHoldingsValue = useMemo(() => {
+    return portfolios.reduce((sum, p) => {
+      const stats = getPortfolioStats(p.id, p.portfolio.portfolioType)
+      return sum + stats.totalValue
+    }, 0)
+  }, [portfolios, getPortfolioStats])
+
+  const totalHoldingsCost = useMemo(() => {
+    return portfolios.reduce((sum, p) => {
+      if (p.portfolio.portfolioType === "manual") return sum
+      const stats = getPortfolioStats(p.id, p.portfolio.portfolioType)
+      return sum + stats.totalCost
+    }, 0)
+  }, [portfolios, getPortfolioStats])
+
+  const totalHoldingsGain = totalHoldingsValue - totalHoldingsCost
+  const totalHoldingsGainPercent = totalHoldingsCost > 0 ? (totalHoldingsGain / totalHoldingsCost) * 100 : 0
+  const totalLivePortfolios = portfolios.filter(p => p.portfolio.portfolioType !== "manual").length
+  const totalManualPortfolios = portfolios.filter(p => p.portfolio.portfolioType === "manual").length
 
   // Calculate allocation data for pie chart - aggregates duplicates by name
   const getPortfolioAllocationData = useCallback((portfolioId: string, portfolioType?: "live" | "manual") => {
@@ -254,13 +275,78 @@ export default function HoldingsPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="p-4 lg:p-8">
-          <div className="mb-6 flex items-center justify-between gap-4 flex-wrap min-h-[40px]">
-            {/* Filters */}
-            {portfolios.length > 0 && (
-              <div className="flex items-center gap-2 bg-muted/50 p-1.5 rounded-lg">
+        <div className="p-4 lg:p-8 space-y-6">
+          {/* Header Section */}
+          {portfolios.length > 0 && (
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            {/* Total Holdings Display */}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-600/20">
+                <Wallet className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-1">Total Holdings Value</div>
+                <div className="text-4xl font-bold tracking-tight">
+                  £{totalHoldingsValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  {totalHoldingsGain >= 0 ? (
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-600" />
+                  )}
+                  <span className={`text-sm font-medium ${totalHoldingsGain >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {totalHoldingsGain >= 0 ? "+" : ""}£{totalHoldingsGain.toLocaleString("en-US", { minimumFractionDigits: 2 })} ({totalHoldingsGainPercent >= 0 ? "+" : ""}{totalHoldingsGainPercent.toFixed(1)}%)
+                  </span>
+                  <span className="text-sm text-muted-foreground">total gain</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 lg:max-w-3xl">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Live Portfolios</span>
+                </div>
+                <div className="text-2xl font-bold">{totalLivePortfolios}</div>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Wallet className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Manual Portfolios</span>
+                </div>
+                <div className="text-2xl font-bold">{totalManualPortfolios}</div>
+              </div>
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Total Cost</span>
+                </div>
+                <div className="text-2xl font-bold">£{totalHoldingsCost.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <PieChartIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Portfolios</span>
+                </div>
+                <div className="text-2xl font-bold">{portfolios.length}</div>
+              </div>
+            </div>
+          </div>
+          )}
+
+          {/* Filters Bar */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                <Filter className="w-4 h-4" />
+                Filters
+              </div>
+              <div className="flex items-center gap-1 bg-muted/50 dark:bg-muted/30 p-1 rounded-lg">
                 <Select value={sortBy} onValueChange={(value: "date" | "value") => setSortBy(value)}>
-                  <SelectTrigger className="w-[130px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Sort by">
+                  <SelectTrigger className="w-[130px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Sort by">
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
                   <SelectContent>
@@ -268,9 +354,9 @@ export default function HoldingsPage() {
                     <SelectItem value="value">Market Value</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="w-px h-6 bg-border" />
+                <div className="w-px h-5 bg-border" />
                 <Select value={valueFilter} onValueChange={(value: "all" | "0-1000" | "1000-10000" | "10000-50000" | "50000+") => setValueFilter(value)}>
-                  <SelectTrigger className="w-[160px] h-8 border-0 bg-transparent shadow-none focus:ring-0" aria-label="Filter by value">
+                  <SelectTrigger className="w-[160px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Filter by value">
                     <SelectValue placeholder="Filter by value" />
                   </SelectTrigger>
                   <SelectContent>
@@ -282,14 +368,23 @@ export default function HoldingsPage() {
                   </SelectContent>
                 </Select>
               </div>
-            )}
-            {/* Buttons */}
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <ArrowUpDown className="w-4 h-4" />
+              </div>
+              {(valueFilter !== "all") && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setValueFilter("all")}
+                  className="text-xs h-7 text-muted-foreground hover:text-foreground"
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <RefreshButton />
-              <Button
-                onClick={() => setShowNewPortfolioForm(true)}
-                className="gap-2 h-8"
-              >
+              <Button onClick={() => setShowNewPortfolioForm(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
                 Add Portfolio
               </Button>
@@ -298,26 +393,36 @@ export default function HoldingsPage() {
 
           {/* New Portfolio Form Modal */}
           {showNewPortfolioForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <Card className="w-full max-w-md">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                  <h2 className="text-xl font-semibold">Create New Portfolio</h2>
-                  <button
-                    onClick={() => {
-                      setShowNewPortfolioForm(false);
-                      setNewPortfolioName("");
-                    }}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <Card className="w-full max-w-md mx-4 shadow-2xl">
+                <CardHeader className="pb-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                        <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-semibold">Create New Portfolio</h2>
+                        <p className="text-sm text-muted-foreground">Track a new investment portfolio</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setShowNewPortfolioForm(false);
+                        setNewPortfolioName("");
+                      }}
+                      className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg p-2 transition-colors"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="pt-6 space-y-5">
                   <div>
                     <label htmlFor="portfolio-name" className="text-sm font-medium">Portfolio Name</label>
                     <Input
                       id="portfolio-name"
-                      placeholder="e.g., Retirement Fund, Savings, Growth Portfolio"
+                      placeholder="e.g., Retirement Fund, Growth Portfolio"
                       value={newPortfolioName}
                       onChange={(e) => setNewPortfolioName(e.target.value)}
                       onKeyDown={(e) => {
@@ -325,13 +430,13 @@ export default function HoldingsPage() {
                           addPortfolio();
                         }
                       }}
-                      className="mt-2"
+                      className="mt-1.5"
                     />
                   </div>
                   <div>
                     <label htmlFor="portfolio-type" className="text-sm font-medium">Portfolio Type</label>
                     <Select value={newPortfolioType} onValueChange={(value: "live" | "manual") => setNewPortfolioType(value)}>
-                      <SelectTrigger id="portfolio-type" className="mt-2" aria-label="Select portfolio type">
+                      <SelectTrigger id="portfolio-type" className="mt-1.5" aria-label="Select portfolio type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -339,24 +444,25 @@ export default function HoldingsPage() {
                         <SelectItem value="manual">Manual (Pensions, OICS, etc.)</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1.5">
                       {newPortfolioType === "live" 
                         ? "For portfolios with tickers that can be tracked via API"
                         : "For portfolios like pensions or OICS that you'll update manually"}
                     </p>
                   </div>
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
+                  <div className="flex gap-3 pt-2">
+                    <Button 
+                      variant="outline" 
                       onClick={() => {
                         setShowNewPortfolioForm(false);
                         setNewPortfolioName("");
                         setNewPortfolioType("live");
-                      }}
+                      }} 
+                      className="flex-1"
                     >
                       Cancel
                     </Button>
-                    <Button onClick={addPortfolio} disabled={isSaving || !newPortfolioName.trim()}>
+                    <Button onClick={addPortfolio} disabled={isSaving || !newPortfolioName.trim()} className="flex-1">
                       {isSaving ? "Creating..." : "Create Portfolio"}
                     </Button>
                   </div>
@@ -369,10 +475,10 @@ export default function HoldingsPage() {
             {sortedAndFilteredPortfolios.length === 0 ? (
               <Card className="col-span-full">
                 <CardContent className="flex flex-col items-center justify-center py-16">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <Plus className="h-8 w-8 text-muted-foreground" />
+                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Wallet className="w-7 h-7 text-muted-foreground" />
                   </div>
-                  <p className="text-lg font-medium mb-2">
+                  <p className="text-lg font-semibold mb-2">
                     {portfolios.length === 0
                       ? "No portfolios yet"
                       : "No portfolios match your filters"}
@@ -403,74 +509,90 @@ export default function HoldingsPage() {
                 const allocationData = getPortfolioAllocationData(portfolioExpanded.id, portfolioExpanded.portfolio.portfolioType)
 
                 return (
-                  <Card key={portfolioExpanded.id} className="flex flex-col hover:shadow-lg transition-shadow duration-200 !border-0">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                              isManual
-                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                                : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                            }`}>
-                              {isManual ? "Manual" : "Live"}
-                            </span>
-                            <Input
-                              value={portfolioExpanded.portfolio.name}
-                              onChange={(e) => updatePortfolioName(portfolioExpanded.id, e.target.value)}
-                              style={{ backgroundColor: 'transparent', border: 'none' }}
-                              className="border-none p-0 text-lg font-semibold shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 bg-transparent"
-                            />
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setPerformanceModalPortfolioId(portfolioExpanded.id)}
-                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground -ml-2"
-                          >
-                            <LineChartIcon className="h-3 w-3 mr-1" />
-                            Performance
-                          </Button>
-                          <CardDescription>
-                            {isManual ? "Total Value" : "Market Value"}: <span className="font-semibold text-foreground">£{portfolioExpanded.stats.totalValue.toFixed(2)}</span>
-                          </CardDescription>
-                          {!isManual && (
+                  <Card key={portfolioExpanded.id} className="flex flex-col hover:shadow-lg transition-all duration-200 !border-0 overflow-hidden gap-0 py-0">
+                    {/* Card Header with gradient - full width banner */}
+                    <div className={`px-4 py-3 rounded-t-xl -mt-0 ${isManual
+                      ? "bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20"
+                      : "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20"
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            isManual
+                              ? "bg-amber-200 text-amber-700 dark:bg-amber-800/50 dark:text-amber-300"
+                              : "bg-blue-200 text-blue-700 dark:bg-blue-800/50 dark:text-blue-300"
+                          }`}>
+                            {isManual ? "Manual" : "Live"}
+                          </span>
+                          <Input
+                            value={portfolioExpanded.portfolio.name}
+                            onChange={(e) => updatePortfolioName(portfolioExpanded.id, e.target.value)}
+                            style={{ backgroundColor: 'transparent', border: 'none' }}
+                            className="border-none p-0 text-lg font-semibold shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 bg-transparent min-w-[120px]"
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPerformanceModalPortfolioId(portfolioExpanded.id)}
+                          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          <LineChartIcon className="h-3 w-3 mr-1" />
+                          Performance
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Value Section */}
+                    <CardHeader className="pb-2 pt-2 px-4">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          {isManual ? "Total Value" : "Market Value"}
+                        </span>
+                        <span className="text-2xl font-bold tracking-tight">
+                          £{portfolioExpanded.stats.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      {/* Holdings count - moved above cost basis and gain */}
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-muted-foreground">Holdings</span>
+                        <span className="text-xs text-foreground">
+                          {(isManual ? portfolioSimpleHoldings.length : portfolioHoldings.length)} {allocationData.length > 0 && (
                             <>
-                              <CardDescription className="mt-0.5">
-                                Cost: <span className="text-foreground">£{portfolioExpanded.stats.totalCost.toFixed(2)}</span>
-                                <span className="mx-1">•</span>
-                                Gain:{" "}
-                                <span className={portfolioExpanded.stats.totalGain >= 0 ? "text-green-600" : "text-red-600"}>
-                                  £{portfolioExpanded.stats.totalGain.toFixed(2)} ({portfolioExpanded.stats.totalGainPercent.toFixed(2)}%)
-                                </span>
-                              </CardDescription>
-                              <CardDescription className="mt-0.5">
-                                {portfolioHoldings.length} {portfolioHoldings.length === 1 ? "holding" : "holdings"}
-                                {allocationData.length > 0 && (
-                                  <>
-                                    <span className="mx-1">•</span>
-                                    Top: <span className="text-foreground">{allocationData[0].name}</span> ({((allocationData[0].value / portfolioExpanded.stats.totalValue) * 100).toFixed(1)}%)
-                                  </>
-                                )}
-                              </CardDescription>
+                              <span className="text-muted-foreground">•</span> Top: <span className="font-medium">{allocationData[0].name}</span> ({((allocationData[0].value / portfolioExpanded.stats.totalValue) * 100).toFixed(1)}%)
                             </>
                           )}
-                          {isManual && (
-                            <CardDescription className="mt-0.5">
-                              {portfolioSimpleHoldings.length} {portfolioSimpleHoldings.length === 1 ? "holding" : "holdings"}
-                              {allocationData.length > 0 && (
-                                <>
-                                  <span className="mx-1">•</span>
-                                  Top: <span className="text-foreground">{allocationData[0].name}</span> ({((allocationData[0].value / portfolioExpanded.stats.totalValue) * 100).toFixed(1)}%)
-                                </>
-                              )}
-                            </CardDescription>
-                          )}
-                        </div>
+                        </span>
                       </div>
+                      {!isManual && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Cost basis</span>
+                          <span className="text-sm">£{portfolioExpanded.stats.totalCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      )}
+                      {!isManual && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Total gain</span>
+                          <span className={`text-sm font-medium ${portfolioExpanded.stats.totalGain >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                            {portfolioExpanded.stats.totalGain >= 0 ? "+" : ""}£{portfolioExpanded.stats.totalGain.toLocaleString("en-US", { minimumFractionDigits: 2 })} ({portfolioExpanded.stats.totalGainPercent >= 0 ? "+" : ""}{portfolioExpanded.stats.totalGainPercent.toFixed(2)}%)
+                          </span>
+                        </div>
+                      )}
+                      {isManual && (
+                        <>
+                          <div className="flex items-center justify-between mt-1 invisible">
+                            <span className="text-xs text-muted-foreground">Cost basis</span>
+                            <span className="text-sm">£0.00</span>
+                          </div>
+                          <div className="flex items-center justify-between invisible">
+                            <span className="text-xs text-muted-foreground">Total gain</span>
+                            <span className="text-sm font-medium">£0.00 (0.00%)</span>
+                          </div>
+                        </>
+                      )}
                     </CardHeader>
 
-                    <CardContent className="flex-1 flex items-center justify-center">
+                    <CardContent className="flex-1 flex items-center justify-center pt-2 px-4 pb-5">
                       {isManual ? (
                         portfolioSimpleHoldings.length === 0 ? (
                           <Link
@@ -497,7 +619,7 @@ export default function HoldingsPage() {
                             href={`/holdings/${portfolioExpanded.id}`}
                             className="w-full cursor-pointer hover:opacity-80 transition-opacity"
                           >
-                            <ResponsiveContainer width="100%" height={220}>
+                            <ResponsiveContainer width="100%" height={200}>
                               <PieChart>
                                 <Pie
                                   data={allocationData}
@@ -516,7 +638,7 @@ export default function HoldingsPage() {
                                 <RechartsTooltip content={PieTooltip} />
                               </PieChart>
                             </ResponsiveContainer>
-                            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 px-2">
+                            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-1 px-2">
                               {allocationData.slice(0, 5).map((item, index) => (
                                 <div key={item.name} className="flex items-center gap-1.5 text-xs">
                                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
@@ -551,7 +673,7 @@ export default function HoldingsPage() {
                           href={`/holdings/${portfolioExpanded.id}`}
                           className="w-full cursor-pointer hover:opacity-80 transition-opacity"
                         >
-                          <ResponsiveContainer width="100%" height={220}>
+                          <ResponsiveContainer width="100%" height={200}>
                             <PieChart>
                               <Pie
                                 data={allocationData}
@@ -570,7 +692,7 @@ export default function HoldingsPage() {
                               <RechartsTooltip content={PieTooltip} />
                             </PieChart>
                           </ResponsiveContainer>
-                          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 px-2">
+                          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-1 px-2">
                             {allocationData.slice(0, 5).map((item, index) => (
                               <div key={item.name} className="flex items-center gap-1.5 text-xs">
                                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />

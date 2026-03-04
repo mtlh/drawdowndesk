@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Trash2, Plus, TrendingUp, TrendingDown, X } from "lucide-react"
+import { ArrowLeft, Save, Trash2, Plus, TrendingUp, TrendingDown, X, Briefcase } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
@@ -337,140 +337,272 @@ export default function PortfolioHoldingsPage() {
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-4 lg:p-8 space-y-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.push("/holdings")} aria-label="Back to holdings">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+          {/* Header Section */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            {/* Portfolio Display */}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20">
+                <Briefcase className="w-7 h-7 text-white" />
+              </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold truncate max-w-[200px] sm:max-w-none">{portfolio.name}</h1>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-lg font-semibold">£{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <div className="text-sm font-medium text-muted-foreground mb-1">{portfolio.name}</div>
+                <div className="text-4xl font-bold tracking-tight">
+                  £{totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
                   {!isManual && (
-                    <span className={`text-sm ${totalGain >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                      {totalGain >= 0 ? "+" : ""}£{totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalGainPercent >= 0 ? "+" : ""}{totalGainPercent.toFixed(2)}%)
-                    </span>
+                    <>
+                      {totalGain >= 0 ? (
+                        <TrendingUp className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <TrendingDown className="w-4 h-4 text-red-600" />
+                      )}
+                      <span className={`text-sm font-medium ${totalGain >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        {totalGain >= 0 ? "+" : ""}£{totalGain.toLocaleString("en-US", { minimumFractionDigits: 2 })} ({totalGainPercent >= 0 ? "+" : ""}{totalGainPercent.toFixed(1)}%)
+                      </span>
+                    </>
                   )}
                   {isManual && (
-                    <span className="text-sm text-muted-foreground">Manual</span>
+                    <span className="text-sm text-muted-foreground">Manual Portfolio</span>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="destructive" size="sm" onClick={deletePortfolio} className="gap-1 sm:gap-2">
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 lg:max-w-2xl">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Holdings</span>
+                </div>
+                <div className="text-2xl font-bold">{isManual ? portfolioSimpleHoldings.length : portfolioHoldings.length}</div>
+              </div>
+              {!isManual && (
+                <>
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Total Cost</span>
+                    </div>
+                    <div className="text-2xl font-bold">£{totalCost.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      {totalGain >= 0 ? (
+                        <TrendingUp className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      ) : (
+                        <TrendingDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      )}
+                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Gain/Loss</span>
+                    </div>
+                    <div className={`text-2xl font-bold ${totalGain >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                      {totalGain >= 0 ? "+" : ""}£{totalGain.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Actions Bar */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <Button variant="ghost" onClick={() => router.push("/holdings")} className="gap-2 -ml-3">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Holdings
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="destructive" size="sm" onClick={deletePortfolio} className="gap-1.5">
                 <Trash2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Delete Portfolio</span>
+                Delete
               </Button>
-              <Button size="sm" onClick={addHolding} className="gap-1 sm:gap-2">
+              <Button size="sm" onClick={addHolding} className="gap-1.5">
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Holding</span>
+                Add Holding
               </Button>
             </div>
           </div>
 
           {/* Holdings Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {isManual ? (
-              portfolioSimpleHoldings.length === 0 ? (
-                <Card className="col-span-full">
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    No holdings yet. Click &quot;Add Holding&quot; to get started.
-                  </CardContent>
-                </Card>
-              ) : (
-                portfolioSimpleHoldings.map((holding) => (
-                  <Card
-                    key={holding._id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      selectedHoldingId === holding._id ? "ring-2 ring-primary" : ""
-                    }`}
-                    onClick={() => selectHolding(holding._id || null)}
-                  >
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{holding.name || "Unnamed"}</div>
-                        <div className="text-xs text-muted-foreground truncate">{holding.accountName || "No account"}</div>
+          <Card className="overflow-hidden">
+            <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">{isManual ? "Manual Holdings" : "Investment Holdings"}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {isManual ? portfolioSimpleHoldings.length : portfolioHoldings.length} holdings • £{totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })} total
+                </p>
+              </div>
+            </div>
+            <CardContent className="p-0">
+              {isManual ? (
+                portfolioSimpleHoldings.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <div className="flex flex-col items-center max-w-sm mx-auto">
+                      <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                        <Briefcase className="w-7 h-7 text-muted-foreground" />
                       </div>
-                      <div className="text-right shrink-0 ml-4">
-                        <div className="font-semibold">{formatCurrency(holding.value, undefined)}</div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )
-            ) : (
-              portfolioHoldings.length === 0 ? (
-                <Card className="col-span-full">
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    No holdings yet. Click &quot;Add Holding&quot; to get started.
-                  </CardContent>
-                </Card>
+                      <p className="text-lg font-semibold mb-2">No holdings yet</p>
+                      <p className="text-sm text-muted-foreground mb-6 text-center">Click &quot;Add Holding&quot; to get started.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b bg-muted/30">
+                        <tr>
+                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                          <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Value</th>
+                          <th className="px-6 py-3 w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {portfolioSimpleHoldings.map((holding) => (
+                          <tr 
+                            key={holding._id} 
+                            className={`hover:bg-muted/30 transition-colors cursor-pointer ${selectedHoldingId === holding._id ? "bg-primary/5" : ""}`}
+                            onClick={() => selectHolding(holding._id || null)}
+                          >
+                            <td className="px-6 py-4">
+                              <div className="font-medium">{holding.name || "Unnamed"}</div>
+                              {holding.notes && <div className="text-xs text-muted-foreground mt-0.5">{holding.notes}</div>}
+                            </td>
+                            <td className="px-6 py-4 text-muted-foreground">
+                              {holding.accountName || "-"}
+                            </td>
+                            <td className="px-6 py-4">
+                              {holding.holdingType && (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-secondary text-secondary-foreground">
+                                  {holding.holdingType}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-right font-semibold">
+                              {formatCurrency(holding.value, undefined)}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); selectHolding(holding._id || null); }}>
+                                <Save className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
               ) : (
-                portfolioHoldings.map((holding) => {
-                  const currency = holding.currency || "GBP";
-                  const marketValue = holding.shares * holding.currentPrice;
-                  const marketValueInPounds = getPriceInPounds(marketValue, currency);
-                  const cost = holding.shares * holding.avgPrice;
-                  const costInPounds = getPriceInPounds(cost, currency);
-                  const gainLoss = marketValueInPounds - costInPounds;
-                  const gainLossPercent = costInPounds > 0 ? (gainLoss / costInPounds) * 100 : 0;
+                portfolioHoldings.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <div className="flex flex-col items-center max-w-sm mx-auto">
+                      <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                        <Briefcase className="w-7 h-7 text-muted-foreground" />
+                      </div>
+                      <p className="text-lg font-semibold mb-2">No holdings yet</p>
+                      <p className="text-sm text-muted-foreground mb-6 text-center">Click &quot;Add Holding&quot; to get started.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b bg-muted/30">
+                        <tr>
+                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Symbol</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</th>
+                          <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shares</th>
+                          <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Value</th>
+                          <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gain/Loss</th>
+                          <th className="px-6 py-3 w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {portfolioHoldings.map((holding) => {
+                          const currency = holding.currency || "GBP";
+                          const marketValue = holding.shares * holding.currentPrice;
+                          const marketValueInPounds = getPriceInPounds(marketValue, currency);
+                          const cost = holding.shares * holding.avgPrice;
+                          const costInPounds = getPriceInPounds(cost, currency);
+                          const gainLoss = marketValueInPounds - costInPounds;
+                          const gainLossPercent = costInPounds > 0 ? (gainLoss / costInPounds) * 100 : 0;
 
-                  return (
-                    <Card
-                      key={holding._id}
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        selectedHoldingId === holding._id ? "ring-2 ring-primary" : ""
-                      }`}
-                      onClick={() => selectHolding(holding._id || null)}
-                    >
-                      <CardContent className="flex items-center justify-between p-4">
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">
-                            {holding.symbol}{holding.exchange ? `.${holding.exchange}` : ""}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">{holding.name || "No name"}</div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0 ml-4">
-                          <div className="text-right hidden md:block">
-                            <div className="text-xs text-muted-foreground">{holding.shares} shares</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-semibold text-sm">{formatCurrency(marketValue, currency)}</div>
-                            {gainLossPercent >= 0 ? (
-                              <div className="text-xs text-emerald-600 flex items-center gap-1 justify-end">
-                                <TrendingUp className="h-2.5 w-2.5" />
-                                +{gainLossPercent.toFixed(1)}%
-                              </div>
-                            ) : (
-                              <div className="text-xs text-red-600 flex items-center gap-1 justify-end">
-                                <TrendingDown className="h-2.5 w-2.5" />
-                                {gainLossPercent.toFixed(1)}%
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              )
-            )}
-          </div>
+                          return (
+                            <tr 
+                              key={holding._id} 
+                              className={`hover:bg-muted/30 transition-colors cursor-pointer ${selectedHoldingId === holding._id ? "bg-primary/5" : ""}`}
+                              onClick={() => selectHolding(holding._id || null)}
+                            >
+                              <td className="px-6 py-4">
+                                <div className="font-medium flex items-center gap-2">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                    {holding.symbol}
+                                    {holding.exchange && <span className="text-blue-400">.{holding.exchange}</span>}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="text-sm">{holding.name || "No name"}</div>
+                              </td>
+                              <td className="px-6 py-4 text-muted-foreground text-sm">
+                                {holding.accountName || "-"}
+                              </td>
+                              <td className="px-6 py-4 text-right text-sm">
+                                {holding.shares.toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 text-right font-semibold">
+                                {formatCurrency(marketValue, currency)}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex flex-col items-end">
+                                  <span className={`text-sm font-medium ${gainLossPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                    {gainLossPercent >= 0 ? "+" : ""}{gainLossPercent.toFixed(1)}%
+                                  </span>
+                                  <span className={`text-xs ${gainLoss >= 0 ? "text-emerald-600/70" : "text-red-600/70"}`}>
+                                    {gainLoss >= 0 ? "+" : ""}£{Math.abs(gainLoss).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); selectHolding(holding._id || null); }}>
+                                  <Save className="h-4 w-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              )}
+            </CardContent>
+          </Card>
 
           {/* Details Panel */}
           {showDetailsPanel && (
-            <Card className="border-t-4 border-t-primary">
-              <CardHeader className="flex flex-row items-center justify-between pb-4">
-                <CardTitle>
-                  {isCreatingNew ? "Add New Holding" : "Edit Holding"}
-                </CardTitle>
+            <Card className="overflow-hidden border-t-4 border-t-primary">
+              <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    {isManual ? (
+                      <Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    ) : (
+                      <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">{isCreatingNew ? "Add New Holding" : "Edit Holding"}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isManual ? "Add a manual holding" : "Update investment details"}
+                    </p>
+                  </div>
+                </div>
                 <Button variant="ghost" size="icon" onClick={closePanel} aria-label="Close panel">
                   <X className="h-4 w-4" />
                 </Button>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <CardContent className="p-6">
                 {isManual ? (
                   <SimpleHoldingForm
                     editedValues={editedSimpleValues}
@@ -518,20 +650,20 @@ function SimpleHoldingForm({
   const simpleEdited = editedValues as Partial<SimpleHolding>;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="lg:col-span-2">
-          <label htmlFor="simple-name" className="text-sm text-muted-foreground">Name</label>
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div>
+          <label htmlFor="simple-name" className="text-sm font-medium">Name</label>
           <Input
             id="simple-name"
             value={simpleEdited.name || ""}
             onChange={(e) => setEditedValues({ ...simpleEdited, name: e.target.value })}
             placeholder="e.g., Vanguard Global All Cap"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
         <div>
-          <label htmlFor="simple-value" className="text-sm text-muted-foreground">Value (£)</label>
+          <label htmlFor="simple-value" className="text-sm font-medium">Value (£)</label>
           <Input
             id="simple-value"
             type="number"
@@ -549,44 +681,44 @@ function SimpleHoldingForm({
               }
             }}
             placeholder="Enter value"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
         <div>
-          <label htmlFor="simple-account" className="text-sm text-muted-foreground">Account</label>
+          <label htmlFor="simple-account" className="text-sm font-medium">Account</label>
           <Input
             id="simple-account"
             value={simpleEdited.accountName || ""}
             onChange={(e) => setEditedValues({ ...simpleEdited, accountName: e.target.value })}
             placeholder="e.g., S&S ISA"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
         <div>
-          <label htmlFor="simple-type" className="text-sm text-muted-foreground">Type</label>
+          <label htmlFor="simple-type" className="text-sm font-medium">Type</label>
           <Input
             id="simple-type"
             value={simpleEdited.holdingType || ""}
             onChange={(e) => setEditedValues({ ...simpleEdited, holdingType: e.target.value })}
             placeholder="e.g., Fund, Pension"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
       </div>
       <div>
-        <label htmlFor="simple-notes" className="text-sm text-muted-foreground">Notes</label>
+        <label htmlFor="simple-notes" className="text-sm font-medium">Notes <span className="text-muted-foreground font-normal">(optional)</span></label>
         <Input
           id="simple-notes"
           value={simpleEdited.notes || ""}
           onChange={(e) => setEditedValues({ ...simpleEdited, notes: e.target.value })}
           placeholder="Optional notes"
-          className="mt-1"
+          className="mt-1.5"
         />
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-3 pt-2">
         <Button onClick={onSave} disabled={isSaving} className="gap-2">
           <Save className="h-4 w-4" />
-          {isSaving ? "Saving..." : isCreating ? "Create" : "Save"}
+          {isSaving ? "Saving..." : isCreating ? "Create Holding" : "Save Changes"}
         </Button>
         {onDelete && (
           <Button variant="destructive" onClick={onDelete} className="gap-2">
@@ -618,9 +750,9 @@ function LiveHoldingForm({
   const liveEdited = editedValues as Partial<Holding>;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-10 gap-4">
-        <div className="lg:col-span-2">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+        <div>
           <a
             href="https://api.twelvedata.com/etfs?apikey=demo&country=UK"
             target="_blank"
@@ -629,61 +761,63 @@ function LiveHoldingForm({
           >
             Find UK ETFs
           </a>
-          <label htmlFor="live-symbol" className="text-sm text-muted-foreground">Symbol</label>
+          <label htmlFor="live-symbol" className="text-sm font-medium">Symbol</label>
           <Input
             id="live-symbol"
             value={liveEdited.symbol || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, symbol: e.target.value })}
             placeholder="e.g., ACWI"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
         <div>
-          <label htmlFor="live-exchange" className="text-sm text-muted-foreground">Exchange</label>
+          <label htmlFor="live-exchange" className="text-sm font-medium">Exchange</label>
           <Input
             id="live-exchange"
             value={liveEdited.exchange || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, exchange: e.target.value })}
             placeholder="e.g., LSE"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
-        <div className="lg:col-span-2">
-          <label htmlFor="live-name" className="text-sm text-muted-foreground">Name</label>
+        <div>
+          <label htmlFor="live-name" className="text-sm font-medium">Name</label>
           <Input
             id="live-name"
             value={liveEdited.name || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, name: e.target.value })}
             placeholder="e.g., iShares MSCI ACWI"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
         <div>
-          <label htmlFor="live-account" className="text-sm text-muted-foreground">Account</label>
+          <label htmlFor="live-account" className="text-sm font-medium">Account</label>
           <Input
             id="live-account"
             value={liveEdited.accountName || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, accountName: e.target.value })}
             placeholder="e.g., S&S ISA"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
         <div>
-          <label htmlFor="live-currency" className="text-sm text-muted-foreground">Currency</label>
+          <label htmlFor="live-currency" className="text-sm font-medium">Currency</label>
           <Input
             id="live-currency"
             value={liveEdited.currency || "GBP"}
             readOnly
-            className="mt-1 bg-muted"
+            className="mt-1.5 bg-muted"
           />
         </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         <div>
-          <label htmlFor="live-type" className="text-sm text-muted-foreground">Type</label>
+          <label htmlFor="live-type" className="text-sm font-medium">Type</label>
           <Select
             value={liveEdited.dataType || "etf"}
             onValueChange={(value) => setEditedValues({ ...liveEdited, dataType: value })}
           >
-            <SelectTrigger id="live-type" className="mt-1" aria-label="Select data type">
+            <SelectTrigger id="live-type" className="mt-1.5" aria-label="Select data type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -693,7 +827,7 @@ function LiveHoldingForm({
           </Select>
         </div>
         <div>
-          <label htmlFor="live-shares" className="text-sm text-muted-foreground">Shares</label>
+          <label htmlFor="live-shares" className="text-sm font-medium">Shares</label>
           <Input
             id="live-shares"
             type="number"
@@ -711,11 +845,11 @@ function LiveHoldingForm({
               }
             }}
             placeholder="e.g., 100.5"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
         <div>
-          <label htmlFor="live-avg-price" className="text-sm text-muted-foreground">
+          <label htmlFor="live-avg-price" className="text-sm font-medium">
             Avg Price {liveEdited.currency === "GBp" ? "(pence)" : liveEdited.currency === "USD" ? "($)" : liveEdited.currency === "EUR" ? "(€)" : "(£)"}
           </label>
           <Input
@@ -735,11 +869,11 @@ function LiveHoldingForm({
               }
             }}
             placeholder="Enter price"
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
         <div>
-          <label htmlFor="live-current-price" className="text-sm text-muted-foreground">
+          <label htmlFor="live-current-price" className="text-sm font-medium">
             Current Price {liveEdited.currency === "GBp" ? "(pence)" : liveEdited.currency === "USD" ? "($)" : liveEdited.currency === "EUR" ? "(€)" : "(£)"}
           </label>
           <Input
@@ -749,24 +883,24 @@ function LiveHoldingForm({
             value={liveEdited.currentPrice ?? ""}
             readOnly
             placeholder="Auto-filled from API"
-            className="mt-1 bg-muted"
+            className="mt-1.5 bg-muted"
           />
         </div>
         <div>
-          <label htmlFor="live-purchase-date" className="text-sm text-muted-foreground">Purchase Date</label>
+          <label htmlFor="live-purchase-date" className="text-sm font-medium">Purchase Date</label>
           <Input
             id="live-purchase-date"
             type="date"
             value={liveEdited.purchaseDate || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, purchaseDate: e.target.value })}
-            className="mt-1"
+            className="mt-1.5"
           />
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-3 pt-2">
         <Button onClick={onSave} disabled={isSaving} className="gap-2">
           <Save className="h-4 w-4" />
-          {isSaving ? "Saving..." : isCreating ? "Create" : "Save"}
+          {isSaving ? "Saving..." : isCreating ? "Create Holding" : "Save Changes"}
         </Button>
         {onDelete && (
           <Button variant="destructive" onClick={onDelete} className="gap-2">

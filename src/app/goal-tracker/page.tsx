@@ -171,9 +171,9 @@ export default function GoalTracker() {
   const totalTarget = goals?.reduce((sum, g) => sum + g.targetAmount, 0) || 0
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="p-8 space-y-8">
+        <div className="p-4 lg:p-8 space-y-6">
 
           {isLoading ? (
             <Card>
@@ -183,67 +183,86 @@ export default function GoalTracker() {
             </Card>
           ) : (
             <>
-              {/* Summary Cards - with more information */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs">Total Saved</CardDescription>
-                    <CardTitle className="text-xl">£{totalSaved.toLocaleString()}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-xs text-muted-foreground">across {goals?.length || 0} goals</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs">Total Target</CardDescription>
-                    <CardTitle className="text-xl">£{totalTarget.toLocaleString()}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-xs text-muted-foreground">£{(totalTarget - totalSaved).toLocaleString()} remaining</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs">Active Goals</CardDescription>
-                    <CardTitle className="text-xl">{activeGoals.length}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-xs text-muted-foreground">{completedGoals.length} completed</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-xs">Overall Progress</CardDescription>
-                    <CardTitle className="text-xl">
-                      {totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0}%
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <Progress value={totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0} className="h-1" />
-                  </CardContent>
-                </Card>
+              {/* Header Section with Stats */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                {/* Goals Overview Display */}
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-600 to-violet-700 flex items-center justify-center shadow-lg shadow-violet-600/20">
+                    <Target className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Total Saved</div>
+                    <div className="text-4xl font-bold tracking-tight">
+                      £{totalSaved.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      {totalTarget > 0 ? (
+                        <>
+                          <TrendingUp className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm font-medium text-emerald-600">
+                            {Math.round((totalSaved / totalTarget) * 100)}%
+                          </span>
+                          <span className="text-sm text-muted-foreground">of £{totalTarget.toLocaleString()} target</span>
+                        </>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No goals set</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 lg:max-w-3xl">
+                  <div className="bg-gradient-to-br from-violet-50 to-violet-100/50 dark:from-violet-950/30 dark:to-violet-900/20 border border-violet-200/50 dark:border-violet-800/50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Target className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      <span className="text-xs font-medium text-violet-600 dark:text-violet-400">Active</span>
+                    </div>
+                    <div className="text-2xl font-bold">{activeGoals.length}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Completed</span>
+                    </div>
+                    <div className="text-2xl font-bold">{completedGoals.length}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Target</span>
+                    </div>
+                    <div className="text-2xl font-bold">£{totalTarget.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Remaining</span>
+                    </div>
+                    <div className="text-2xl font-bold">£{(totalTarget - totalSaved).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                  </div>
+                </div>
               </div>
 
               {/* Filter and Add Goal - full width row */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
                 <Tabs defaultValue="active" className="w-full">
-                  <div className="flex items-center justify-between w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="active">
-                        Active ({activeGoals.length})
-                      </TabsTrigger>
-                      <TabsTrigger value="completed">
-                        Completed ({completedGoals.length})
-                      </TabsTrigger>
-                    </TabsList>
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="flex items-center gap-2 ml-4">
-                          <Plus className="h-4 w-4" />
-                          Add New Goal
-                        </Button>
-                      </DialogTrigger>
+                  <TabsList className="grid w-full sm:w-auto grid-cols-2">
+                    <TabsTrigger value="active">
+                      Active ({activeGoals.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="completed">
+                      Completed ({completedGoals.length})
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add New Goal
+                    </Button>
+                  </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Create New Goal</DialogTitle>
@@ -251,7 +270,7 @@ export default function GoalTracker() {
                             Set up a new financial goal to track your progress.
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-4">
+                        <div className="space-y-5 py-2">
                           <div className="space-y-2">
                             <Label htmlFor="name">Goal Name</Label>
                             <Input
@@ -357,15 +376,21 @@ export default function GoalTracker() {
                           </Button>
                         </div>
                       </DialogContent>
-                    </Dialog>
-                  </div>
+                </Dialog>
+              </div>
 
-                  <TabsContent value="active" className="space-y-4 mt-6">
+              <Tabs defaultValue="active">
+                <TabsContent value="active" className="space-y-4 mt-6">
               {activeGoals.length === 0 ? (
                       <Card>
-                        <CardContent className="py-12 text-center text-muted-foreground">
-                          <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p>No active goals yet. Create your first goal to start tracking!</p>
+                        <CardContent className="py-16 text-center">
+                          <div className="flex flex-col items-center max-w-sm mx-auto">
+                            <div className="w-14 h-14 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4">
+                              <Target className="w-7 h-7 text-violet-600 dark:text-violet-400" />
+                            </div>
+                            <p className="text-lg font-semibold mb-2">No active goals yet</p>
+                            <p className="text-sm text-muted-foreground mb-6">Create your first goal to start tracking your progress!</p>
+                          </div>
                         </CardContent>
                       </Card>
                     ) : (
@@ -377,12 +402,26 @@ export default function GoalTracker() {
                           const isOverdue = daysRemaining < 0
 
                           return (
-                            <Card key={goal._id} className={isOverdue ? "border-destructive" : ""}>
-                              <CardHeader className="pb-2">
+                            <Card key={goal._id} className={`overflow-hidden ${isOverdue ? "border-destructive" : "hover:border-violet-200 dark:hover:border-violet-800 transition-colors"}`}>
+                              <CardHeader className="pb-3">
                                 <div className="flex items-start justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-2xl" aria-hidden="true">{getCategoryIcon(goal.category)}</span>
-                                    <CardTitle className="text-lg">{goal.name}</CardTitle>
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-xl">
+                                      {getCategoryIcon(goal.category)}
+                                    </div>
+                                    <div>
+                                      <CardTitle className="text-lg">{goal.name}</CardTitle>
+                                      <CardDescription className="flex items-center gap-1 mt-0.5">
+                                        <Calendar className="h-3 w-3" />
+                                        {isOverdue ? (
+                                          <span className="text-destructive">Overdue by {Math.abs(daysRemaining)} days</span>
+                                        ) : daysRemaining === 0 ? (
+                                          <span>Due today!</span>
+                                        ) : (
+                                          <span>{daysRemaining} days remaining</span>
+                                        )}
+                                      </CardDescription>
+                                    </div>
                                   </div>
                                   <div className="flex gap-1">
                                     <Button
@@ -405,16 +444,6 @@ export default function GoalTracker() {
                                     </Button>
                                   </div>
                                 </div>
-                                <CardDescription className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {isOverdue ? (
-                                    <span className="text-destructive">Overdue by {Math.abs(daysRemaining)} days</span>
-                                  ) : daysRemaining === 0 ? (
-                                    <span>Due today!</span>
-                                  ) : (
-                                    <span>{daysRemaining} days remaining</span>
-                                  )}
-                                </CardDescription>
                               </CardHeader>
                               <CardContent className="space-y-4">
                                 <div className="space-y-2">
@@ -444,12 +473,12 @@ export default function GoalTracker() {
 
                                 {/* Linked Portfolio Info */}
                                 {goal.linkedPortfolioId && (
-                                  <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                                  <div className="bg-violet-50 dark:bg-violet-950/30 border border-violet-200/50 dark:border-violet-800/50 rounded-lg p-3 space-y-2">
                                     <div className="flex items-center gap-2 text-sm">
-                                      <Link2 className="h-3 w-3" />
+                                      <Link2 className="h-3 w-3 text-violet-600 dark:text-violet-400" />
                                       <span className="font-medium">{goal.portfolioName}</span>
                                       {goal.autoSyncPortfolio && (
-                                        <Badge variant="outline" className="text-xs ml-auto">Auto-syncs on refresh</Badge>
+                                        <Badge variant="outline" className="text-xs ml-auto">Auto-syncs</Badge>
                                       )}
                                     </div>
                                     <div className="text-sm">
@@ -487,21 +516,25 @@ export default function GoalTracker() {
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {completedGoals.map((goal) => (
-                          <Card key={goal._id} className="border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20">
-                            <CardHeader className="pb-2">
+                          <Card key={goal._id} className="border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/20 overflow-hidden">
+                            <CardHeader className="pb-3">
                               <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-2xl" aria-hidden="true">{getCategoryIcon(goal.category)}</span>
-                                  <CardTitle className="text-lg">{goal.name}</CardTitle>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xl">
+                                    {getCategoryIcon(goal.category)}
+                                  </div>
+                                  <div>
+                                    <CardTitle className="text-lg">{goal.name}</CardTitle>
+                                    <CardDescription className="flex items-center gap-1 mt-0.5">
+                                      Completed on {goal.completedDate}
+                                    </CardDescription>
+                                  </div>
                                 </div>
                                 <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-700">
                                   <CheckCircle2 className="h-3 w-3 mr-1" />
                                   Completed
                                 </Badge>
                               </div>
-                              <CardDescription className="flex items-center gap-1">
-                                Completed on {goal.completedDate}
-                              </CardDescription>
                             </CardHeader>
                             <CardContent>
                               <div className="flex justify-between text-sm">
@@ -515,7 +548,6 @@ export default function GoalTracker() {
                     )}
                   </TabsContent>
                 </Tabs>
-              </div>
 
               {/* Edit Goal Dialog */}
               <Dialog open={!!editingGoal} onOpenChange={() => setEditingGoal(null)}>
@@ -524,7 +556,7 @@ export default function GoalTracker() {
                     <DialogTitle>Edit Goal</DialogTitle>
                   </DialogHeader>
                   {editingGoal && (
-                    <div className="space-y-4 py-4">
+                    <div className="space-y-5 py-2">
                       <div className="space-y-2">
                         <Label htmlFor="editName">Goal Name</Label>
                         <Input
