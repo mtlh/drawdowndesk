@@ -12,7 +12,6 @@ import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
 } from "@/components/ui/chart"
 
 import { useQuery } from "convex/react";
