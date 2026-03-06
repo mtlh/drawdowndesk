@@ -369,7 +369,7 @@ export default function PortfolioOverview() {
             <CardContent>
               <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground" suppressHydrationWarning>
               <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={assetTypeData} barGap={8} barCategoryGap="30%">
+                <BarChart data={assetTypeData} barGap={8} barCategoryGap="20%">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis
                     dataKey="name"
@@ -389,12 +389,12 @@ export default function PortfolioOverview() {
                   <Bar
                     dataKey="value"
                     radius={[6, 6, 0, 0]}
-                    barSize={40}
+                    barSize={80}
                     isAnimationActive={false}
-                    activeBar={(props: { x?: number; y?: number; width?: number; height?: number }) => (
+                    activeBar={(props: { x?: number; y?: number; width?: number; height?: number; fill?: string }) => (
                       <rect
-                        fill="currentColor"
-                        fillOpacity={0.8}
+                        fill={props.fill || "#4F46E5"}
+                        fillOpacity={0.9}
                         rx={6}
                         x={props.x}
                         y={props.y}

@@ -125,7 +125,6 @@ export const addBuySellEvent = mutation({
         symbol: args.symbol,
         name: args.name,
         accountName: args.accountName,
-        holdingType: "Stock",
         dataType: "stock",
         currency: currency,
         shares: args.buyShares,

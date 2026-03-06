@@ -135,7 +135,7 @@ export default function NetWorthPage() {
         // Process simple holdings
         if (portfolio.simpleHoldings && portfolio.simpleHoldings.length > 0) {
           for (const holding of portfolio.simpleHoldings) {
-            const accountName = holding.accountName || holding.holdingType || "Unassigned"
+            const accountName = holding.accountName || holding.dataType || "Unassigned"
 
             let existing = accountValues.get(accountName)
             if (!existing) {

@@ -156,8 +156,7 @@ export default function PortfolioHoldingsPage() {
           symbol: editedValues.symbol,
           name: editedValues.name,
           accountName: editedValues.accountName,
-          holdingType: editedValues.holdingType || "Stock",
-          dataType: editedValues.dataType || "etf",
+          dataType: editedValues.dataType || "stock",
           exchange: editedValues.exchange,
           currency: editedValues.currency || "GBP",
           shares: editedValues.shares || 0,
@@ -176,8 +175,7 @@ export default function PortfolioHoldingsPage() {
           symbol: editedValues.symbol,
           name: editedValues.name,
           accountName: editedValues.accountName,
-          holdingType: editedValues.holdingType || "Stock",
-          dataType: editedValues.dataType || "etf",
+          dataType: editedValues.dataType || "stock",
           exchange: editedValues.exchange,
           currency: editedValues.currency || "GBP",
           shares: editedValues.shares || 0,
@@ -230,7 +228,7 @@ export default function PortfolioHoldingsPage() {
           name: editedSimpleValues.name,
           value: editedSimpleValues.value || 0,
           accountName: editedSimpleValues.accountName,
-          holdingType: editedSimpleValues.holdingType,
+          dataType: editedSimpleValues.dataType || "stock",
           notes: editedSimpleValues.notes,
         });
         const newData = await getPortfolioData;
@@ -244,7 +242,7 @@ export default function PortfolioHoldingsPage() {
           name: editedSimpleValues.name,
           value: editedSimpleValues.value || 0,
           accountName: editedSimpleValues.accountName,
-          holdingType: editedSimpleValues.holdingType,
+          dataType: editedSimpleValues.dataType || "stock",
           notes: editedSimpleValues.notes,
         });
         setSimpleHoldings(simpleHoldings.map((h) =>
@@ -300,7 +298,7 @@ export default function PortfolioHoldingsPage() {
         name: "",
         value: 0,
         accountName: "",
-        holdingType: "",
+        dataType: "",
         notes: "",
       });
       setEditedValues({});
@@ -310,8 +308,7 @@ export default function PortfolioHoldingsPage() {
         symbol: "",
         name: "",
         accountName: "",
-        holdingType: "Stock",
-        dataType: "etf",
+        dataType: "stock",
         exchange: "",
         currency: "GBP",
         shares: 0,
@@ -472,9 +469,9 @@ export default function PortfolioHoldingsPage() {
                               {holding.accountName || "-"}
                             </td>
                             <td className="px-6 py-4">
-                              {holding.holdingType && (
+                              {holding.dataType && (
                                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-secondary text-secondary-foreground">
-                                  {holding.holdingType}
+                                  {holding.dataType}
                                 </span>
                               )}
                             </td>
@@ -696,13 +693,20 @@ function SimpleHoldingForm({
         </div>
         <div>
           <label htmlFor="simple-type" className="text-sm font-medium">Type</label>
-          <Input
-            id="simple-type"
-            value={simpleEdited.holdingType || ""}
-            onChange={(e) => setEditedValues({ ...simpleEdited, holdingType: e.target.value })}
-            placeholder="e.g., Fund, Pension"
-            className="mt-1.5"
-          />
+          <Select
+            value={simpleEdited.dataType || "stock"}
+            onValueChange={(value) => setEditedValues({ ...simpleEdited, dataType: value })}
+          >
+            <SelectTrigger id="simple-type" className="mt-1.5">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="stock">Stock</SelectItem>
+              <SelectItem value="bond">Bond</SelectItem>
+              <SelectItem value="commodity">Commodity</SelectItem>
+              <SelectItem value="crypto">Crypto</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div>
@@ -814,15 +818,17 @@ function LiveHoldingForm({
         <div>
           <label htmlFor="live-type" className="text-sm font-medium">Type</label>
           <Select
-            value={liveEdited.dataType || "etf"}
+            value={liveEdited.dataType || "stock"}
             onValueChange={(value) => setEditedValues({ ...liveEdited, dataType: value })}
           >
             <SelectTrigger id="live-type" className="mt-1.5" aria-label="Select data type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="etf">ETF</SelectItem>
               <SelectItem value="stock">Stock</SelectItem>
+              <SelectItem value="bond">Bond</SelectItem>
+              <SelectItem value="commodity">Commodity</SelectItem>
+              <SelectItem value="crypto">Crypto</SelectItem>
             </SelectContent>
           </Select>
         </div>
