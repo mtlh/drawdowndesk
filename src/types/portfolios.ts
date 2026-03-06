@@ -14,7 +14,6 @@ export interface Holding {
   name: string;                // e.g., "Microsoft Corporation"
   accountName?: string;        // e.g., "S&S ISA"
   dataType?: string;         // e.g., "Stock", "Bond", "Commodity", "Crypto"
-  dataType?: string;           // "stock" or "etf" for Twelve Data API
   exchange?: string;           // e.g., "LON", "NASDAQ", "LSE" for Twelve Data API
   currency?: string;           // e.g., "GBP", "USD", "GBp"
   shares: number;              // e.g., 1000
