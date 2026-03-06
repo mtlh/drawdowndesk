@@ -13,7 +13,7 @@ export interface Holding {
   symbol: string;              // e.g., "MSFT" or "ACWI"
   name: string;                // e.g., "Microsoft Corporation"
   accountName?: string;        // e.g., "S&S ISA"
-  holdingType: string;         // e.g., "Stock", "Bond", "Commodity"
+  dataType?: string;         // e.g., "Stock", "Bond", "Commodity", "Crypto"
   dataType?: string;           // "stock" or "etf" for Twelve Data API
   exchange?: string;           // e.g., "LON", "NASDAQ", "LSE" for Twelve Data API
   currency?: string;           // e.g., "GBP", "USD", "GBp"
@@ -45,7 +45,7 @@ export interface SimpleHolding {
   name: string;                // e.g., "Vanguard Global All Cap"
   value: number;               // Total current value in GBP
   accountName?: string;        // e.g., "S&S ISA", "Pension"
-  holdingType?: string;        // e.g., "Fund", "Pension", "Savings"
+  dataType?: string;        // e.g., "Stock", "Bond", "Commodity", "Crypto"
   notes?: string;              // Optional notes
   lastUpdated?: string;        // Optional ISO timestamp
 }

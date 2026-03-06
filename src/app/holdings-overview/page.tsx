@@ -389,12 +389,13 @@ export default function PortfolioOverview() {
                   <Bar
                     dataKey="value"
                     radius={[6, 6, 0, 0]}
-                    barSize={40}
+                    barSize={60}
+                    barCategoryGap="20%"
                     isAnimationActive={false}
-                    activeBar={(props: { x?: number; y?: number; width?: number; height?: number }) => (
+                    activeBar={(props: { x?: number; y?: number; width?: number; height?: number; fill?: string }) => (
                       <rect
-                        fill="currentColor"
-                        fillOpacity={0.8}
+                        fill={props.fill || "#4F46E5"}
+                        fillOpacity={0.9}
                         rx={6}
                         x={props.x}
                         y={props.y}

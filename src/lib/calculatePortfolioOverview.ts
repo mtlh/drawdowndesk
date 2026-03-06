@@ -37,7 +37,7 @@ export interface Holding {
   avgPrice: number
   currentPrice: number
   purchaseDate: string
-  holdingType: string
+  dataType?: string  // "stock", "bond", "commodity", "crypto" for asset classification
   currency?: string  // e.g., "GBP", "USD", "GBp"
 }
 
@@ -61,7 +61,7 @@ export function normalizePortfolios(
       name: string;
       value: number;
       accountName?: string;
-      holdingType?: string;
+      dataType?: string;
     }>;
     _id: Id<"portfolios">;
     _creationTime?: number;
@@ -81,7 +81,7 @@ export function normalizePortfolios(
         symbol: sh.name,
         name: sh.name,
         accountName: sh.accountName,
-        holdingType: sh.holdingType || "Other",
+        dataType: sh.dataType,
         shares: 1,
         avgPrice: sh.value,
         currentPrice: sh.value,
@@ -179,7 +179,11 @@ export function calculateAssetTypeAllocation(portfolios: CalculatedPortfolio[]) 
 
   portfolios.forEach((portfolio) => {
     portfolio.holdings.forEach((holding) => {
-      const type = holding.holdingType ?? "Other"
+      // Use dataType for asset classification, capitalize for display
+      let type = holding.dataType || "Other"
+      if (type !== "Other") {
+        type = type.charAt(0).toUpperCase() + type.slice(1)
+      }
       const marketValue = typeof holding.marketValue === "number"
         ? holding.marketValue
         : getPriceInPounds((holding.shares ?? 0) * (holding.currentPrice ?? 0), holding.currency || "GBP")
@@ -213,10 +217,13 @@ export function generateHoldingsTreemapData(portfolios: CalculatedPortfolio[]) {
       if (!holdingsByAccount[accountName]) {
         holdingsByAccount[accountName] = []
       }
+      const holdingType = holding.dataType
+        ? holding.dataType.charAt(0).toUpperCase() + holding.dataType.slice(1)
+        : "Other"
       holdingsByAccount[accountName].push({
         symbol: holding.symbol,
         marketValue: holding.marketValue,
-        holdingType: holding.holdingType ?? "Other",
+        holdingType,
       })
     })
   })

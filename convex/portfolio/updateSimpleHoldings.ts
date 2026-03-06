@@ -10,7 +10,7 @@ export const updateSimpleHolding = mutation({
     name: v.string(),
     value: v.float64(),
     accountName: v.optional(v.string()),
-    holdingType: v.optional(v.string()),
+    dataType: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
 
@@ -52,7 +52,7 @@ export const updateSimpleHolding = mutation({
         name: args.name,
         value: args.value,
         accountName: args.accountName,
-        holdingType: args.holdingType,
+        dataType: args.dataType,
         notes: args.notes,
         lastUpdated: now,
       });
@@ -68,7 +68,7 @@ export const updateSimpleHolding = mutation({
         name: args.name,
         value: args.value,
         accountName: args.accountName,
-        holdingType: args.holdingType,
+        dataType: args.dataType,
         notes: args.notes,
         lastUpdated: now,
       });

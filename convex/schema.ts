@@ -112,8 +112,8 @@ export default defineSchema({
         symbol: v.string(),                          // e.g., "MSFT"
         name: v.string(),                            // e.g., "Microsoft Corporation"
         accountName: v.optional(v.string()),         // e.g., "S&S ISA"
-        holdingType: v.string(),                     // e.g., "Stock", "Bond", "Commodity"
-        dataType: v.optional(v.string()),             // "stock" or "etf" for Twelve Data API
+        dataType: v.optional(v.string()),             // "stock", "bond", "commodity", "crypto" for asset classification
+        holdingType: v.optional(v.string()),         // deprecated, use dataType instead
         exchange: v.optional(v.string()),             // e.g., "LON", "NASDAQ", "LSE" for Twelve Data API
         currency: v.optional(v.string()),             // e.g., "USD", "GBp", "EUR"
         shares: v.float64(),                         // e.g., 1000
@@ -130,7 +130,8 @@ export default defineSchema({
         name: v.string(),                            // e.g., "Vanguard Global All Cap"
         value: v.float64(),                           // Total current value in GBP
         accountName: v.optional(v.string()),         // e.g., "S&S ISA", "Pension"
-        holdingType: v.optional(v.string()),         // e.g., "Fund", "Pension", "Savings"
+        dataType: v.optional(v.string()),             // "stock", "bond", "commodity", "crypto" for asset classification
+        holdingType: v.optional(v.string()),         // deprecated, use dataType instead
         notes: v.optional(v.string()),                // Optional notes
         lastUpdated: v.optional(v.string()),
     }).index("by_portfolio", ["userId", "portfolioId"]).index("by_user", ["userId"]),
