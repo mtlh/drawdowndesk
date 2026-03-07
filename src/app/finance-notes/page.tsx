@@ -125,6 +125,39 @@ export default function FinanceNotesPage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [hasChanges, trimmedTitle])
 
+  // Helper to fix markdown list continuation issue
+  // Adds blank line after list items when followed by non-list content
+  const processedContent = useMemo(() => {
+    if (!content) return ""
+    const lines = content.split("\n")
+    const result: string[] = []
+    let inList = false
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      const isListItem = /^[-*]\s/.test(line) || /^\d+\.\s/.test(line)
+      const isBlank = line.trim() === ""
+      const nextIsListItem = i + 1 < lines.length && (/^[-*]\s/.test(lines[i + 1]) || /^\d+\.\s/.test(lines[i + 1]))
+
+      if (isListItem && !nextIsListItem && i + 1 < lines.length) {
+        // List item followed by non-list content - add current line and a blank line
+        result.push(line)
+        if (!isBlank) {
+          result.push("") // Add blank line to end the list
+        }
+      } else if (inList && !isListItem && !isBlank) {
+        // Was in list, now regular text without blank line - add blank line first
+        result.push("")
+        result.push(line)
+        inList = false
+      } else {
+        result.push(line)
+        inList = isListItem
+      }
+    }
+    return result.join("\n")
+  }, [content])
+
   const isLoading = allNotes === undefined
 
   // Focus textarea on load if no title
@@ -265,7 +298,7 @@ export default function FinanceNotesPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-background">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
         <div className="p-4 lg:p-8 space-y-6">
           {/* Status Bar */}
           <div className="flex items-center justify-between">
@@ -334,43 +367,63 @@ export default function FinanceNotesPage() {
             </Card>
           ) : (
             <>
-              {/* Title Input */}
-              <Input
-                id="title"
-                placeholder="Note title..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="text-xl font-semibold bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 rounded-none px-0 pb-3"
-              />
+              {/* Title Section */}
+              <div className="space-y-2">
+                <label htmlFor="title" className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Note Title
+                </label>
+                <Input
+                  id="title"
+                  placeholder="Enter note title..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="text-xl font-semibold h-auto py-3"
+                />
+              </div>
 
               {/* Toolbar */}
-              <div className="flex items-center justify-between border-b pb-3">
-                <div className="flex items-center gap-2 bg-muted/50 dark:bg-muted/30 p-1 rounded-lg">
-                  <Button
-                    onClick={() => setIsPreviewMode(false)}
-                    variant={!isPreviewMode ? "default" : "ghost"}
-                    size="sm"
-                    className="gap-1.5"
-                  >
-                    <Edit3 className="h-3.5 w-3.5" />
-                    <span className="text-xs">Edit</span>
-                  </Button>
-                  <Button
-                    onClick={() => setIsPreviewMode(true)}
-                    variant={isPreviewMode ? "default" : "ghost"}
-                    size="sm"
-                    className="gap-1.5"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    <span className="text-xs">Preview</span>
-                  </Button>
+              <div className="flex flex-col gap-3 border-b pb-4">
+                {/* Mode Tabs - Clear separation between Edit and Preview */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1 p-1 bg-muted/50 dark:bg-muted/30 rounded-lg">
+                    <Button
+                      onClick={() => setIsPreviewMode(false)}
+                      variant={!isPreviewMode ? "default" : "ghost"}
+                      size="sm"
+                      className={`gap-1.5 ${!isPreviewMode ? "bg-primary text-primary-foreground" : ""}`}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      <span>Edit</span>
+                    </Button>
+                    <Button
+                      onClick={() => setIsPreviewMode(true)}
+                      variant={isPreviewMode ? "default" : "ghost"}
+                      size="sm"
+                      className={`gap-1.5 ${isPreviewMode ? "bg-primary text-primary-foreground" : ""}`}
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span>Preview</span>
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-md">
+                    <Keyboard className="h-3 w-3" />
+                    <span className="font-medium">Ctrl+S</span>
+                    <span>to save</span>
+                  </div>
                 </div>
-                <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
-                  <Keyboard className="h-3 w-3" />
-                  <span>Ctrl+S to save</span>
-                  <span className="text-muted-foreground/50">|</span>
-                  <span># for headers, - for lists</span>
-                </div>
+
+                {/* Markdown Help - Only shown in Edit mode */}
+                {!isPreviewMode && (
+                  <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/30 px-4 py-3 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                    <span className="font-semibold text-blue-700 dark:text-blue-400">Markdown tips:</span>
+                    <span className="ml-2"># Heading 1</span>
+                    <span className="ml-3">## Heading 2</span>
+                    <span className="ml-3">- bullet (type - + space)</span>
+                    <span className="ml-3">1. numbered</span>
+                    <span className="ml-3 italic">Tip: press Enter twice after a list to end it</span>
+                  </div>
+                )}
               </div>
 
               {/* Content Editor/Preview */}
@@ -398,7 +451,7 @@ export default function FinanceNotesPage() {
                           a: ({ href, children }) => <a href={href} className="text-blue-600 hover:underline">{children}</a>,
                         }}
                       >
-                        {content}
+                        {processedContent}
                       </ReactMarkdown>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground">
@@ -418,8 +471,8 @@ export default function FinanceNotesPage() {
 # Use Markdown for formatting
 
 ## Headers
-- Bullet points
-- Are easy to use
+- Bullet points (type dash + space)
+- Use Enter for new line
 
 **Bold** and *italic* text
 

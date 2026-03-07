@@ -86,7 +86,7 @@ export default function PortfolioHoldingsPage() {
   if (!portfolio) {
     return (
       <div className="flex min-h-screen bg-background">
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pr-4">
           <div className="p-4 lg:p-8">
             <div className="mb-4">
               <Button variant="ghost" onClick={() => router.push("/holdings")} className="gap-2">
@@ -332,7 +332,7 @@ export default function PortfolioHoldingsPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <main className="flex-1 overflow-y-auto bg-background">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
         <div className="p-4 lg:p-8 space-y-6">
           {/* Header Section */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">

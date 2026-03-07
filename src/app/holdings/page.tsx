@@ -40,7 +40,8 @@ export default function HoldingsPage() {
   const [newPortfolioType, setNewPortfolioType] = useState<"live" | "manual">("live");
   const [isSaving, setIsSaving] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "value">("date");
-  const [valueFilter, setValueFilter] = useState<"all" | "0-1000" | "1000-10000" | "10000-50000" | "50000+">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "live" | "manual">("all");
+  const [accountFilter, setAccountFilter] = useState<string>("all");
   const [selectedTimeline, setSelectedTimeline] = useState<TimelineRange>("1M");
   const [performanceModalPortfolioId, setPerformanceModalPortfolioId] = useState<string | null>(null);
 
@@ -65,6 +66,17 @@ export default function HoldingsPage() {
 
   // Prevent body scroll when modal is open
   useBodyScrollLock(showNewPortfolioForm)
+
+  // Get unique account names from holdings
+  const uniqueAccounts = useMemo(() => {
+    const accounts = new Set<string>();
+    holdings.forEach(h => {
+      if (h.accountName) {
+        accounts.add(h.accountName);
+      }
+    });
+    return Array.from(accounts).sort();
+  }, [holdings]);
 
   // Reusable pie chart tooltip
   const PieTooltip = PieChartTooltip({})
@@ -158,22 +170,16 @@ export default function HoldingsPage() {
       return { ...p, stats };
     });
 
-    // Apply value filter
-    if (valueFilter !== "all") {
+    // Apply type filter
+    if (typeFilter !== "all") {
+      filtered = filtered.filter((p) => p.portfolio.portfolioType === typeFilter);
+    }
+
+    // Apply account filter - filter portfolios that have holdings with the selected account
+    if (accountFilter !== "all") {
       filtered = filtered.filter((p) => {
-        const value = p.stats.totalValue;
-        switch (valueFilter) {
-          case "0-1000":
-            return value >= 0 && value < 1000;
-          case "1000-10000":
-            return value >= 1000 && value < 10000;
-          case "10000-50000":
-            return value >= 10000 && value < 50000;
-          case "50000+":
-            return value >= 50000;
-          default:
-            return true;
-        }
+        const portfolioHoldings = holdings.filter(h => h.portfolioId === p.id);
+        return portfolioHoldings.some(h => h.accountName === accountFilter);
       });
     }
 
@@ -198,7 +204,7 @@ export default function HoldingsPage() {
     });
 
     return filtered;
-  }, [portfolios, valueFilter, sortBy, getPortfolioStats]);
+  }, [portfolios, typeFilter, accountFilter, sortBy, getPortfolioStats, holdings]);
 
   // Early returns AFTER all hooks
   if (!getPortfolioData) {
@@ -274,7 +280,7 @@ export default function HoldingsPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <main className="flex-1 overflow-y-auto bg-background">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
         <div className="p-4 lg:p-8 space-y-6">
           {/* Header Section */}
           {portfolios.length > 0 && (
@@ -355,27 +361,37 @@ export default function HoldingsPage() {
                   </SelectContent>
                 </Select>
                 <div className="w-px h-5 bg-border" />
-                <Select value={valueFilter} onValueChange={(value: "all" | "0-1000" | "1000-10000" | "10000-50000" | "50000+") => setValueFilter(value)}>
-                  <SelectTrigger className="w-[160px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Filter by value">
-                    <SelectValue placeholder="Filter by value" />
+                <Select value={typeFilter} onValueChange={(value: "all" | "live" | "manual") => setTypeFilter(value)}>
+                  <SelectTrigger className="w-[130px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Filter by type">
+                    <SelectValue placeholder="Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Values</SelectItem>
-                    <SelectItem value="0-1000">£0 - £1,000</SelectItem>
-                    <SelectItem value="1000-10000">£1,000 - £10,000</SelectItem>
-                    <SelectItem value="10000-50000">£10,000 - £50,000</SelectItem>
-                    <SelectItem value="50000+">£50,000+</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="live">Live</SelectItem>
+                    <SelectItem value="manual">Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="w-px h-5 bg-border" />
+                <Select value={accountFilter} onValueChange={setAccountFilter}>
+                  <SelectTrigger className="w-[150px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Filter by account">
+                    <SelectValue placeholder="All Accounts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Accounts</SelectItem>
+                    {uniqueAccounts.map((account) => (
+                      <SelectItem key={account} value={account}>{account}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <ArrowUpDown className="w-4 h-4" />
               </div>
-              {(valueFilter !== "all") && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setValueFilter("all")}
+              {(typeFilter !== "all" || accountFilter !== "all") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setTypeFilter("all"); setAccountFilter("all"); }}
                   className="text-xs h-7 text-muted-foreground hover:text-foreground"
                 >
                   Clear filters
@@ -494,8 +510,8 @@ export default function HoldingsPage() {
                       Create Portfolio
                     </Button>
                   )}
-                  {portfolios.length > 0 && valueFilter !== "all" && (
-                    <Button variant="outline" onClick={() => setValueFilter("all")} className="gap-2">
+                  {portfolios.length > 0 && (typeFilter !== "all" || accountFilter !== "all") && (
+                    <Button variant="outline" onClick={() => { setTypeFilter("all"); setAccountFilter("all"); }} className="gap-2">
                       Clear Filters
                     </Button>
                   )}
@@ -711,15 +727,15 @@ export default function HoldingsPage() {
 
           {/* Performance Modal */}
           <Dialog open={!!performanceModalPortfolioId} onOpenChange={(open) => !open && setPerformanceModalPortfolioId(null)}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader className="pb-2">
-                <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                  <LineChartIcon className="h-5 w-5 text-primary" />
+            <DialogContent className="max-w-3xl">
+              <DialogHeader className="pb-4">
+                <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                  <LineChartIcon className="h-6 w-6 text-primary" />
                   {performanceModalPortfolioId
                     ? portfolios.find(p => p.id === performanceModalPortfolioId)?.portfolio.name
                     : "Portfolio Performance"}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-base">
                   View historical performance data for this portfolio over time.
                 </DialogDescription>
               </DialogHeader>
@@ -759,26 +775,29 @@ export default function HoldingsPage() {
                 const CustomTooltip = ChartTooltip({});
 
                 return (
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     {/* Stats cards */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border border-primary/20">
-                        <div className="text-xs text-muted-foreground mb-1">Current Value</div>
-                        <div className="text-lg font-bold">£{currentValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/20">
+                        <div className="text-sm text-muted-foreground mb-2">Current Value</div>
+                        <div className="text-2xl font-bold">£{currentValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       </div>
-                      <div className={`rounded-lg p-3 border ${periodReturn >= 0 ? "bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20" : "bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20"}`}>
-                        <div className="text-xs text-muted-foreground mb-1">Period Return</div>
-                        <div className={`text-lg font-bold ${periodReturn >= 0 ? "text-green-600" : "text-red-600"}`}>
-                          {periodReturn >= 0 ? "+" : ""}£{periodReturn.toFixed(2)}
+                      <div className={`rounded-xl p-5 border ${periodReturn >= 0 ? "bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20" : "bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20"}`}>
+                        <div className="text-sm text-muted-foreground mb-2">Period Return</div>
+                        <div className="text-2xl font-bold leading-tight">
+                          <span className={periodReturn >= 0 ? "text-green-600" : "text-red-600"}>
+                            {periodReturn >= 0 ? "+" : ""}£{periodReturn.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
                         </div>
-                        <div className={`text-xs ${periodReturn >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        <div className={`text-base mt-1 ${periodReturn >= 0 ? "text-green-600" : "text-red-600"}`}>
                           {periodReturnPercent >= 0 ? "+" : ""}{periodReturnPercent.toFixed(2)}%
                         </div>
                       </div>
-                      <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-lg p-3 border border-amber-500/20">
-                        <div className="text-xs text-muted-foreground mb-1">Period Range</div>
-                        <div className="text-sm font-semibold">£{periodLow.toLocaleString("en-US", { minimumFractionDigits: 0 })} - £{periodHigh.toLocaleString("en-US", { minimumFractionDigits: 0 })}</div>
-                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl p-5 border border-amber-500/20">
+                      <div className="text-sm text-muted-foreground mb-2">Period Range</div>
+                      <div className="text-xl font-semibold">£{periodLow.toLocaleString("en-US", { minimumFractionDigits: 0 })} - £{periodHigh.toLocaleString("en-US", { minimumFractionDigits: 0 })}</div>
                     </div>
 
                     {/* Timeline selector */}
@@ -799,7 +818,7 @@ export default function HoldingsPage() {
                     {/* Chart */}
                     {hasData ? (
                       <div className="relative [&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
-                        <ResponsiveContainer width="100%" height={280}>
+                        <ResponsiveContainer width="100%" height={320}>
                           <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <defs>
                               <linearGradient id="modalPortfolioValueGradient" x1="0" y1="0" x2="0" y2="1">
@@ -838,7 +857,7 @@ export default function HoldingsPage() {
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div className="h-[280px] flex flex-col items-center justify-center text-muted-foreground bg-muted/30 rounded-lg border-2 border-dashed">
+                      <div className="h-[320px] flex flex-col items-center justify-center text-muted-foreground bg-muted/30 rounded-lg border-2 border-dashed">
                         <LineChartIcon className="h-12 w-12 mb-3 opacity-50" />
                         <p className="text-sm">No historical data for this portfolio yet.</p>
                         <p className="text-xs mt-1">Performance tracking starts after the first snapshot is saved.</p>
