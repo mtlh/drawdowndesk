@@ -3,6 +3,8 @@ export interface TreemapNode {
   value?: number;
   children?: TreemapNode[];
   accountName?: string;
+  accountValue?: number;
+  accountColor?: string;
 
   // Runtime layout props from Recharts
   x?: number;
