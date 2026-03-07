@@ -1,5 +1,12 @@
 import { getPriceInPounds } from "./utils"
 
+// Extended palette for treemap accounts
+const EXTENDED_PALETTE = [
+  "#4F46E5", "#10B981", "#F59E0B", "#EC4899", "#06B6D4",
+  "#8B5CF6", "#14B8A6", "#EF4444", "#84CC16", "#F97316",
+  "#6366F1", "#34D399", "#FBBF24", "#F472B6", "#22D3EE",
+];
+
 export interface CalculatedHolding extends Holding {
   marketValue: number
   costBasis: number
@@ -229,8 +236,9 @@ export function generateHoldingsTreemapData(portfolios: CalculatedPortfolio[]) {
   })
 
   // Build treemap structure: Account -> Individual Holdings
-  const children: TreemapNode[] = Object.entries(holdingsByAccount).map(([accountName, holdings]) => {
+  const children: TreemapNode[] = Object.entries(holdingsByAccount).map(([accountName, holdings], accountIndex) => {
     const accountTotal = holdings.reduce((sum, h) => sum + h.marketValue, 0)
+    const accountColor = EXTENDED_PALETTE[accountIndex % EXTENDED_PALETTE.length]
 
     // Sort holdings by value descending
     const sortedHoldings = [...holdings].sort((a, b) => b.marketValue - a.marketValue)
@@ -241,6 +249,10 @@ export function generateHoldingsTreemapData(portfolios: CalculatedPortfolio[]) {
       children: sortedHoldings.map((holding) => ({
         name: holding.symbol,
         value: holding.marketValue,
+        // Include account info for color lookup and tooltip display
+        accountName,
+        accountValue: accountTotal,
+        accountColor,
       })),
     }
   })
