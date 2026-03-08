@@ -16,7 +16,7 @@ import {
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, TrendingUp, CalendarDays, PiggyBank, Target, Calculator, Save, Edit2, X } from "lucide-react";
+import { Trash2, Plus, TrendingUp, CalendarDays, PiggyBank, Target, Calculator, Save, Edit2, X, Pencil, Check } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -40,6 +40,12 @@ type AccountBreakdown = {
   id: string;
   name: string;
   value: number;
+};
+
+// Monthly contribution type
+type MonthlyContribution = {
+  accountName: string;
+  monthlyAmount: number;
 };
 
 export default function LifetimeAccumulation() {
@@ -80,6 +86,10 @@ export default function LifetimeAccumulation() {
   const [retirementAge, setRetirementAge] = useState(65);
   const [annualReturn, setAnnualReturn] = useState(5);
   const [inflation, setInflation] = useState(2);
+
+  // Continuous contributions state
+  const [contributions, setContributions] = useState<MonthlyContribution[]>([]);
+  const [isEditingContributions, setIsEditingContributions] = useState(false);
 
   // Set default age from latest accumulation and sync with user settings
   useEffect(() => {
@@ -143,6 +153,11 @@ export default function LifetimeAccumulation() {
     });
     return Array.from(names).sort();
   }, [accumulations]);
+
+  // Derive contributions from allAccountNames when state is empty
+  const displayContributions = contributions.length > 0
+    ? contributions
+    : allAccountNames.map(name => ({ accountName: name, monthlyAmount: 0 }));
 
   // Handle adding new record
   const handleAddNew = () => {
@@ -317,11 +332,20 @@ export default function LifetimeAccumulation() {
     // If current age is set higher than last record age, project from there
     const startProjectionAge = Math.max(currentAge, lastAge + 1);
 
+    // Create contributions lookup map
+    const contributionsMap: Record<string, number> = {};
+    contributions.forEach(c => {
+      contributionsMap[c.accountName] = c.monthlyAmount;
+    });
+
     // Project forward from last record
     for (let age = lastAge + 1; age <= retirementAge; age++) {
-      // Grow each account value
+      // Grow each account value and add annual contributions
       allAccountNames.forEach(name => {
-        accountValues[name] = accountValues[name] * (1 + realReturn);
+        const monthlyContribution = contributionsMap[name] || 0;
+        const annualContribution = monthlyContribution * 12;
+        // Apply growth then add annual contribution
+        accountValues[name] = accountValues[name] * (1 + realReturn) + annualContribution;
       });
 
       const taxYear = lastTaxYear + (age - lastAge);
@@ -339,7 +363,7 @@ export default function LifetimeAccumulation() {
     }
 
     return data;
-  }, [accumulations, currentAge, retirementAge, annualReturn, inflation, allAccountNames]);
+  }, [accumulations, currentAge, retirementAge, annualReturn, inflation, allAccountNames, contributions]);
 
   // Calculate retirement income estimates using TOTAL values
   const retirementEstimates = useMemo(() => {
@@ -728,69 +752,193 @@ export default function LifetimeAccumulation() {
             </CardContent>
           </Card>
 
-          {/* Projection Settings */}
-          <Card>
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
+          {/* Projection Settings and Continuous Contributions side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Projection Settings */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Calculator className="w-5 h-5 text-violet-600" />
+                      Projection Settings
+                    </CardTitle>
+                    <CardDescription>Configure your retirement projection assumptions</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Age inputs */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="current-age" className="text-sm font-medium">Current Age</label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="current-age"
+                          type="number"
+                          className="h-10"
+                          value={currentAge}
+                          onChange={(e) => setCurrentAge(parseInt(e.target.value) || 25)}
+                        />
+                        <span className="text-muted-foreground">years</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="retirement-age" className="text-sm font-medium">Retirement Age</label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="retirement-age"
+                          type="number"
+                          className="h-10"
+                          value={retirementAge}
+                          onChange={(e) => setRetirementAge(parseInt(e.target.value) || 65)}
+                          aria-label="Retirement age"
+                        />
+                        <span className="text-muted-foreground">years</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Growth and Inflation rates */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="annual-return" className="text-sm font-medium">Annual Return</label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="annual-return"
+                          type="number"
+                          className="h-10"
+                          value={annualReturn}
+                          onChange={(e) => setAnnualReturn(parseFloat(e.target.value) || 0)}
+                        />
+                        <span className="text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="inflation" className="text-sm font-medium">Inflation</label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="inflation"
+                          type="number"
+                          className="h-10"
+                          value={inflation}
+                          onChange={(e) => setInflation(parseFloat(e.target.value) || 0)}
+                        />
+                        <span className="text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Continuous Contributions */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Calculator className="w-5 h-5 text-violet-600" />
-                    Projection Settings
+                    <PiggyBank className="w-5 h-5 text-emerald-600" />
+                    Continuous Contributions
                   </CardTitle>
-                  <CardDescription>Configure your retirement projection assumptions</CardDescription>
+                  <CardDescription>Add monthly contributions to your accounts for projections</CardDescription>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!isEditingContributions) {
+                      // Initialize contributions when entering edit mode
+                      const initialContributions: MonthlyContribution[] = allAccountNames.map(name => {
+                        const existing = contributions.find(c => c.accountName === name);
+                        return {
+                          accountName: name,
+                          monthlyAmount: existing?.monthlyAmount || 0,
+                        };
+                      });
+                      setContributions(initialContributions);
+                    }
+                    setIsEditingContributions(!isEditingContributions);
+                  }}
+                  className="gap-1.5"
+                >
+                  {isEditingContributions ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Done
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="w-4 h-4" />
+                      Edit
+                    </>
+                  )}
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="flex items-center gap-2">
-                  <label htmlFor="current-age" className="text-sm text-muted-foreground whitespace-nowrap">Current Age</label>
-                  <Input
-                    id="current-age"
-                    type="number"
-                    className="w-20 h-9"
-                    value={currentAge}
-                    onChange={(e) => setCurrentAge(parseInt(e.target.value) || 25)}
-                  />
+              {allAccountNames.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Add historical records with account breakdowns to configure contributions.
+                </p>
+              ) : isEditingContributions ? (
+                <div className="space-y-3">
+                  {displayContributions.map((contribution, index) => (
+                    <div key={contribution.accountName} className="flex items-center gap-4">
+                      <label className="text-sm font-medium w-32">{contribution.accountName}</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">£</span>
+                        <Input
+                          type="number"
+                          className="w-28 h-9"
+                          value={contribution.monthlyAmount || ""}
+                          onChange={(e) => {
+                            const newAmount = parseFloat(e.target.value) || 0;
+                            setContributions(prev => prev.map((c, i) =>
+                              i === index ? { ...c, monthlyAmount: newAmount } : c
+                            ));
+                          }}
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-muted-foreground">/month</span>
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Contributions are added annually (monthly × 12) in projections
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">→</span>
-                  <label htmlFor="retirement-age" className="text-sm text-muted-foreground whitespace-nowrap">Retirement Age</label>
-                  <Input
-                    id="retirement-age"
-                    type="number"
-                    className="w-20 h-9"
-                    value={retirementAge}
-                    onChange={(e) => setRetirementAge(parseInt(e.target.value) || 65)}
-                    aria-label="Retirement age"
-                  />
+              ) : (
+                <div className="space-y-2">
+                  {displayContributions.length > 0 && displayContributions.some(c => c.monthlyAmount > 0) ? (
+                    displayContributions.filter(c => c.monthlyAmount > 0).map(c => (
+                      <div key={c.accountName} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{c.accountName}</span>
+                        <span className="font-medium">£{c.monthlyAmount.toLocaleString()}/month</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No continuous contributions configured. Click Edit to add monthly contributions per account.
+                    </p>
+                  )}
+                  {displayContributions.length > 0 && displayContributions.some(c => c.monthlyAmount > 0) && (
+                    <div className="pt-2 mt-2 border-t">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Total monthly</span>
+                        <span>£{displayContributions.reduce((sum, c) => sum + c.monthlyAmount, 0).toLocaleString()}/month</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Total annual</span>
+                        <span>£{(displayContributions.reduce((sum, c) => sum + c.monthlyAmount, 0) * 12).toLocaleString()}/year</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="w-px h-8 bg-border" />
-                <div className="flex items-center gap-2">
-                  <label htmlFor="annual-return" className="text-sm text-muted-foreground whitespace-nowrap">Annual Return</label>
-                  <Input
-                    id="annual-return"
-                    type="number"
-                    className="w-20 h-9"
-                    value={annualReturn}
-                    onChange={(e) => setAnnualReturn(parseFloat(e.target.value) || 0)}
-                  />
-                  <span className="text-muted-foreground">%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label htmlFor="inflation" className="text-sm text-muted-foreground whitespace-nowrap">Inflation</label>
-                  <Input
-                    id="inflation"
-                    type="number"
-                    className="w-20 h-9"
-                    value={inflation}
-                    onChange={(e) => setInflation(parseFloat(e.target.value) || 0)}
-                  />
-                  <span className="text-muted-foreground">%</span>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
+          </div>
 
           {/* Projection Chart */}
           <Card>
