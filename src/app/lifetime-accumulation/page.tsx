@@ -63,11 +63,13 @@ export default function LifetimeAccumulation() {
   // Fetch data from Convex
   const accumulations = useQuery(lifetimeApi.getAccumulations) as AccumulationRecord[] | null | undefined;
   const latestAccumulation = useQuery(lifetimeApi.getLatestAccumulation) as AccumulationRecord | null | undefined;
+  const continuousContributionsData = useQuery(lifetimeApi.getContinuousContributions);
 
   // Mutations
   const createAccumulation = useMutation(lifetimeApi.createAccumulation);
   const updateAccumulation = useMutation(lifetimeApi.updateAccumulation);
   const deleteAccumulation = useMutation(lifetimeApi.deleteAccumulation);
+  const saveContinuousContributions = useMutation(lifetimeApi.saveContinuousContributions);
 
   // Local state for form
   const [editingId, setEditingId] = useState<Id<"lifetimeAccumulations"> | null>(null);
@@ -101,6 +103,22 @@ export default function LifetimeAccumulation() {
       setInflation(userSettings.defaultInflationRate ?? 2)
     }
   }, [latestAccumulation, userSettings]);
+
+  // Initialize contributions from database when available
+  useEffect(() => {
+    if (continuousContributionsData?.contributions) {
+      try {
+        const parsed = JSON.parse(continuousContributionsData.contributions);
+        const loaded: MonthlyContribution[] = Object.entries(parsed).map(([accountName, monthlyAmount]) => ({
+          accountName,
+          monthlyAmount: monthlyAmount as number,
+        }));
+        setContributions(loaded);
+      } catch {
+        // Invalid JSON, ignore
+      }
+    }
+  }, [continuousContributionsData]);
 
   // Parse breakdown JSON
   const parseBreakdown = (breakdown?: string): Record<string, number> => {
@@ -846,7 +864,7 @@ export default function LifetimeAccumulation() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
+                  onClick={async () => {
                     if (!isEditingContributions) {
                       // Initialize contributions when entering edit mode
                       const initialContributions: MonthlyContribution[] = allAccountNames.map(name => {
@@ -857,8 +875,18 @@ export default function LifetimeAccumulation() {
                         };
                       });
                       setContributions(initialContributions);
+                      setIsEditingContributions(true);
+                    } else {
+                      // Save contributions to database when clicking Done
+                      const contributionsObj: Record<string, number> = {};
+                      contributions.forEach(c => {
+                        if (c.accountName.trim() && c.monthlyAmount > 0) {
+                          contributionsObj[c.accountName.trim()] = c.monthlyAmount;
+                        }
+                      });
+                      await saveContinuousContributions({ contributions: JSON.stringify(contributionsObj) });
+                      setIsEditingContributions(false);
                     }
-                    setIsEditingContributions(!isEditingContributions);
                   }}
                   className="gap-1.5"
                 >

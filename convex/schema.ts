@@ -211,6 +211,13 @@ export default defineSchema({
         lastUpdated: v.optional(v.string()),
     }).index("by_userYear", ["userId", "taxYear"]),
 
+    // Continuous Contributions - monthly contributions per account for projections
+    continuousContributions: defineTable({
+        userId: v.id("users"),
+        contributions: v.string(), // JSON: { "AccountName": 500, ... } - monthly contributions per account
+        lastUpdated: v.optional(v.string()),
+    }).index("by_user", ["userId"]),
+
     // User finance planning notes
     financeNotes: defineTable({
         userId: v.id("users"),                          // Authenticated user ID

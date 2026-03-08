@@ -147,3 +147,60 @@ export const deleteAccumulation = mutation({
     return { success: true };
   },
 });
+
+// Get continuous contributions for the user
+export const getContinuousContributions = query({
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+
+    const contributions = await ctx.db
+      .query("continuousContributions")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .first();
+
+    if (!contributions) {
+      return null;
+    }
+
+    return contributions;
+  },
+});
+
+// Save continuous contributions (create or update)
+export const saveContinuousContributions = mutation({
+  args: {
+    contributions: v.string(), // JSON string of { accountName: monthlyAmount, ... }
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { error: "User not found." };
+    }
+
+    // Check if contributions already exist
+    const existing = await ctx.db
+      .query("continuousContributions")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .first();
+
+    if (existing) {
+      // Update existing
+      await ctx.db.patch(existing._id, {
+        contributions: args.contributions,
+        lastUpdated: new Date().toISOString(),
+      });
+      return { success: true };
+    } else {
+      // Create new
+      const id = await ctx.db.insert("continuousContributions", {
+        userId,
+        contributions: args.contributions,
+        lastUpdated: new Date().toISOString(),
+      });
+      return { id };
+    }
+  },
+});
