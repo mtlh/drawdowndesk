@@ -18,6 +18,7 @@ import type * as currentUser_getCurrentUser from "../currentUser/getCurrentUser.
 import type * as financeNotes_financeNotesCrud from "../financeNotes/financeNotesCrud.js";
 import type * as goals_goalCrud from "../goals/goalCrud.js";
 import type * as http from "../http.js";
+import type * as lifetime_lifetimeAccumulations from "../lifetime/lifetimeAccumulations.js";
 import type * as netWorth_netWorthSnapshots from "../netWorth/netWorthSnapshots.js";
 import type * as portfolio_buySellEvents from "../portfolio/buySellEvents.js";
 import type * as portfolio_currentPriceUpdates_updateHoldingWithTicker from "../portfolio/currentPriceUpdates/updateHoldingWithTicker.js";
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   "financeNotes/financeNotesCrud": typeof financeNotes_financeNotesCrud;
   "goals/goalCrud": typeof goals_goalCrud;
   http: typeof http;
+  "lifetime/lifetimeAccumulations": typeof lifetime_lifetimeAccumulations;
   "netWorth/netWorthSnapshots": typeof netWorth_netWorthSnapshots;
   "portfolio/buySellEvents": typeof portfolio_buySellEvents;
   "portfolio/currentPriceUpdates/updateHoldingWithTicker": typeof portfolio_currentPriceUpdates_updateHoldingWithTicker;

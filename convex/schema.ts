@@ -48,6 +48,8 @@ export default defineSchema({
         statePensionAmount: v.float64(),                 // Annual state pension amount
         statePensionAge: v.number(),                    // State pension age
         isRetired: v.optional(v.boolean()),             // Whether user is retired (affects tax bands)
+        defaultGrowthRate: v.optional(v.float64()),     // Default growth rate for projections (e.g., 5)
+        defaultInflationRate: v.optional(v.float64()),  // Default inflation rate for projections (e.g., 2)
         lastUpdated: v.optional(v.string()),
     }).index("by_user", ["userId"]),
 
@@ -197,6 +199,17 @@ export default defineSchema({
         autoSyncPortfolio: v.optional(v.boolean()),  // Auto-sync currentAmount from portfolio value
         lastUpdated: v.optional(v.string()),
     }).index("by_user", ["userId"]),
+
+    // Lifetime Accumulation - yearly record of account values with age
+    lifetimeAccumulations: defineTable({
+        userId: v.id("users"),
+        taxYear: v.number(),           // e.g., 2025
+        userAge: v.number(),             // User's age during that tax year
+        totalValue: v.float64(),        // Total account value at year end
+        breakdown: v.optional(v.string()), // JSON: { "ISA": 50000, "Pension": 100000 }
+        notes: v.optional(v.string()),
+        lastUpdated: v.optional(v.string()),
+    }).index("by_userYear", ["userId", "taxYear"]),
 
     // User finance planning notes
     financeNotes: defineTable({

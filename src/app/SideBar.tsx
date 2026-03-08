@@ -45,6 +45,11 @@ const menuSections = [
         icon: ArrowLeftRight,
       },
       {
+        title: "Coast FI",
+        url: "/lifetime-accumulation",
+        icon: FlameKindling,
+      },
+      {
         title: "Goals",
         url: "/goal-tracker",
         icon: MonitorCheck,

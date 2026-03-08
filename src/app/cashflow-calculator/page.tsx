@@ -246,6 +246,8 @@ function useTaxInfoQuery(userId: string | undefined): TaxInfo {
 type UserSettings = {
   statePensionAmount: number;
   statePensionAge: number;
+  defaultGrowthRate: number;
+  defaultInflationRate: number;
 };
 
 // Helper function to get user settings - wraps useQuery
@@ -279,11 +281,12 @@ export default function RetirementCashflowCalculator() {
   const [statePensionAge, setStatePensionAge] = useState(67);
   const [startAge, setStartAge] = useState(55);
 
-  // Sync state pension values with user settings when they load
+  // Sync values with user settings when they load
   useMemo(() => {
     if (userSettings) {
       setStatePension(userSettings.statePensionAmount);
       setStatePensionAge(userSettings.statePensionAge);
+      setGrowthRate(userSettings.defaultGrowthRate ?? 5);
     }
   }, [userSettings]);
 

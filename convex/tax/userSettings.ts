@@ -18,6 +18,8 @@ export const getUserSettings = query({
         statePensionAmount: 11000,  // Default UK state pension
         statePensionAge: 67,
         isRetired: false,
+        defaultGrowthRate: 5,  // Default 5% growth
+        defaultInflationRate: 2,  // Default 2% inflation
       };
     }
 
@@ -26,6 +28,8 @@ export const getUserSettings = query({
       statePensionAmount: settings.statePensionAmount,
       statePensionAge: settings.statePensionAge,
       isRetired: settings.isRetired ?? false,
+      defaultGrowthRate: settings.defaultGrowthRate ?? 5,
+      defaultInflationRate: settings.defaultInflationRate ?? 2,
     };
   },
 });
@@ -37,6 +41,8 @@ export const saveUserSettings = mutation({
     statePensionAmount: v.float64(),
     statePensionAge: v.number(),
     isRetired: v.optional(v.boolean()),
+    defaultGrowthRate: v.optional(v.float64()),
+    defaultInflationRate: v.optional(v.float64()),
   },
   handler: async (ctx, args) => {
     // Check if settings already exist
@@ -47,13 +53,20 @@ export const saveUserSettings = mutation({
 
     if (existing) {
       // Update existing settings
-      await ctx.db.patch(existing._id, {
+      const updateFields: Record<string, unknown> = {
         theme: args.theme ?? "dark",
         statePensionAmount: args.statePensionAmount,
         statePensionAge: args.statePensionAge,
         isRetired: args.isRetired ?? false,
         lastUpdated: new Date().toISOString(),
-      });
+      };
+      if (args.defaultGrowthRate !== undefined) {
+        updateFields.defaultGrowthRate = args.defaultGrowthRate;
+      }
+      if (args.defaultInflationRate !== undefined) {
+        updateFields.defaultInflationRate = args.defaultInflationRate;
+      }
+      await ctx.db.patch(existing._id, updateFields);
       return existing._id;
     } else {
       // Create new settings with defaults
@@ -63,6 +76,8 @@ export const saveUserSettings = mutation({
         statePensionAmount: args.statePensionAmount,
         statePensionAge: args.statePensionAge,
         isRetired: args.isRetired ?? false,
+        defaultGrowthRate: args.defaultGrowthRate ?? 5,
+        defaultInflationRate: args.defaultInflationRate ?? 2,
         lastUpdated: new Date().toISOString(),
       });
     }
@@ -88,6 +103,8 @@ export const ensureUserSettings = mutation({
         statePensionAmount: 11000,
         statePensionAge: 67,
         isRetired: false,
+        defaultGrowthRate: 5,
+        defaultInflationRate: 2,
         lastUpdated: new Date().toISOString(),
       });
     }

@@ -18,7 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Plus, TrendingUp, CalendarDays, PiggyBank, Target, Calculator } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface Contribution {
   id: string;
@@ -35,6 +39,14 @@ interface AccountForecast {
 }
 
 export default function AccumulationForecast() {
+  const user = useCurrentUser()
+
+  // User settings for default assumptions
+  const userSettings = useQuery(
+    api.tax.userSettings.getUserSettings,
+    user ? { userId: user._id as Id<"users"> } : "skip"
+  )
+
   const [currentAge, setCurrentAge] = useState(25);
   const [retirementAge, setRetirementAge] = useState(65);
   const [annualReturn, setAnnualReturn] = useState(5);
@@ -43,6 +55,14 @@ export default function AccumulationForecast() {
   const [accounts, setAccounts] = useState<AccountForecast[]>([
     { id: "1", accountType: "GIA", startingBalance: 0, yearlyContribution: 0, contributions: [] }
   ]);
+
+  // Sync with user settings when loaded
+  useEffect(() => {
+    if (userSettings) {
+      setAnnualReturn(userSettings.defaultGrowthRate ?? 5)
+      setInflation(userSettings.defaultInflationRate ?? 2)
+    }
+  }, [userSettings])
 
   const addAccount = () => {
     const types = ["GIA", "ISA", "Pension"];

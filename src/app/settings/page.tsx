@@ -88,6 +88,11 @@ function SettingsContent() {
   // State pension settings
   const [statePension, setStatePension] = useState({ amount: 11000, age: 67 })
   const [isRetired, setIsRetired] = useState(false)
+
+  // Assumptions settings
+  const [assumptions, setAssumptions] = useState({ growthRate: 5, inflationRate: 2 })
+  const [editingAssumptions, setEditingAssumptions] = useState(false)
+
   const [isSaving, setIsSaving] = useState(false)
 
   // Load user overrides when they load
@@ -129,6 +134,10 @@ function SettingsContent() {
         age: userSettings.statePensionAge,
       })
       setIsRetired(userSettings.isRetired ?? false)
+      setAssumptions({
+        growthRate: userSettings.defaultGrowthRate ?? 5,
+        inflationRate: userSettings.defaultInflationRate ?? 2,
+      })
     }
   }, [userSettings])
 
@@ -289,6 +298,27 @@ function SettingsContent() {
     setTimeout(() => setSavedMessage(""), 3000)
   }
 
+  const handleSaveAssumptions = async () => {
+    if (!user) return
+    setIsSaving(true)
+    try {
+      await saveUserSettings({
+        userId: user._id as Id<"users">,
+        statePensionAmount: statePension.amount,
+        statePensionAge: statePension.age,
+        isRetired: isRetired,
+        defaultGrowthRate: assumptions.growthRate,
+        defaultInflationRate: assumptions.inflationRate,
+      })
+      setSavedMessage("Assumptions saved!")
+      setEditingAssumptions(false)
+    } catch {
+      setSavedMessage("Error saving assumptions")
+    }
+    setIsSaving(false)
+    setTimeout(() => setSavedMessage(""), 3000)
+  }
+
   if (!user) {
     return <LoadingSpinner fullScreen message="Loading..." />
   }
@@ -315,12 +345,13 @@ function SettingsContent() {
           )}
 
           <Tabs defaultValue="allowance" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="appearance">Appearance</TabsTrigger>
               <TabsTrigger value="allowance">Personal Allowance</TabsTrigger>
               <TabsTrigger value="bands">Tax Bands</TabsTrigger>
               <TabsTrigger value="cgt">Capital Gains Tax</TabsTrigger>
               <TabsTrigger value="statePension">State Pension</TabsTrigger>
+              <TabsTrigger value="assumptions">Assumptions</TabsTrigger>
             </TabsList>
 
             {/* Appearance Tab */}
@@ -774,6 +805,74 @@ function SettingsContent() {
                         </div>
                       </div>
                       <Button variant="outline" onClick={() => setEditingStatePension(true)} className="gap-2">
+                        <Pencil className="h-4 w-4" /> Edit
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Assumptions Tab */}
+            <TabsContent value="assumptions">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Assumptions</CardTitle>
+                  <CardDescription>
+                    Default assumptions used for projections and forecasts across the application.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {editingAssumptions ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="growth-rate">Default Growth Rate (%)</Label>
+                          <Input
+                            id="growth-rate"
+                            type="number"
+                            value={assumptions.growthRate}
+                            onChange={(e) => setAssumptions({ ...assumptions, growthRate: parseFloat(e.target.value) || 0 })}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Expected annual investment growth (e.g., 5%)
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="inflation-rate">Default Inflation Rate (%)</Label>
+                          <Input
+                            id="inflation-rate"
+                            type="number"
+                            value={assumptions.inflationRate}
+                            onChange={(e) => setAssumptions({ ...assumptions, inflationRate: parseFloat(e.target.value) || 0 })}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Expected annual inflation (e.g., 2%)
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={handleSaveAssumptions} disabled={isSaving} className="gap-2">
+                          <Check className="h-4 w-4" /> Save
+                        </Button>
+                        <Button variant="outline" onClick={() => setEditingAssumptions(false)} className="gap-2">
+                          <X className="h-4 w-4" /> Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Growth Rate:</span>
+                          <p className="font-medium">{assumptions.growthRate}%</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Inflation Rate:</span>
+                          <p className="font-medium">{assumptions.inflationRate}%</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" onClick={() => setEditingAssumptions(true)} className="gap-2">
                         <Pencil className="h-4 w-4" /> Edit
                       </Button>
                     </div>
