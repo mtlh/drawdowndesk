@@ -66,6 +66,7 @@ Main tables in `convex/schema.ts`:
 - `taxYears`, `taxBands`, `personalAllowances`, `capitalGainsTax` - UK tax configuration
 - `historicalReturns` - Historical market data for Monte Carlo simulations
 - `users` - Authentication (via @convex-dev/auth)
+- `userSettings` - Per-user settings (theme, default growth/inflation rates, continuous contributions)
 
 ### Key Patterns
 
@@ -73,6 +74,17 @@ Main tables in `convex/schema.ts`:
 2. **Ticker Updates:** Live holdings refresh prices via `/api/updateTickers` route using Alpha Vantage API with backup keys
 3. **UK Tax Calculations:** Tax bands are seeded into Convex and queried for cashflow/CGT calculations
 4. **Monte Carlo:** Uses seeded historical returns to simulate investment projections
+5. **Dark Mode:** Theme preference stored in `userSettings` table (field: `theme`), dark mode is default. Use `useUserTheme` hook from `@/hooks/useUserTheme.ts`
+6. **Projection Settings:** Default growth/inflation rates and continuous contributions stored per-user in userSettings
+7. **Coast FI:** Lifetime accumulation tracking - calculates when portfolio can grow to target without further contributions
+
+### Reusable Components & Hooks
+
+- `src/components/ui/loading-spinner.tsx` - Reusable loading spinner
+- `src/components/ui/error-display.tsx` - Reusable error display
+- `src/hooks/useBodyScrollLock.ts` - Body scroll lock hook for modals
+- `src/hooks/useUserTheme.ts` - Theme management hook
+- `getPriceInPounds` - Consolidated utility in `src/lib/utils.ts`
 
 ### Environment Variables
 
@@ -124,6 +136,7 @@ npm run electron:build
 - The desktop app requires internet to connect to Convex and Yahoo Finance
 - Auth flow works within Electron (popup window)
 - The release folder is gitignored - do not commit built files
+- All TypeScript `any` types have been removed and replaced with proper types
 
 ## Screenshots
 
