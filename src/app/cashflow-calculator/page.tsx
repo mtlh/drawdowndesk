@@ -11,6 +11,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Accordion,
   AccordionContent,
@@ -32,8 +42,8 @@ import {
   Line,
   LineChart,
 } from "recharts";
-import { TrendingUp, Calendar, PoundSterling, AlertCircle, Building2, Wallet, PiggyBank } from "lucide-react";
-import { useQuery } from "convex/react";
+import { TrendingUp, Calendar, PoundSterling, AlertCircle, Building2, Wallet, PiggyBank, Save, GitCompare } from "lucide-react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { CreateTakeHome, TaxInfo } from "@/lib/createTakeHome";
@@ -267,6 +277,14 @@ export default function RetirementCashflowCalculator() {
   // User settings for state pension
   const userSettings = useUserSettingsQuery(user?._id);
 
+  // Scenarios
+  const createScenario = useMutation(api.scenarios.scenarioCrud.createScenario);
+
+  // Scenario UI state
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [scenarioName, setScenarioName] = useState("");
+  const [scenarioDescription, setScenarioDescription] = useState("");
+
   // Account values
   const [pensionValue, setPensionValue] = useState(500000);
   const [isaValue, setIsaValue] = useState(100000);
@@ -280,6 +298,30 @@ export default function RetirementCashflowCalculator() {
   const [statePension, setStatePension] = useState(11000);
   const [statePensionAge, setStatePensionAge] = useState(67);
   const [startAge, setStartAge] = useState(55);
+
+  // Save current settings as a scenario
+  const handleSaveScenario = async () => {
+    if (!scenarioName.trim()) return;
+    try {
+      await createScenario({
+        name: scenarioName.trim(),
+        description: scenarioDescription.trim() || undefined,
+        pensionValue,
+        isaValue,
+        giaValue,
+        growthRate,
+        withdrawalRate,
+        startAge,
+        statePension,
+        statePensionAge,
+      });
+      setSaveDialogOpen(false);
+      setScenarioName("");
+      setScenarioDescription("");
+    } catch (error) {
+      console.error("Failed to save scenario:", error);
+    }
+  };
 
   // Sync values with user settings when they load
   useMemo(() => {
@@ -426,6 +468,71 @@ export default function RetirementCashflowCalculator() {
               </div>
             </div>
           </div>
+
+          {/* Save Scenario Button */}
+          <Card className="overflow-hidden border-primary/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Save this forecast as a scenario?</p>
+                  <p className="text-sm text-muted-foreground">Save your current settings to compare different retirement strategies</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" asChild>
+                    <a href="/what-if-scenarios">
+                      <GitCompare className="w-4 h-4 mr-2" />
+                      Compare Scenarios
+                    </a>
+                  </Button>
+                  <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="default">
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Scenario
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Save Current Scenario</DialogTitle>
+                        <DialogDescription>
+                          Save your current settings as a named scenario
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="scenarioName">Scenario Name</Label>
+                          <Input
+                            id="scenarioName"
+                            placeholder="e.g., Retire at 55"
+                            value={scenarioName}
+                            onChange={(e) => setScenarioName(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="scenarioDescription">Description (optional)</Label>
+                          <Input
+                            id="scenarioDescription"
+                            placeholder="e.g., Lower pension, earlier retirement"
+                            value={scenarioDescription}
+                            onChange={(e) => setScenarioDescription(e.target.value)}
+                          />
+                        </div>
+                        <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                          <p className="font-medium mb-1">Current settings:</p>
+                          <p>Pension: £{pensionValue.toLocaleString()} | ISA: £{isaValue.toLocaleString()} | GIA: £{giaValue.toLocaleString()}</p>
+                          <p>Start Age: {startAge} | Growth: {growthRate}% | Withdrawal: {withdrawalRate}%</p>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveScenario} disabled={!scenarioName.trim()}>Save Scenario</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Account Inputs */}
           <Card className="overflow-hidden">
@@ -617,9 +724,10 @@ export default function RetirementCashflowCalculator() {
                     <ChartTooltip
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
+                        const total = payload.reduce((sum, entry) => sum + (Number(entry.value) || 0), 0);
                         return (
-                          <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm">
-                            <div className="font-semibold mb-1">Age {label}</div>
+                          <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm min-w-[200px]">
+                            <div className="font-semibold border-b border-border pb-1.5 mb-1.5">Age {label}</div>
                             {payload.map((entry: { dataKey?: string | number; value?: number | string | (string | number)[]; color?: string }) => (
                               <div key={String(entry.dataKey)} className="flex justify-between gap-4">
                                 <span className="text-muted-foreground flex items-center gap-1.5">
@@ -629,6 +737,10 @@ export default function RetirementCashflowCalculator() {
                                 <span className="font-medium">£{(entry.value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}</span>
                               </div>
                             ))}
+                            <div className="flex justify-between gap-4 border-t border-border pt-1.5 mt-1.5 font-semibold">
+                              <span className="text-muted-foreground">Total</span>
+                              <span>£{total.toLocaleString("en-US", { minimumFractionDigits: 0 })}</span>
+                            </div>
                           </div>
                         );
                       }}
@@ -698,18 +810,23 @@ export default function RetirementCashflowCalculator() {
                     <ChartTooltip
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
+                        const total = payload.reduce((sum, entry) => sum + (Number(entry.value) || 0), 0);
                         return (
-                          <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm">
-                            <div className="font-semibold mb-1">Age {label}</div>
+                          <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm min-w-[200px]">
+                            <div className="font-semibold border-b border-border pb-1.5 mb-1.5">Age {label}</div>
                             {payload.map((entry: { dataKey?: string | number; value?: number | string | (string | number)[]; color?: string }) => (
                               <div key={String(entry.dataKey)} className="flex justify-between gap-4">
                                 <span className="text-muted-foreground flex items-center gap-1.5">
                                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
                                   {potConfig[String(entry.dataKey) as keyof typeof potConfig]?.label || String(entry.dataKey)}
                                 </span>
-                                <span className="font-medium">£{(entry.value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}</span>
+                                <span className="font-medium">£{((entry.value ?? 0) as number).toLocaleString("en-US", { minimumFractionDigits: 0 })}</span>
                               </div>
                             ))}
+                            <div className="flex justify-between gap-4 border-t border-border pt-1.5 mt-1.5 font-semibold">
+                              <span className="text-muted-foreground">Total</span>
+                              <span>£{total.toLocaleString("en-US", { minimumFractionDigits: 0 })}</span>
+                            </div>
                           </div>
                         );
                       }}
