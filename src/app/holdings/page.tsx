@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, X, LineChart as LineChartIcon, TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon, Building2, Filter, ArrowUpDown } from "lucide-react"
+import { Plus, X, LineChart as LineChartIcon, TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon, Building2, Filter, ArrowUpDown, Search } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -16,6 +16,7 @@ import { RefreshButton } from "@/components/RefreshHoldingsButton"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, CartesianGrid, XAxis, YAxis } from "recharts"
 import { CHART_COLORS, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 import { getPriceInPounds } from "@/lib/utils"
+import { validateField, commonRules } from "@/lib/validation"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
 import { PieChartTooltip, ChartTooltip } from "@/components/chart-tooltip"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -38,10 +39,12 @@ export default function HoldingsPage() {
   const [showNewPortfolioForm, setShowNewPortfolioForm] = useState(false);
   const [newPortfolioName, setNewPortfolioName] = useState("");
   const [newPortfolioType, setNewPortfolioType] = useState<"live" | "manual">("live");
+  const [portfolioNameError, setPortfolioNameError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "value">("date");
   const [typeFilter, setTypeFilter] = useState<"all" | "live" | "manual">("all");
   const [accountFilter, setAccountFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedTimeline, setSelectedTimeline] = useState<TimelineRange>("1M");
   const [performanceModalPortfolioId, setPerformanceModalPortfolioId] = useState<string | null>(null);
 
@@ -183,6 +186,21 @@ export default function HoldingsPage() {
       });
     }
 
+    // Apply search filter - filter by portfolio name or holding symbol/name
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter((p) => {
+        // Match portfolio name
+        if (p.portfolio.name.toLowerCase().includes(term)) return true;
+        // Match holdings
+        const portfolioHoldings = holdings.filter(h => h.portfolioId === p.id);
+        return portfolioHoldings.some(h => 
+          h.symbol?.toLowerCase().includes(term) || 
+          h.name.toLowerCase().includes(term)
+        );
+      });
+    }
+
     // Sort portfolios
     filtered.sort((a, b) => {
       if (sortBy === "date") {
@@ -204,7 +222,7 @@ export default function HoldingsPage() {
     });
 
     return filtered;
-  }, [portfolios, typeFilter, accountFilter, sortBy, getPortfolioStats, holdings]);
+  }, [portfolios, typeFilter, accountFilter, searchTerm, sortBy, getPortfolioStats, holdings]);
 
   // Early returns AFTER all hooks
   if (!getPortfolioData) {
@@ -220,9 +238,19 @@ export default function HoldingsPage() {
   }
 
   // Add new portfolio
+  // Validate portfolio name
+  const validatePortfolioName = (): boolean => {
+    const error = validateField(newPortfolioName.trim(), [
+      commonRules.required("Portfolio name is required"),
+      commonRules.minLength(2, "Portfolio name must be at least 2 characters"),
+      commonRules.maxLength(50, "Portfolio name must be 50 characters or less"),
+    ]);
+    setPortfolioNameError(error);
+    return !error;
+  };
+
   const addPortfolio = async () => {
-    if (!newPortfolioName.trim()) {
-      alert("Please enter a portfolio name");
+    if (!validatePortfolioName()) {
       return;
     }
 
@@ -249,6 +277,7 @@ export default function HoldingsPage() {
         setShowNewPortfolioForm(false);
         setNewPortfolioName("");
         setNewPortfolioType("live");
+        setPortfolioNameError(null);
       }
     } catch (error) {
       console.error("Failed to create portfolio:", error);
@@ -350,6 +379,16 @@ export default function HoldingsPage() {
                 <Filter className="w-4 h-4" />
                 Filters
               </div>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search holdings..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-[180px] h-9 pl-9 bg-background text-sm"
+                />
+              </div>
               <div className="flex items-center gap-1 bg-muted/50 dark:bg-muted/30 p-1 rounded-lg">
                 <Select value={sortBy} onValueChange={(value: "date" | "value") => setSortBy(value)}>
                   <SelectTrigger className="w-[130px] h-9 border-0 bg-transparent shadow-none focus:ring-0 text-sm" aria-label="Sort by">
@@ -440,14 +479,22 @@ export default function HoldingsPage() {
                       id="portfolio-name"
                       placeholder="e.g., Retirement Fund, Growth Portfolio"
                       value={newPortfolioName}
-                      onChange={(e) => setNewPortfolioName(e.target.value)}
+                      onChange={(e) => {
+                        setNewPortfolioName(e.target.value);
+                        if (portfolioNameError) setPortfolioNameError(null);
+                      }}
+                      onBlur={validatePortfolioName}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           addPortfolio();
                         }
                       }}
-                      className="mt-1.5"
+                      className={`mt-1.5 ${portfolioNameError ? "border-red-500 focus:border-red-500" : ""}`}
+                      aria-invalid={!!portfolioNameError}
                     />
+                    {portfolioNameError && (
+                      <p className="text-xs text-red-500 mt-1">{portfolioNameError}</p>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="portfolio-type" className="text-sm font-medium">Portfolio Type</label>
@@ -473,6 +520,7 @@ export default function HoldingsPage() {
                         setShowNewPortfolioForm(false);
                         setNewPortfolioName("");
                         setNewPortfolioType("live");
+                        setPortfolioNameError(null);
                       }} 
                       className="flex-1"
                     >
