@@ -22,6 +22,7 @@ import { calculatePortfolioSummary, normalizePortfolios, calculateAssetTypeAlloc
 import { api } from "../../../convex/_generated/api"
 import { useQuery } from "convex/react"
 import { usePortfolioData } from "@/hooks/usePortfolioData"
+import { PortfolioDataResult } from "@/hooks/usePortfolioData"
 import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
 import { CHART_COLORS_MAIN, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 import { ChartTooltip, PieChartTooltip } from "@/components/chart-tooltip"
@@ -30,9 +31,18 @@ import { ErrorDisplay } from "@/components/ui/error-display"
 
 const COLORS = CHART_COLORS_MAIN
 
+type PortfolioSnapshot = {
+  _id: string;
+  userId: string;
+  portfolioId?: string;
+  totalValue: number;
+  snapshotDate: string;
+  lastUpdated?: string;
+};
+
 export default function PortfolioOverview() {
-  const portfolioData = usePortfolioData();
-  const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
+  const portfolioData: PortfolioDataResult = usePortfolioData();
+  const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 }) as PortfolioSnapshot[] | undefined | { error: string };
 
   const [excludedPortfolios, setExcludedPortfolios] = useState<Record<string, boolean>>({});
 
