@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import {
   PieChart,
   Pie,
@@ -32,6 +33,40 @@ const COLORS = CHART_COLORS_MAIN
 export default function PortfolioOverview() {
   const portfolioData = usePortfolioData();
   const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
+
+  const [excludedPortfolios, setExcludedPortfolios] = useState<Record<string, boolean>>({});
+
+  const availablePortfolios = useMemo(() => {
+    if (!getPortfolioSnapshots || "error" in getPortfolioSnapshots || getPortfolioSnapshots.length === 0) return [];
+    const portfolioIds = new Set<string>();
+    getPortfolioSnapshots.forEach((s: { portfolioId?: string }) => {
+      if (s.portfolioId) portfolioIds.add(s.portfolioId);
+    });
+    return Array.from(portfolioIds);
+  }, [getPortfolioSnapshots]);
+
+  const portfolioNames = useMemo(() => {
+    if (!portfolioData.success) return {};
+    const names: Record<string, string> = {};
+    portfolioData.data.forEach((p: { _id: string; name: string }) => { names[p._id] = p.name; });
+    return names;
+  }, [portfolioData]);
+
+  const togglePortfolio = (portfolioId: string) => {
+    setExcludedPortfolios(prev => ({
+      ...prev,
+      [portfolioId]: !prev[portfolioId]
+    }));
+  };
+
+  const isPortfolioExcluded = (portfolioId: string) => !!excludedPortfolios[portfolioId];
+
+  const includeAllPortfolios = () => setExcludedPortfolios({});
+  const excludeAllPortfolios = () => {
+    const allExcluded: Record<string, boolean> = {};
+    availablePortfolios.forEach((id: string) => { allExcluded[id] = true; });
+    setExcludedPortfolios(allExcluded);
+  };
 
   // All hooks must be called before any conditional returns
   const portfolioSummary = useMemo(() => {
@@ -77,6 +112,113 @@ export default function PortfolioOverview() {
     return changes;
   }, [getPortfolioSnapshots, portfolioData]);
 
+  const hasSnapshots = getPortfolioSnapshots && Array.isArray(getPortfolioSnapshots) && getPortfolioSnapshots.length > 0;
+
+  const performanceData = useMemo(() => {
+    if (!hasSnapshots) return [];
+
+    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; snapshotDate: string }>;
+    
+    // Group by date and portfolio - include all portfolios
+    const dateMap = new Map<string, Map<string, number>>();
+    snapshots.forEach(s => {
+      if (!dateMap.has(s.snapshotDate)) {
+        dateMap.set(s.snapshotDate, new Map());
+      }
+      const portfolioMap = dateMap.get(s.snapshotDate)!;
+      const key = s.portfolioId || "total";
+      const current = portfolioMap.get(key) || 0;
+      portfolioMap.set(key, current + s.totalValue);
+    });
+
+    // Convert to array and sort by date
+    const sortedDates = Array.from(dateMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+    if (sortedDates.length === 0) return [];
+
+    // Get all portfolio keys
+    const portfolioKeys = new Set<string>();
+    sortedDates.forEach(([, portfolioMap]) => {
+      portfolioMap.forEach((_, key) => portfolioKeys.add(key));
+    });
+
+    // Get initial values for each portfolio (for % calculation)
+    const firstDateMap = sortedDates[0][1];
+    const initialValues: Record<string, number> = {};
+    portfolioKeys.forEach(key => {
+      initialValues[key] = firstDateMap.get(key) || 0;
+    });
+
+    // Build data with percentage changes for each portfolio
+    return sortedDates.map(([date, portfolioMap]) => {
+      const dataPoint: Record<string, string | number> = {
+        date: new Date(date).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
+      };
+      
+      portfolioKeys.forEach(key => {
+        const value = portfolioMap.get(key) || 0;
+        const initial = initialValues[key];
+        const percentChange = initial > 0 ? ((value - initial) / initial) * 100 : 0;
+        dataPoint[key] = percentChange;
+      });
+
+      return dataPoint;
+    });
+  }, [hasSnapshots, getPortfolioSnapshots]);
+
+  const allPortfolioKeys = useMemo(() => {
+    if (performanceData.length === 0) return [];
+    const keys: string[] = [];
+    performanceData.forEach(d => {
+      Object.keys(d).forEach(k => {
+        if (k !== "date" && !keys.includes(k)) keys.push(k);
+      });
+    });
+    return keys.sort((a, b) => {
+      if (a === "total") return -1;
+      if (b === "total") return 1;
+      return a.localeCompare(b);
+    });
+  }, [performanceData]);
+
+  const lineColors = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
+
+  const visiblePortfolios = allPortfolioKeys.filter(k => k === "total" || !isPortfolioExcluded(k));
+
+  const percentDomain = (() => {
+    if (performanceData.length === 0) return [-10, 10];
+    const allValues: number[] = [];
+    performanceData.forEach(d => {
+      visiblePortfolios.forEach(key => {
+        const val = d[key];
+        if (typeof val === "number") allValues.push(val);
+      });
+    });
+    if (allValues.length === 0) return [-10, 10];
+    const min = Math.min(...allValues);
+    const max = Math.max(...allValues);
+    const padding = Math.max(Math.abs(max - min) * 0.1, 1);
+    return [Math.min(min - padding, 0), Math.max(max + padding, 0)];
+  })();
+
+  // Calculate YTD from raw snapshots
+  const currentYear = new Date().getFullYear();
+  const ytdValue = (() => {
+    if (!hasSnapshots || !portfolioSummary) return null;
+
+    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; snapshotDate: string }>;
+    
+    // Get year start value (total only)
+    const yearStartSnapshot = snapshots
+      .filter(s => !s.portfolioId && new Date(s.snapshotDate).getFullYear() === currentYear)
+      .sort((a, b) => a.snapshotDate.localeCompare(b.snapshotDate))[0];
+
+    if (!yearStartSnapshot || yearStartSnapshot.totalValue <= 0) return null;
+    if (!portfolioSummary.totalValue) return null;
+
+    return ((portfolioSummary.totalValue - yearStartSnapshot.totalValue) / yearStartSnapshot.totalValue) * 100;
+  })();
+
   // Handle loading state
   if (portfolioData.isLoading) {
     return <LoadingSpinner fullScreen />;
@@ -100,39 +242,42 @@ export default function PortfolioOverview() {
     };
   });
 
-  // Convert snapshots to performance chart data (only total investment, no portfolioId)
-  const hasSnapshots = getPortfolioSnapshots && Array.isArray(getPortfolioSnapshots) && getPortfolioSnapshots.length > 0;
-  const investmentSnapshots = hasSnapshots
-    ? getPortfolioSnapshots.filter(s => !s.portfolioId)
-    : [];
-  const performanceData = investmentSnapshots.length > 0
-    ? investmentSnapshots.map(snapshot => ({
-        date: new Date(snapshot.snapshotDate).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
-        value: snapshot.totalValue,
-      }))
-    : [];
-
-  // Calculate YTD return from snapshots (investment only)
-  const currentYear = new Date().getFullYear();
-  const ytdData = investmentSnapshots.length > 0 && summary
-    ? (() => {
-        const yearStartSnapshot = investmentSnapshots.find(s => new Date(s.snapshotDate).getFullYear() === currentYear);
-        const currentValue = summary.totalValue;
-        if (yearStartSnapshot && yearStartSnapshot.totalValue > 0) {
-          const ytdReturn = ((currentValue - yearStartSnapshot.totalValue) / yearStartSnapshot.totalValue) * 100;
-          return ytdReturn;
-        }
-        return null;
-      })()
-    : null;
-
   const assetTypeData = calculateAssetTypeAllocation(summary.portfolios)
   const accountAllocationData = getAccountAllocationData(summary.portfolios)
   const treemapData = generateHoldingsTreemapData(summary.portfolios)
 
   // Reusable chart tooltips
-  const CustomTooltip = ChartTooltip({})
   const PieTooltip = PieChartTooltip({})
+
+  // Enhanced tooltip for multi-line performance chart
+  const PerformanceTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
+    if (!active || !payload?.length) return null;
+    
+    return (
+      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-sm min-w-[180px]">
+        {label && (
+          <div className="font-semibold text-muted-foreground border-b border-border pb-1.5 mb-1.5">
+            {label}
+          </div>
+        )}
+        {payload.map((entry, index) => {
+          const name = entry.name === "total" ? "Total" : (portfolioNames[entry.name] || entry.name.slice(0, 8));
+          const val = entry.value;
+          return (
+            <div key={index} className="flex items-center justify-between gap-4 mt-1">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-muted-foreground">{name}</span>
+              </div>
+              <span className={val >= 0 ? "font-medium text-emerald-600" : "font-medium text-red-600"}>
+                {val >= 0 ? "+" : ""}{val.toFixed(2)}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   // Tooltip for percentage-based charts
   const PercentTooltip = ChartTooltip({
@@ -192,8 +337,8 @@ export default function PortfolioOverview() {
                   <BarChart3 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   <span className="text-xs font-medium text-amber-600 dark:text-amber-400">YTD</span>
                 </div>
-                <div className={`text-2xl font-bold ${ytdData !== null && ytdData >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-                  {ytdData !== null ? (ytdData >= 0 ? "+" : "") + ytdData.toFixed(1) + "%" : "—"}
+                <div className={`text-2xl font-bold ${ytdValue !== null && ytdValue >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                  {ytdValue !== null ? (ytdValue >= 0 ? "+" : "") + ytdValue.toFixed(1) + "%" : "—"}
                 </div>
               </div>
               <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/50 rounded-xl p-4">
@@ -213,23 +358,70 @@ export default function PortfolioOverview() {
           {/* Portfolio Performance - Line Chart */}
           <Card className="lg:col-span-5">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-                Performance
-              </CardTitle>
-              <CardDescription>{hasSnapshots ? "12-month history" : "Track your portfolio over time"}</CardDescription>
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                  Performance
+                </CardTitle>
+                <CardDescription>{hasSnapshots ? "12-month history (% change from start)" : "Track your portfolio over time"}</CardDescription>
+              </div>
+              {allPortfolioKeys.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {allPortfolioKeys.length > 1 && (
+                      <>
+                        <Button variant="outline" size="sm" onClick={includeAllPortfolios} className="h-6 text-xs px-2">
+                          All
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={excludeAllPortfolios} className="h-6 text-xs px-2">
+                          None
+                        </Button>
+                        <div className="w-px h-4 bg-border" />
+                      </>
+                    )}
+                    {/* Always show Total */}
+                    <button
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs cursor-default"
+                    >
+                      <span 
+                        className="w-3 h-3 rounded-sm" 
+                        style={{ backgroundColor: lineColors[0] }}
+                      />
+                      <span className="font-semibold">Total</span>
+                    </button>
+                    {/* Show individual portfolios */}
+                    {allPortfolioKeys.filter(k => k !== "total").map((key, index) => {
+                      const isExcluded = isPortfolioExcluded(key);
+                      const color = lineColors[index + 1];
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => togglePortfolio(key)}
+                          className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors ${
+                            isExcluded 
+                              ? "opacity-40 hover:opacity-70" 
+                              : "hover:bg-accent"
+                          }`}
+                        >
+                          <span 
+                            className="w-3 h-3 rounded-sm" 
+                            style={{ backgroundColor: color }}
+                          />
+                          <span>
+                            {portfolioNames[key] || key.slice(0, 8)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
-              {hasSnapshots ? (
+              {hasSnapshots && allPortfolioKeys.length > 0 ? (
                 <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={performanceData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#4F46E5" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis
                       dataKey="date"
@@ -239,21 +431,25 @@ export default function PortfolioOverview() {
                       tick={{ fill: "currentColor", fontSize: 12 }}
                     />
                     <YAxis
+                      domain={percentDomain}
                       stroke="hsl(var(--muted-foreground))"
-                      tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
+                      tickFormatter={(value) => `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`}
                       tickLine={false}
                       axisLine={false}
                       tick={{ fill: "currentColor", fontSize: 12 }}
                     />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#4F46E5"
-                      strokeWidth={2.5}
-                      dot={false}
-                      fill="url(#valueGradient)"
-                    />
+                    <Tooltip content={<PerformanceTooltip />} />
+                    {visiblePortfolios.map((key, index) => (
+                      <Line
+                        key={key}
+                        type="monotone"
+                        dataKey={key}
+                        name={key}
+                        stroke={lineColors[index % lineColors.length]}
+                        strokeWidth={2.5}
+                        dot={false}
+                      />
+                    ))}
                   </LineChart>
                 </ResponsiveContainer>
                 </div>
@@ -292,6 +488,8 @@ export default function PortfolioOverview() {
                     paddingAngle={3}
                     cornerRadius={8}
                     dataKey="value"
+                    labelLine={true}
+                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                   >
                     {portfolioAllocationData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
@@ -300,20 +498,6 @@ export default function PortfolioOverview() {
                   <Tooltip content={<PieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              {/* Legend below donut with 1-day change */}
-              <div className="flex flex-wrap justify-center gap-3 mt-2">
-                {portfolioAllocationWithPerformance.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center gap-1.5 text-xs">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                    <span className="text-muted-foreground">{entry.name}</span>
-                    {entry.oneDayChangePercent !== 0 && (
-                      <span className={entry.oneDayChangePercent >= 0 ? "text-green-600" : "text-red-600"}>
-                        {entry.oneDayChangePercent >= 0 ? "+" : ""}{entry.oneDayChangePercent.toFixed(2)}%
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
             </CardContent>
           </Card>
 
@@ -338,6 +522,8 @@ export default function PortfolioOverview() {
                     paddingAngle={3}
                     cornerRadius={8}
                     dataKey="value"
+                    labelLine={true}
+                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                   >
                     {accountAllocationData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
@@ -346,14 +532,6 @@ export default function PortfolioOverview() {
                   <Tooltip content={<PieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex flex-wrap justify-center gap-3 mt-2">
-                {accountAllocationData.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center gap-1.5 text-xs">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                    <span className="text-muted-foreground">{entry.name}</span>
-                  </div>
-                ))}
-              </div>
             </CardContent>
           </Card>
 
