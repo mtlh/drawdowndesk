@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { getPriceInPounds } from "@/lib/utils"
+import { validateForm, commonRules, ValidationRule } from "@/lib/validation"
 import { PortfolioWithHoldings } from "@/types/portfolios"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -46,6 +47,7 @@ export default function GoalTracker() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
+  const [goalErrors, setGoalErrors] = useState<Record<string, string>>({})
   const [newGoal, setNewGoal] = useState({
     name: "",
     targetAmount: 0,
@@ -105,6 +107,20 @@ export default function GoalTracker() {
   }
 
   const handleCreateGoal = async () => {
+    const validation = validateForm(newGoal, {
+      name: [commonRules.required("Goal name is required") as ValidationRule<unknown>, commonRules.minLength(2) as ValidationRule<unknown>],
+      targetAmount: [commonRules.positiveNumber("Target amount must be greater than 0") as ValidationRule<unknown>],
+      currentAmount: [commonRules.nonNegativeNumber("Current amount cannot be negative") as ValidationRule<unknown>],
+      targetDate: [commonRules.required("Target date is required") as ValidationRule<unknown>, commonRules.futureDate("Target date must be in the future") as ValidationRule<unknown>],
+    });
+
+    if (!validation.isValid) {
+      setGoalErrors(validation.errors);
+      return;
+    }
+
+    setGoalErrors({});
+    
     await createGoal({
       name: newGoal.name,
       targetAmount: newGoal.targetAmount,
@@ -127,6 +143,16 @@ export default function GoalTracker() {
     })
     setIsDialogOpen(false)
   }
+
+  const clearGoalError = (field: string) => {
+    if (goalErrors[field]) {
+      setGoalErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
 
   const handleUpdateGoal = async () => {
     if (!editingGoal) return
@@ -256,7 +282,10 @@ export default function GoalTracker() {
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                  if (!open) setGoalErrors({});
+                  setIsDialogOpen(open);
+                }}>
                   <DialogTrigger asChild>
                     <Button className="gap-2">
                       <Plus className="h-4 w-4" />
@@ -277,14 +306,22 @@ export default function GoalTracker() {
                               id="name"
                               placeholder="e.g., Wedding Fund"
                               value={newGoal.name}
-                              onChange={(e) => setNewGoal({ ...newGoal, name: e.target.value })}
+                              onChange={(e) => {
+                                setNewGoal({ ...newGoal, name: e.target.value });
+                                clearGoalError("name");
+                              }}
+                              className={goalErrors.name ? "border-red-500" : ""}
                             />
+                            {goalErrors.name && <p className="text-xs text-red-500">{goalErrors.name}</p>}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>
                             <Select
                               value={newGoal.category}
-                              onValueChange={(value) => setNewGoal({ ...newGoal, category: value })}
+                              onValueChange={(value) => {
+                                setNewGoal({ ...newGoal, category: value });
+                                clearGoalError("category");
+                              }}
                             >
                               <SelectTrigger aria-label="Select category">
                                 <SelectValue />
@@ -306,8 +343,13 @@ export default function GoalTracker() {
                                 type="number"
                                 placeholder="30000"
                                 value={newGoal.targetAmount || ""}
-                                onChange={(e) => setNewGoal({ ...newGoal, targetAmount: Number(e.target.value) || 0 })}
+                                onChange={(e) => {
+                                  setNewGoal({ ...newGoal, targetAmount: Number(e.target.value) || 0 });
+                                  clearGoalError("targetAmount");
+                                }}
+                                className={goalErrors.targetAmount ? "border-red-500" : ""}
                               />
+                              {goalErrors.targetAmount && <p className="text-xs text-red-500">{goalErrors.targetAmount}</p>}
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="currentAmount">Current Amount (£)</Label>
@@ -316,8 +358,13 @@ export default function GoalTracker() {
                                 type="number"
                                 placeholder="0"
                                 value={newGoal.currentAmount || ""}
-                                onChange={(e) => setNewGoal({ ...newGoal, currentAmount: Number(e.target.value) || 0 })}
+                                onChange={(e) => {
+                                  setNewGoal({ ...newGoal, currentAmount: Number(e.target.value) || 0 });
+                                  clearGoalError("currentAmount");
+                                }}
+                                className={goalErrors.currentAmount ? "border-red-500" : ""}
                               />
+                              {goalErrors.currentAmount && <p className="text-xs text-red-500">{goalErrors.currentAmount}</p>}
                             </div>
                           </div>
                           <div className="space-y-2">
@@ -326,8 +373,13 @@ export default function GoalTracker() {
                               id="targetDate"
                               type="date"
                               value={newGoal.targetDate}
-                              onChange={(e) => setNewGoal({ ...newGoal, targetDate: e.target.value })}
+                              onChange={(e) => {
+                                setNewGoal({ ...newGoal, targetDate: e.target.value });
+                                clearGoalError("targetDate");
+                              }}
+                              className={goalErrors.targetDate ? "border-red-500" : ""}
                             />
+                            {goalErrors.targetDate && <p className="text-xs text-red-500">{goalErrors.targetDate}</p>}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="linkedPortfolio">Link to Portfolio (optional)</Label>

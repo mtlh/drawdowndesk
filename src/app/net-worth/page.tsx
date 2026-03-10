@@ -11,6 +11,7 @@ import { Plus, Trash2, X, Link as LinkIcon } from "lucide-react"
 import { Account, AccountType, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
+import { validateForm, commonRules, ValidationRule } from "@/lib/validation"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import {
@@ -74,6 +75,7 @@ export default function NetWorthPage() {
   const [newAccountValue, setNewAccountValue] = useState("")
   const [newAccountPortfolioId, setNewAccountPortfolioId] = useState<string>("")
   const [newAccountNotes, setNewAccountNotes] = useState("")
+  const [accountErrors, setAccountErrors] = useState<Record<string, string>>({})
 
   const accountsInitialized = useRef(false);
   useEffect(() => {
@@ -233,11 +235,20 @@ export default function NetWorthPage() {
 
   // Create account
   const addAccount = async () => {
-    if (!newAccountName.trim() || !newAccountValue) {
-      alert("Please enter account name and value")
-      return
+    const validation = validateForm({
+      name: newAccountName.trim(),
+      value: parseFloat(newAccountValue) || 0,
+    }, {
+      name: [commonRules.required("Account name is required") as ValidationRule<unknown>, commonRules.minLength(2) as ValidationRule<unknown>],
+      value: [commonRules.positiveNumber("Value must be greater than 0") as ValidationRule<unknown>],
+    });
+
+    if (!validation.isValid) {
+      setAccountErrors(validation.errors);
+      return;
     }
 
+    setAccountErrors({});
     setIsSaving(true)
     try {
       const result = await createAccountMutation({
@@ -282,7 +293,18 @@ export default function NetWorthPage() {
     setNewAccountValue("")
     setNewAccountPortfolioId("")
     setNewAccountNotes("")
+    setAccountErrors({})
   }
+
+  const clearAccountError = (field: string) => {
+    if (accountErrors[field]) {
+      setAccountErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
 
   // Update account value inline
   const updateAccountValue = async (accountId: string, newValue: number) => {
@@ -798,9 +820,13 @@ export default function NetWorthPage() {
                       id="account-name"
                       placeholder="e.g., NatWest Current Account"
                       value={newAccountName}
-                      onChange={(e) => setNewAccountName(e.target.value)}
-                      className="mt-1.5"
+                      onChange={(e) => {
+                        setNewAccountName(e.target.value);
+                        clearAccountError("name");
+                      }}
+                      className={`mt-1.5 ${accountErrors.name ? "border-red-500" : ""}`}
                     />
+                    {accountErrors.name && <p className="text-xs text-red-500 mt-1">{accountErrors.name}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -824,9 +850,13 @@ export default function NetWorthPage() {
                         step="0.01"
                         placeholder="1000.00"
                         value={newAccountValue}
-                        onChange={(e) => setNewAccountValue(e.target.value)}
-                        className="mt-1.5"
+                        onChange={(e) => {
+                          setNewAccountValue(e.target.value);
+                          clearAccountError("value");
+                        }}
+                        className={`mt-1.5 ${accountErrors.value ? "border-red-500" : ""}`}
                       />
+                      {accountErrors.value && <p className="text-xs text-red-500 mt-1">{accountErrors.value}</p>}
                     </div>
                   </div>
                   <div>

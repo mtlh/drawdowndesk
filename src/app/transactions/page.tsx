@@ -71,6 +71,7 @@ export default function TransactionsPage() {
   const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
   const [formNotes, setFormNotes] = useState("");
   const [formIsBuy, setFormIsBuy] = useState(true);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const initialized = useMemo(() => {
     if (getPortfolioData && isPortfolioArray(getPortfolioData)) {
@@ -280,7 +281,18 @@ export default function TransactionsPage() {
     resetForm();
   };
 
+  const clearFormError = (field: string) => {
+    if (formErrors[field]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
   const addToQueue = () => {
+    setFormErrors({});
     const newTxn: TransactionFormData = {
       id: Date.now().toString(),
       portfolioId: formPortfolioId,
@@ -317,6 +329,19 @@ export default function TransactionsPage() {
   };
 
   const handleSaveTransactions = async () => {
+    // Validate current form if it's not valid but queue has items
+    if (!isFormValid && transactionQueue.length === 0) {
+      const errors: Record<string, string> = {};
+      if (!formPortfolioId) errors.portfolioId = "Please select a portfolio";
+      if (!formShares || parseFloat(formShares) <= 0) errors.shares = "Please enter a valid number of shares";
+      if (!formPrice || parseFloat(formPrice) <= 0) errors.price = "Please enter a valid price";
+      if (formIsNewHolding && !formSymbol) errors.symbol = "Please enter a symbol";
+      if (!formIsNewHolding && !formExistingHoldingId) errors.existingHolding = "Please select an existing holding or create a new one";
+      setFormErrors(errors);
+      return;
+    }
+
+    setFormErrors({});
     setIsSaving(true);
     try {
       // Save any current form as well
@@ -631,12 +656,13 @@ export default function TransactionsPage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="portfolio" className="text-sm font-medium">Portfolio</label>
-                <Select value={formPortfolioId} onValueChange={(v) => { const p = portfolios.find(x => x._id === v); setFormPortfolioId(v); setFormPortfolioName(p?.name || ""); setFormExistingHoldingId(""); setFormIsNewHolding(false); }}>
-                  <SelectTrigger id="portfolio" className="mt-1" aria-label="Select portfolio"><SelectValue placeholder="Select portfolio" /></SelectTrigger>
+                <Select value={formPortfolioId} onValueChange={(v) => { const p = portfolios.find(x => x._id === v); setFormPortfolioId(v); setFormPortfolioName(p?.name || ""); setFormExistingHoldingId(""); setFormIsNewHolding(false); clearFormError("portfolioId"); }}>
+                  <SelectTrigger id="portfolio" className={`mt-1 ${formErrors.portfolioId ? "border-red-500" : ""}`} aria-label="Select portfolio"><SelectValue placeholder="Select portfolio" /></SelectTrigger>
                   <SelectContent>
                     {portfolios.map(p => (<SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>))}
                   </SelectContent>
                 </Select>
+                {formErrors.portfolioId && <p className="text-xs text-red-500 mt-1">{formErrors.portfolioId}</p>}
               </div>
 
               {formPortfolioId && (
@@ -670,7 +696,8 @@ export default function TransactionsPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label htmlFor="symbol" className="text-xs font-medium">Symbol</label>
-                      <Input id="symbol" placeholder="MSFT" value={formSymbol} onChange={(e) => setFormSymbol(e.target.value.toUpperCase())} className="mt-1" />
+                      <Input id="symbol" placeholder="MSFT" value={formSymbol} onChange={(e) => { setFormSymbol(e.target.value.toUpperCase()); clearFormError("symbol"); }} className={`mt-1 ${formErrors.symbol ? "border-red-500" : ""}`} />
+                      {formErrors.symbol && <p className="text-xs text-red-500 mt-1">{formErrors.symbol}</p>}
                     </div>
                     <div>
                       <label htmlFor="currency" className="text-xs font-medium">Currency</label>
@@ -715,11 +742,13 @@ export default function TransactionsPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="shares" className="text-sm font-medium">Shares</label>
-                      <Input id="shares" type="number" step="any" placeholder="100" value={formShares} onChange={(e) => setFormShares(e.target.value)} className="mt-1" />
+                      <Input id="shares" type="number" step="any" placeholder="100" value={formShares} onChange={(e) => { setFormShares(e.target.value); clearFormError("shares"); }} className={`mt-1 ${formErrors.shares ? "border-red-500" : ""}`} />
+                      {formErrors.shares && <p className="text-xs text-red-500 mt-1">{formErrors.shares}</p>}
                     </div>
                     <div>
                       <label htmlFor="price" className="text-sm font-medium">Price</label>
-                      <Input id="price" type="number" step="any" placeholder="150.00" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} className="mt-1" />
+                      <Input id="price" type="number" step="any" placeholder="150.00" value={formPrice} onChange={(e) => { setFormPrice(e.target.value); clearFormError("price"); }} className={`mt-1 ${formErrors.price ? "border-red-500" : ""}`} />
+                      {formErrors.price && <p className="text-xs text-red-500 mt-1">{formErrors.price}</p>}
                     </div>
                   </div>
 
