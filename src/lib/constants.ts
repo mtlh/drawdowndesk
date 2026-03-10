@@ -26,3 +26,8 @@ export const CHART_COLORS_MAIN: readonly [string, string, string, string, string
 // Donut chart inner radius for hollow center effect
 export const DONUT_INNER_RADIUS = 60;
 export const DONUT_OUTER_RADIUS = 100;
+
+// UK Tax configuration
+export const CURRENT_TAX_YEAR = 2025;
+export const TAX_YEAR_START_MONTH = 4; // April
+export const TAX_YEAR_START_DAY = 6;   // 6th April

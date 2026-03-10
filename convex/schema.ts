@@ -104,8 +104,10 @@ export default defineSchema({
         userId: v.id("users"),                          // Authenticated user ID
         name: v.string(),                            // e.g., "My Portfolio"
         portfolioType: v.optional(v.union(v.literal("live"), v.literal("manual"))), // "live" for API-tracked, "manual" for pensions/OICS
+        isSystem: v.optional(v.boolean()),            // System portfolios (benchmarks) - hidden from user
+        benchmarkId: v.optional(v.string()),          // Benchmark identifier (e.g., "ACWI", "SP500", "GOLD")
         lastUpdated: v.optional(v.string()),
-    }).index("by_userPorfolio", ["userId", "name"]),
+    }).index("by_userPorfolio", ["userId", "name"]).index("by_user", ["userId"]),
 
     // User Portfolio Holdings
     holdings: defineTable({
@@ -153,6 +155,21 @@ export default defineSchema({
         lastUpdated: v.optional(v.string()),
     }).index("by_user", ["userId"]).index("by_userPortfolio", ["userId", "portfolioId"]),
 
+    // Dividend income tracking
+    dividends: defineTable({
+        userId: v.id("users"),                          // Authenticated user ID
+        symbol: v.string(),                          // e.g., "MSFT"
+        name: v.string(),                            // e.g., "Microsoft Corporation"
+        portfolioId: v.optional(v.id("portfolios")), // Optional link to portfolio
+        accountName: v.optional(v.string()),         // e.g., "S&S ISA"
+        currency: v.optional(v.string()),            // e.g., "GBP", "USD", "GBp"
+        shares: v.float64(),                         // Number of shares owned
+        dividendPerShare: v.float64(),               // Dividend per share (annual)
+        frequency: v.string(),                        // "annual", "quarterly", "monthly"
+        paymentMonth: v.optional(v.number()),        // 1-12 for primary payment month
+        lastUpdated: v.optional(v.string()),
+    }).index("by_user", ["userId"]).index("by_userSymbol", ["userId", "symbol"]).index("by_userPortfolio", ["userId", "portfolioId"]),
+
     // Portfolio value snapshots for performance tracking
     portfolioSnapshots: defineTable({
         userId: v.id("users"),                          // Authenticated user ID
@@ -161,6 +178,15 @@ export default defineSchema({
         snapshotDate: v.string(),                      // Date of snapshot (YYYY-MM-DD)
         lastUpdated: v.optional(v.string()),
     }).index("by_userDate", ["userId", "snapshotDate"]).index("by_userPortfolioDate", ["userId", "portfolioId", "snapshotDate"]),
+
+    // Holding price snapshots for performance tracking
+    holdingSnapshots: defineTable({
+        userId: v.id("users"),                          // Authenticated user ID
+        symbol: v.string(),                            // Stock symbol
+        price: v.float64(),                           // Price at snapshot time
+        snapshotDate: v.string(),                      // Date of snapshot (YYYY-MM-DD)
+        lastUpdated: v.optional(v.string()),
+    }).index("by_userSymbolDate", ["userId", "symbol", "snapshotDate"]).index("by_symbolDate", ["symbol", "snapshotDate"]),
 
     // Net worth snapshots including all accounts
     netWorthSnapshots: defineTable({
@@ -223,6 +249,22 @@ export default defineSchema({
         userId: v.id("users"),                          // Authenticated user ID
         title: v.string(),                            // Title of the note
         content: v.string(),                          // Free-form content (markdown supported)
+        lastUpdated: v.optional(v.string()),
+    }).index("by_user", ["userId"]),
+
+    // Retirement scenarios for "What-If" comparison
+    scenarios: defineTable({
+        userId: v.id("users"),                          // Authenticated user ID
+        name: v.string(),                            // Scenario name, e.g., "Retire at 55"
+        description: v.optional(v.string()),         // Optional description
+        pensionValue: v.float64(),                   // Pension pot value
+        isaValue: v.float64(),                        // ISA value
+        giaValue: v.float64(),                        // GIA value
+        growthRate: v.float64(),                     // Annual growth rate (percentage, e.g., 5 for 5%)
+        withdrawalRate: v.float64(),                 // Withdrawal rate (percentage, e.g., 3 for 3%)
+        startAge: v.number(),                         // Retirement start age
+        statePension: v.float64(),                   // Annual state pension amount
+        statePensionAge: v.number(),                 // State pension age
         lastUpdated: v.optional(v.string()),
     }).index("by_user", ["userId"]),
 });
