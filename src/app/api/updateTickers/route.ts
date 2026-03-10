@@ -190,6 +190,16 @@ export async function GET(request: Request) {
     )
   )
 
+  // Save holding price snapshots for historical tracking
+  try {
+    await convex.mutation(
+      api.holdingSnapshots.snapshotCrud.createHoldingSnapshotsBatch,
+      { snapshots: results.map(q => ({ symbol: q.symbol, price: q.price })) }
+    );
+  } catch (snapshotError) {
+    console.error("Failed to save holding snapshots:", snapshotError);
+  }
+
   // After updating prices, calculate total portfolio value and save a snapshot
   try {
     await convex.mutation(
