@@ -1,15 +1,13 @@
 "use client";
 
-import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet, FileText, User, ArrowLeftRight, Briefcase, Calculator, Receipt } from "lucide-react"
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet, FileText, User, ArrowLeftRight, Briefcase, Calculator, Receipt, Leaf, ArrowRight, GitCompare, TrendingUp } from "lucide-react"
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { usePathname } from "next/navigation";
 
 import {
   Sidebar,
-  SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -45,6 +43,11 @@ const menuSections = [
         icon: ArrowLeftRight,
       },
       {
+        title: "Dividends",
+        url: "/dividend-calculator",
+        icon: DollarSign,
+      },
+      {
         title: "Coast FI",
         url: "/lifetime-accumulation",
         icon: FlameKindling,
@@ -58,6 +61,11 @@ const menuSections = [
         title: "Planning Notes",
         url: "/finance-notes",
         icon: FileText,
+      },
+      {
+        title: "Holdings Performance",
+        url: "/holdings-performance",
+        icon: TrendingUp,
       }
     ]
   },
@@ -71,6 +79,11 @@ const menuSections = [
         icon: FlameKindling,
       },
       {
+        title: "What-If Scenarios",
+        url: "/what-if-scenarios",
+        icon: GitCompare,
+      },
+      {
         title: "Accumulation Forecast",
         url: "/accumulation-forecast",
         icon: MoveUpRightIcon,
@@ -79,7 +92,7 @@ const menuSections = [
         title: "Monte Carlo Simulator",
         url: "/monte-carlo-simulator",
         icon: LineChartIcon,
-      }
+      },
     ]
   },
   {
@@ -87,9 +100,19 @@ const menuSections = [
     icon: Receipt,
     items: [
       {
+        title: "Tax-Loss Harvesting",
+        url: "/tax-loss-harvesting",
+        icon: Leaf,
+      },
+      {
         title: "One off Capital Gain Calculator",
         url: "/one-off-cgt",
         icon: DollarSign,
+      },
+      {
+        title: "Bed-and-ISA",
+        url: "/bed-and-isa",
+        icon: ArrowRight,
       }
     ]
   }
@@ -131,23 +154,26 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r border-border/50">
-      <SidebarContent className="pt-4">
-        <SidebarGroup className="gap-2">
-          <div className="px-3 mb-4">
-            <Link 
-              href={"/"} 
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-600/20 group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center backdrop-blur-sm">
-                <Image src={favicon} alt="Drawdown Desk" width={20} height={20} className="invert" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-white font-bold text-sm leading-tight">Drawdown Desk</span>
-                <span className="text-blue-100/70 text-xs">Portfolio Tracker</span>
-              </div>
-            </Link>
-          </div>
-          <SidebarGroupContent className="px-2">
+      <div className="pt-4 flex flex-col h-full">
+        {/* Fixed Header */}
+        <div className="flex-none px-2 mb-2">
+          <Link 
+            href={"/"} 
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-600/20 group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center backdrop-blur-sm">
+              <Image src={favicon} alt="Drawdown Desk" width={20} height={20} className="invert" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-white font-bold text-sm leading-tight">Drawdown Desk</span>
+              <span className="text-blue-100/70 text-xs">Portfolio Tracker</span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Scrollable Menu */}
+        <div className="flex-1 overflow-y-auto px-2">
+          <SidebarGroup className="gap-1">
             <SidebarMenu className="gap-1">
               {menuSections.map((section) => (
                 <Collapsible key={section.section} defaultOpen className="group/collapsible">
@@ -181,13 +207,14 @@ export function AppSidebar() {
                 </Collapsible>
               ))}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter className="pb-4">
+          </SidebarGroup>
+        </div>
+
+        {/* Fixed Footer */}
+        <SidebarFooter className="pb-4 flex-none">
         <div className="px-2">
           <Separator className="mb-4" />
-          <SidebarGroup className="gap-2">
+          <SidebarGroup className="gap-2 flex-none">
             <Authenticated>
               <div className="flex flex-col gap-1">
                 <Link 
@@ -211,6 +238,7 @@ export function AppSidebar() {
           </SidebarGroup>
         </div>
       </SidebarFooter>
+      </div>
     </Sidebar>
   )
 }
