@@ -1,42 +1,43 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Trash2, Plus, TrendingUp, TrendingDown, X, Briefcase } from "lucide-react"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { ArrowLeft, Save, Trash2, Plus, TrendingUp, TrendingDown, Briefcase, PieChart as PieChartIcon, Wallet, BarChart3 } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 import { Id } from "../../../../convex/_generated/dataModel"
 import { getPriceInPounds } from "@/lib/utils"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  Legend
+} from "recharts"
+import { CHART_COLORS_MAIN } from "@/lib/constants"
 
-// Helper to get currency symbol
-function getCurrencySymbol(currency: string | undefined): string {
-  switch (currency) {
-    case "USD": return "$";
-    case "EUR": return "€";
-    case "GBp": return "p";
-    case "GBP":
-    default: return "£";
-  }
-}
+const COLORS = CHART_COLORS_MAIN
 
-// Helper to format value with currency
-function formatCurrency(value: number, currency: string | undefined): string {
-  const symbol = getCurrencySymbol(currency);
-  const valueInPounds = getPriceInPounds(value, currency);
-
-  return `${symbol}${valueInPounds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+interface ChartData {
+  name: string;
+  value: number;
+  color: string;
 }
 
 export default function PortfolioHoldingsPage() {
   const params = useParams()
   const router = useRouter()
   const portfolioId = params.portfolioId as string
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const updateHoldingMutation = useMutation(api.portfolio.updateUserHoldings.updateUserHolding);
@@ -50,8 +51,11 @@ export default function PortfolioHoldingsPage() {
   const [selectedHoldingId, setSelectedHoldingId] = useState<string | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editedValues, setEditedValues] = useState<Partial<Holding>>({});
   const [editedSimpleValues, setEditedSimpleValues] = useState<Partial<SimpleHolding>>({});
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'holding' | 'simpleHolding' | 'portfolio'; id: string } | null>(null);
 
   const initialized = useRef(false);
   useEffect(() => {
@@ -66,22 +70,165 @@ export default function PortfolioHoldingsPage() {
     }
   }, [getPortfolioData]);
 
+  const portfolioHoldings = useMemo(() => 
+    holdings.filter((h) => h.portfolioId === portfolioId), 
+    [holdings, portfolioId]
+  );
+  
+  const portfolioSimpleHoldings = useMemo(() => 
+    simpleHoldings.filter((h) => h.portfolioId === portfolioId), 
+    [simpleHoldings, portfolioId]
+  );
+
+  const isManual = useMemo(() => {
+    if (!getPortfolioData || isError(getPortfolioData) || !isPortfolioArray(getPortfolioData)) return false;
+    const portfolio = getPortfolioData.find((p) => p._id === portfolioId);
+    return portfolio?.portfolioType === "manual";
+  }, [getPortfolioData, portfolioId]);
+
+  const portfolio = useMemo(() => {
+    if (!getPortfolioData || isError(getPortfolioData) || !isPortfolioArray(getPortfolioData)) return undefined;
+    return getPortfolioData.find((p) => p._id === portfolioId);
+  }, [getPortfolioData, portfolioId]);
+
+  const totalValue = useMemo(() => 
+    isManual
+      ? portfolioSimpleHoldings.reduce((sum, h) => sum + h.value, 0)
+      : portfolioHoldings.reduce((sum, h) => sum + getPriceInPounds(h.shares * h.currentPrice, h.currency), 0),
+    [isManual, portfolioHoldings, portfolioSimpleHoldings]
+  );
+  
+  const totalCost = useMemo(() => 
+    isManual
+      ? 0
+      : portfolioHoldings.reduce((sum, h) => sum + getPriceInPounds(h.shares * h.avgPrice, h.currency), 0),
+    [isManual, portfolioHoldings]
+  );
+  
+  const totalGain = totalValue - totalCost;
+  const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+
+  const chartData: ChartData[] = useMemo(() => {
+    if (isManual) {
+      const accountMap = new Map<string, number>();
+      portfolioSimpleHoldings.forEach(h => {
+        const key = h.accountName || "Unassigned";
+        const current = accountMap.get(key) || 0;
+        accountMap.set(key, current + h.value);
+      });
+      return Array.from(accountMap.entries()).map(([name, value], index) => ({
+        name,
+        value,
+        color: COLORS[index % COLORS.length]
+      }));
+    }
+    return portfolioHoldings.map((h, index) => ({
+      name: h.symbol,
+      value: getPriceInPounds(h.shares * h.currentPrice, h.currency),
+      color: COLORS[index % COLORS.length]
+    }));
+  }, [isManual, portfolioHoldings, portfolioSimpleHoldings]);
+
+  useEffect(() => {
+    if (isSheetOpen && closeButtonRef.current) {
+      closeButtonRef.current.focus()
+    }
+  }, [isSheetOpen])
+
+  const openEditSheet = useCallback((holdingId: string | null) => {
+    const holding = portfolioHoldings.find(h => h._id === holdingId) || portfolioSimpleHoldings.find(h => h._id === holdingId);
+    if (holding) {
+      setSelectedHoldingId(holdingId);
+      setIsCreatingNew(false);
+      if ('symbol' in holding) {
+        setEditedValues(holding);
+        setEditedSimpleValues({});
+      } else {
+        setEditedSimpleValues(holding);
+        setEditedValues({});
+      }
+      setIsSheetOpen(true);
+    }
+  }, [portfolioHoldings, portfolioSimpleHoldings]);
+
+  const openCreateSheet = useCallback(() => {
+    if (isManual) {
+      setEditedSimpleValues({
+        portfolioId: portfolioId as Id<"portfolios">,
+        name: "",
+        value: 0,
+        accountName: "",
+        dataType: "",
+        notes: "",
+      });
+      setEditedValues({});
+    } else {
+      setEditedValues({
+        portfolioId: portfolioId as Id<"portfolios">,
+        symbol: "",
+        name: "",
+        accountName: "",
+        dataType: "stock",
+        exchange: "",
+        currency: "GBP",
+        shares: 0,
+        avgPrice: 0,
+        currentPrice: 0,
+        purchaseDate: new Date().toISOString().split("T")[0],
+      });
+      setEditedSimpleValues({});
+    }
+    setSelectedHoldingId("new");
+    setIsCreatingNew(true);
+    setIsSheetOpen(true);
+  }, [isManual, portfolioId]);
+
+  const closeSheet = useCallback(() => {
+    setIsSheetOpen(false);
+    setSelectedHoldingId(null);
+    setIsCreatingNew(false);
+    setEditedValues({});
+    setEditedSimpleValues({});
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, holdingId: string | null) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openEditSheet(holdingId);
+    }
+  }, [openEditSheet]);
+
   if (!getPortfolioData) {
     return <LoadingSpinner fullScreen />;
   }
 
   if (isError(getPortfolioData)) {
-    return <div>Error: {getPortfolioData.error}</div>;
+    return (
+      <div className="flex min-h-screen bg-background" role="alert">
+        <main className="flex-1 p-4 lg:p-8">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <p className="text-destructive">Error: {getPortfolioData.error}</p>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
   }
 
   if (!isPortfolioArray(getPortfolioData)) {
-    return <div>Error: Unexpected response format.</div>;
+    return (
+      <div className="flex min-h-screen bg-background" role="alert">
+        <main className="flex-1 p-4 lg:p-8">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <p className="text-destructive">Error: Unexpected response format.</p>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
   }
-
-  const portfolio = getPortfolioData.find((p) => p._id === portfolioId);
-  const portfolioHoldings = holdings.filter((h) => h.portfolioId === portfolioId);
-  const portfolioSimpleHoldings = simpleHoldings.filter((h) => h.portfolioId === portfolioId);
-  const isManual = portfolio?.portfolioType === "manual";
 
   if (!portfolio) {
     return (
@@ -105,46 +252,8 @@ export default function PortfolioHoldingsPage() {
     );
   }
 
-  // Calculate portfolio stats
-  const totalValue = isManual
-    ? portfolioSimpleHoldings.reduce((sum, h) => sum + h.value, 0)
-    : portfolioHoldings.reduce((sum, h) => sum + getPriceInPounds(h.shares * h.currentPrice, h.currency), 0);
-  const totalCost = isManual
-    ? 0
-    : portfolioHoldings.reduce((sum, h) => sum + getPriceInPounds(h.shares * h.avgPrice, h.currency), 0);
-  const totalGain = totalValue - totalCost;
-  const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
-
-  const showDetailsPanel = selectedHoldingId !== null || isCreatingNew;
-
-  // Select a holding to edit
-  const selectHolding = (holdingId: string | null) => {
-    if (selectedHoldingId === holdingId) {
-      // Deselect
-      setSelectedHoldingId(null);
-      setIsCreatingNew(false);
-      setEditedValues({});
-      setEditedSimpleValues({});
-    } else {
-      const holding = portfolioHoldings.find(h => h._id === holdingId) || portfolioSimpleHoldings.find(h => h._id === holdingId);
-      if (holding) {
-        setSelectedHoldingId(holdingId);
-        setIsCreatingNew(false);
-        if ('symbol' in holding) {
-          setEditedValues(holding);
-          setEditedSimpleValues({});
-        } else {
-          setEditedSimpleValues(holding);
-          setEditedValues({});
-        }
-      }
-    }
-  };
-
-  // Save edited holding
   const saveHolding = async () => {
     if (!editedValues.symbol || !editedValues.name || !editedValues.portfolioId) {
-      alert("Please fill in Symbol and Name");
       return;
     }
 
@@ -189,34 +298,42 @@ export default function PortfolioHoldingsPage() {
             : h
         ));
       }
-      setSelectedHoldingId(null);
-      setIsCreatingNew(false);
-      setEditedValues({});
+      closeSheet();
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Delete holding
-  const deleteHolding = async () => {
-    if (!selectedHoldingId || !confirm("Are you sure you want to delete this holding?")) {
-      return;
-    }
+  const confirmDelete = (type: 'holding' | 'simpleHolding' | 'portfolio', id: string) => {
+    setDeleteTarget({ type, id });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
 
     try {
-      await deleteHoldingsMutation({ holdingId: selectedHoldingId as Id<"holdings"> });
-      setHoldings(holdings.filter((h) => h._id !== selectedHoldingId));
-      setSelectedHoldingId(null);
+      if (deleteTarget.type === 'holding') {
+        await deleteHoldingsMutation({ holdingId: deleteTarget.id as Id<"holdings"> });
+        setHoldings(holdings.filter((h) => h._id !== deleteTarget.id));
+      } else if (deleteTarget.type === 'simpleHolding') {
+        await deleteSimpleHoldingMutation({ holdingId: deleteTarget.id as Id<"simpleHoldings"> });
+        setSimpleHoldings(simpleHoldings.filter((h) => h._id !== deleteTarget.id));
+      } else if (deleteTarget.type === 'portfolio') {
+        await deletePortfolioMutation({ id: portfolioId as Id<"portfolios"> });
+        router.push("/holdings");
+      }
+      closeSheet();
     } catch (error) {
-      console.error("Failed to delete holding:", error);
-      alert("Failed to delete holding. Please try again.");
+      console.error("Failed to delete:", error);
+    } finally {
+      setDeleteConfirmOpen(false);
+      setDeleteTarget(null);
     }
   };
 
-  // Save edited simple holding
   const saveSimpleHolding = async () => {
     if (!editedSimpleValues.name || editedSimpleValues.portfolioId === undefined) {
-      alert("Please fill in Name and Value");
       return;
     }
 
@@ -251,420 +368,406 @@ export default function PortfolioHoldingsPage() {
             : h
         ));
       }
-      setSelectedHoldingId(null);
-      setIsCreatingNew(false);
-      setEditedSimpleValues({});
+      closeSheet();
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Delete simple holding
-  const deleteSimpleHolding = async () => {
-    if (!selectedHoldingId || !confirm("Are you sure you want to delete this holding?")) {
-      return;
-    }
-
-    try {
-      await deleteSimpleHoldingMutation({ holdingId: selectedHoldingId as Id<"simpleHoldings"> });
-      setSimpleHoldings(simpleHoldings.filter((h) => h._id !== selectedHoldingId));
-      setSelectedHoldingId(null);
-    } catch (error) {
-      console.error("Failed to delete holding:", error);
-      alert("Failed to delete holding. Please try again.");
-    }
-  };
-
-  // Delete entire portfolio
-  const deletePortfolio = async () => {
-    if (!confirm("Are you sure you want to delete this portfolio and all its holdings?")) {
-      return;
-    }
-
-    try {
-      await deletePortfolioMutation({ id: portfolioId as Id<"portfolios"> });
-      window.location.href = "/holdings";
-    } catch (error) {
-      console.error("Failed to delete portfolio:", error);
-      alert("Failed to delete portfolio. Please try again.");
-    }
-  };
-
-  // Add new holding - create blank entry
-  const addHolding = () => {
-    if (isManual) {
-      setEditedSimpleValues({
-        portfolioId: portfolioId as Id<"portfolios">,
-        name: "",
-        value: 0,
-        accountName: "",
-        dataType: "",
-        notes: "",
-      });
-      setEditedValues({});
-    } else {
-      setEditedValues({
-        portfolioId: portfolioId as Id<"portfolios">,
-        symbol: "",
-        name: "",
-        accountName: "",
-        dataType: "stock",
-        exchange: "",
-        currency: "GBP",
-        shares: 0,
-        avgPrice: 0,
-        currentPrice: 0,
-        purchaseDate: new Date().toISOString().split("T")[0],
-      });
-      setEditedSimpleValues({});
-    }
-    setSelectedHoldingId("new");
-    setIsCreatingNew(true);
-  };
-
-  // Close details panel
-  const closePanel = () => {
-    setSelectedHoldingId(null);
-    setIsCreatingNew(false);
-    setEditedValues({});
-    setEditedSimpleValues({});
-  };
-
   return (
     <div className="flex min-h-screen bg-background">
-      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4" role="main" aria-label="Portfolio holdings">
         <div className="p-4 lg:p-8 space-y-6">
-          {/* Header Section */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            {/* Portfolio Display */}
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20">
-                <Briefcase className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">{portfolio.name}</div>
-                <div className="text-4xl font-bold tracking-tight">
-                  £{totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          <header>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => router.push("/holdings")} 
+                  className="shrink-0"
+                  aria-label="Back to holdings"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20" aria-hidden="true">
+                  <Briefcase className="w-6 h-6 text-white" />
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  {!isManual && (
-                    <>
-                      {totalGain >= 0 ? (
-                        <TrendingUp className="w-4 h-4 text-emerald-600" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-red-600" />
-                      )}
-                      <span className={`text-sm font-medium ${totalGain >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {totalGain >= 0 ? "+" : ""}£{totalGain.toLocaleString("en-US", { minimumFractionDigits: 2 })} ({totalGainPercent >= 0 ? "+" : ""}{totalGainPercent.toFixed(1)}%)
-                      </span>
-                    </>
-                  )}
-                  {isManual && (
-                    <span className="text-sm text-muted-foreground">Manual Portfolio</span>
-                  )}
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">{portfolio.name}</h1>
+                  <p className="text-sm text-muted-foreground">
+                    {isManual ? "Manual Portfolio" : "Live Portfolio"} • {isManual ? portfolioSimpleHoldings.length : portfolioHoldings.length} holdings
+                  </p>
                 </div>
               </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 lg:max-w-2xl">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Holdings</span>
-                </div>
-                <div className="text-2xl font-bold">{isManual ? portfolioSimpleHoldings.length : portfolioHoldings.length}</div>
-              </div>
-              {!isManual && (
-                <>
-                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Total Cost</span>
-                    </div>
-                    <div className="text-2xl font-bold">£{totalCost.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200/50 dark:border-amber-800/50 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      {totalGain >= 0 ? (
-                        <TrendingUp className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      )}
-                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Gain/Loss</span>
-                    </div>
-                    <div className={`text-2xl font-bold ${totalGain >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-                      {totalGain >= 0 ? "+" : ""}£{totalGain.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Actions Bar */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-            <Button variant="ghost" onClick={() => router.push("/holdings")} className="gap-2 -ml-3">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Holdings
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="destructive" size="sm" onClick={deletePortfolio} className="gap-1.5">
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-              <Button size="sm" onClick={addHolding} className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                Add Holding
-              </Button>
-            </div>
-          </div>
-
-          {/* Holdings Grid */}
-          <Card className="overflow-hidden">
-            <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">{isManual ? "Manual Holdings" : "Investment Holdings"}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isManual ? portfolioSimpleHoldings.length : portfolioHoldings.length} holdings • £{totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })} total
-                </p>
-              </div>
-            </div>
-            <CardContent className="p-0">
-              {isManual ? (
-                portfolioSimpleHoldings.length === 0 ? (
-                  <div className="py-16 text-center">
-                    <div className="flex flex-col items-center max-w-sm mx-auto">
-                      <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
-                        <Briefcase className="w-7 h-7 text-muted-foreground" />
-                      </div>
-                      <p className="text-lg font-semibold mb-2">No holdings yet</p>
-                      <p className="text-sm text-muted-foreground mb-6 text-center">Click &quot;Add Holding&quot; to get started.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="border-b bg-muted/30">
-                        <tr>
-                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</th>
-                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</th>
-                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
-                          <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Value</th>
-                          <th className="px-6 py-3 w-10"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {portfolioSimpleHoldings.map((holding) => (
-                          <tr 
-                            key={holding._id} 
-                            className={`hover:bg-muted/30 transition-colors cursor-pointer ${selectedHoldingId === holding._id ? "bg-primary/5" : ""}`}
-                            onClick={() => selectHolding(holding._id || null)}
-                          >
-                            <td className="px-6 py-4">
-                              <div className="font-medium">{holding.name || "Unnamed"}</div>
-                              {holding.notes && <div className="text-xs text-muted-foreground mt-0.5">{holding.notes}</div>}
-                            </td>
-                            <td className="px-6 py-4 text-muted-foreground">
-                              {holding.accountName || "-"}
-                            </td>
-                            <td className="px-6 py-4">
-                              {holding.dataType && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-secondary text-secondary-foreground">
-                                  {holding.dataType}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-right font-semibold">
-                              {formatCurrency(holding.value, undefined)}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); selectHolding(holding._id || null); }}>
-                                <Save className="h-4 w-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )
-              ) : (
-                portfolioHoldings.length === 0 ? (
-                  <div className="py-16 text-center">
-                    <div className="flex flex-col items-center max-w-sm mx-auto">
-                      <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
-                        <Briefcase className="w-7 h-7 text-muted-foreground" />
-                      </div>
-                      <p className="text-lg font-semibold mb-2">No holdings yet</p>
-                      <p className="text-sm text-muted-foreground mb-6 text-center">Click &quot;Add Holding&quot; to get started.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="border-b bg-muted/30">
-                        <tr>
-                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Symbol</th>
-                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</th>
-                          <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</th>
-                          <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shares</th>
-                          <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Value</th>
-                          <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gain/Loss</th>
-                          <th className="px-6 py-3 w-10"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {portfolioHoldings.map((holding) => {
-                          const currency = holding.currency || "GBP";
-                          const marketValue = holding.shares * holding.currentPrice;
-                          const marketValueInPounds = getPriceInPounds(marketValue, currency);
-                          const cost = holding.shares * holding.avgPrice;
-                          const costInPounds = getPriceInPounds(cost, currency);
-                          const gainLoss = marketValueInPounds - costInPounds;
-                          const gainLossPercent = costInPounds > 0 ? (gainLoss / costInPounds) * 100 : 0;
-
-                          return (
-                            <tr 
-                              key={holding._id} 
-                              className={`hover:bg-muted/30 transition-colors cursor-pointer ${selectedHoldingId === holding._id ? "bg-primary/5" : ""}`}
-                              onClick={() => selectHolding(holding._id || null)}
-                            >
-                              <td className="px-6 py-4">
-                                <div className="font-medium flex items-center gap-2">
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                    {holding.symbol}
-                                    {holding.exchange && <span className="text-blue-400">.{holding.exchange}</span>}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="text-sm">{holding.name || "No name"}</div>
-                              </td>
-                              <td className="px-6 py-4 text-muted-foreground text-sm">
-                                {holding.accountName || "-"}
-                              </td>
-                              <td className="px-6 py-4 text-right text-sm">
-                                {holding.shares.toLocaleString()}
-                              </td>
-                              <td className="px-6 py-4 text-right font-semibold">
-                                {formatCurrency(marketValue, currency)}
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <div className="flex flex-col items-end">
-                                  <span className={`text-sm font-medium ${gainLossPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                                    {gainLossPercent >= 0 ? "+" : ""}{gainLossPercent.toFixed(1)}%
-                                  </span>
-                                  <span className={`text-xs ${gainLoss >= 0 ? "text-emerald-600/70" : "text-red-600/70"}`}>
-                                    {gainLoss >= 0 ? "+" : ""}£{Math.abs(gainLoss).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); selectHolding(holding._id || null); }}>
-                                  <Save className="h-4 w-4" />
-                                </Button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Details Panel */}
-          {showDetailsPanel && (
-            <Card className="overflow-hidden border-t-4 border-t-primary">
-              <div className="px-6 py-4 border-b bg-muted/20 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    {isManual ? (
-                      <Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    ) : (
-                      <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">{isCreatingNew ? "Add New Holding" : "Edit Holding"}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {isManual ? "Add a manual holding" : "Update investment details"}
-                    </p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" onClick={closePanel} aria-label="Close panel">
-                  <X className="h-4 w-4" />
+              <div className="flex gap-2">
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => confirmDelete('portfolio', portfolioId)} 
+                  className="gap-1.5"
+                  aria-label="Delete portfolio"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={openCreateSheet} 
+                  className="gap-1.5"
+                  aria-label="Add new holding"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Holding
                 </Button>
               </div>
-              <CardContent className="p-6">
-                {isManual ? (
-                  <SimpleHoldingForm
-                    editedValues={editedSimpleValues}
-                    setEditedValues={setEditedSimpleValues}
-                    onSave={saveSimpleHolding}
-                    onDelete={isCreatingNew ? undefined : deleteSimpleHolding}
-                    isCreating={isCreatingNew}
-                    isSaving={isSaving}
-                  />
+            </div>
+          </header>
+
+          <section aria-label="Portfolio statistics">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200/50 dark:border-blue-800/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Value</span>
+                  </div>
+                  <div className="text-2xl font-bold" aria-live="polite">
+                    £{totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {!isManual && (
+                <>
+                  <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200/50 dark:border-emerald-800/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                        <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Total Cost</span>
+                      </div>
+                      <div className="text-2xl font-bold">
+                        £{totalCost.toLocaleString("en-US", { minimumFractionDigits: 0 })}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className={`bg-gradient-to-br ${totalGain >= 0 ? "from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200/50 dark:border-emerald-800/50" : "from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border-red-200/50 dark:border-red-800/50"}`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        {totalGain >= 0 ? (
+                          <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" aria-hidden="true" />
+                        )}
+                        <span className={`text-sm font-medium ${totalGain >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                          Gain/Loss
+                        </span>
+                      </div>
+                      <div className={`text-2xl font-bold ${totalGain >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`} aria-live="polite">
+                        {totalGain >= 0 ? "+" : ""}£{totalGain.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </div>
+                      <div className={`text-sm ${totalGain >= 0 ? "text-emerald-600/70" : "text-red-600/70"}`} aria-live="polite">
+                        {totalGainPercent >= 0 ? "+" : ""}{totalGainPercent.toFixed(1)}%
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <PieChartIcon className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-sm font-medium text-muted-foreground">Holdings</span>
+                  </div>
+                  <div className="text-2xl font-bold" aria-live="polite">
+                    {isManual ? portfolioSimpleHoldings.length : portfolioHoldings.length}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4" aria-hidden="true" />
+                  Allocation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <PieChart aria-label="Portfolio allocation chart">
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip
+                        formatter={(value: number) => `£${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                        contentStyle={{
+                          backgroundColor: "var(--background)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "8px",
+                        }}
+                      />
+                      <Legend
+                        layout="vertical"
+                        verticalAlign="middle"
+                        align="right"
+                        formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 ) : (
-                  <LiveHoldingForm
-                    editedValues={editedValues}
-                    setEditedValues={setEditedValues}
-                    onSave={saveHolding}
-                    onDelete={isCreatingNew ? undefined : deleteHolding}
-                    isCreating={isCreatingNew}
-                    isSaving={isSaving}
-                  />
+                  <div className="h-[280px] flex items-center justify-center text-muted-foreground" role="status">
+                    No data to display
+                  </div>
                 )}
               </CardContent>
             </Card>
-          )}
+
+            <Card className="lg:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Briefcase className="w-4 h-4" aria-hidden="true" />
+                  {isManual ? "Holdings" : "Investments"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {isManual ? (
+                  portfolioSimpleHoldings.length === 0 ? (
+                    <div className="py-12 text-center" role="status">
+                      <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" aria-hidden="true" />
+                      <p className="text-muted-foreground">No holdings yet</p>
+                      <Button size="sm" onClick={openCreateSheet} className="mt-3 gap-1.5">
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        Add Holding
+                      </Button>
+                    </div>
+                  ) : (
+                    <ul className="divide-y" role="list" aria-label="Manual holdings list">
+                      {portfolioSimpleHoldings.map((holding) => (
+                        <li
+                          key={holding._id}
+                          className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer focus-within:bg-muted/30 focus-within:outline-none"
+                          onClick={() => openEditSheet(holding._id || null)}
+                          onKeyDown={(e) => handleKeyDown(e, holding._id || null)}
+                          tabIndex={0}
+                          role="listitem"
+                          aria-label={`${holding.name}, £${holding.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center" aria-hidden="true">
+                              <Briefcase className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <div className="font-medium">{holding.name || "Unnamed"}</div>
+                              <div className="text-sm text-muted-foreground">{holding.accountName || "No account"}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold">£{holding.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                            {holding.dataType && (
+                              <div className="text-xs text-muted-foreground capitalize">{holding.dataType}</div>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                ) : (
+                  portfolioHoldings.length === 0 ? (
+                    <div className="py-12 text-center" role="status">
+                      <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" aria-hidden="true" />
+                      <p className="text-muted-foreground">No holdings yet</p>
+                      <Button size="sm" onClick={openCreateSheet} className="mt-3 gap-1.5">
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        Add Holding
+                      </Button>
+                    </div>
+                  ) : (
+                    <ul className="divide-y" role="list" aria-label="Investment holdings list">
+                      {portfolioHoldings.map((holding) => {
+                        const currency = holding.currency || "GBP";
+                        const marketValue = holding.shares * holding.currentPrice;
+                        const marketValueInPounds = getPriceInPounds(marketValue, currency);
+                        const cost = holding.shares * holding.avgPrice;
+                        const costInPounds = getPriceInPounds(cost, currency);
+                        const gainLoss = marketValueInPounds - costInPounds;
+                        const gainLossPercent = costInPounds > 0 ? (gainLoss / costInPounds) * 100 : 0;
+
+                        return (
+                          <li
+                            key={holding._id}
+                            className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer focus-within:bg-muted/30 focus-within:outline-none"
+                            onClick={() => openEditSheet(holding._id || null)}
+                            onKeyDown={(e) => handleKeyDown(e, holding._id || null)}
+                            tabIndex={0}
+                            role="listitem"
+                            aria-label={`${holding.symbol}, £${marketValueInPounds.toLocaleString(undefined, { minimumFractionDigits: 2 })}, ${gainLossPercent >= 0 ? "+" : ""}${gainLossPercent.toFixed(1)}%`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/20 flex items-center justify-center" aria-hidden="true">
+                                <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                                  {holding.symbol.slice(0, 2).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="font-medium flex items-center gap-1.5">
+                                  <span className="px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                    {holding.symbol}
+                                  </span>
+                                  {holding.exchange && <span className="text-xs text-muted-foreground">.{holding.exchange}</span>}
+                                </div>
+                                <div className="text-sm text-muted-foreground truncate max-w-[200px]">{holding.name}</div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold">£{marketValueInPounds.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                              <div className={`text-xs ${gainLossPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                {gainLossPercent >= 0 ? "+" : ""}{gainLossPercent.toFixed(1)}%
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
+
+      <Sheet open={isSheetOpen} onOpenChange={(open) => !open && closeSheet()}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle className="flex items-center gap-2">
+              {isCreatingNew ? (
+                <>
+                  <Plus className="w-5 h-5" aria-hidden="true" />
+                  Add New Holding
+                </>
+              ) : (
+                <>
+                  <Briefcase className="w-5 h-5" aria-hidden="true" />
+                  Edit Holding
+                </>
+              )}
+            </SheetTitle>
+          </SheetHeader>
+
+          {isManual ? (
+            <SimpleHoldingForm
+              editedValues={editedSimpleValues}
+              setEditedValues={setEditedSimpleValues}
+              onSave={saveSimpleHolding}
+              onDelete={() => selectedHoldingId && confirmDelete('simpleHolding', selectedHoldingId)}
+              isCreating={isCreatingNew}
+              isSaving={isSaving}
+              onCancel={closeSheet}
+              ref={closeButtonRef}
+            />
+          ) : (
+            <LiveHoldingForm
+              editedValues={editedValues}
+              setEditedValues={setEditedValues}
+              onSave={saveHolding}
+              onDelete={() => selectedHoldingId && confirmDelete('holding', selectedHoldingId)}
+              isCreating={isCreatingNew}
+              isSaving={isSaving}
+              onCancel={closeSheet}
+              ref={closeButtonRef}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this {deleteTarget?.type === 'portfolio' ? 'portfolio and all its holdings' : 'holding'}?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-// Simple Holding Form Component
-function SimpleHoldingForm({
-  editedValues,
-  setEditedValues,
-  onSave,
-  onDelete,
-  isCreating,
-  isSaving,
-}: {
+import { forwardRef } from "react"
+
+const SimpleHoldingForm = forwardRef<HTMLButtonElement, {
   editedValues: Partial<SimpleHolding>;
   setEditedValues: (values: Partial<SimpleHolding>) => void;
   onSave: () => void;
   onDelete?: () => void;
   isCreating: boolean;
   isSaving: boolean;
-}) {
+  onCancel: () => void;
+}>(({ editedValues, setEditedValues, onSave, onDelete, isCreating, isSaving, onCancel }, ref) => {
   const simpleEdited = editedValues as Partial<SimpleHolding>;
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = () => {
+    if (!simpleEdited.name) {
+      setError("Name is required");
+      return;
+    }
+    if (simpleEdited.value === undefined || simpleEdited.value <= 0) {
+      setError("Value must be greater than 0");
+      return;
+    }
+    setError(null);
+    onSave();
+  };
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {error && (
+        <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="space-y-3">
         <div>
-          <label htmlFor="simple-name" className="text-sm font-medium">Name</label>
+          <label htmlFor="simple-name" className="text-sm font-medium">Name *</label>
           <Input
             id="simple-name"
             value={simpleEdited.name || ""}
             onChange={(e) => setEditedValues({ ...simpleEdited, name: e.target.value })}
             placeholder="e.g., Vanguard Global All Cap"
             className="mt-1.5"
+            required
+            aria-required="true"
           />
         </div>
         <div>
-          <label htmlFor="simple-value" className="text-sm font-medium">Value (£)</label>
+          <label htmlFor="simple-value" className="text-sm font-medium">Value (£) *</label>
           <Input
             id="simple-value"
             type="number"
             step="any"
+            min="0"
             value={simpleEdited.value ?? ""}
             onChange={(e) => {
               const val = e.target.value;
@@ -679,6 +782,8 @@ function SimpleHoldingForm({
             }}
             placeholder="Enter value"
             className="mt-1.5"
+            required
+            aria-required="true"
           />
         </div>
         <div>
@@ -697,7 +802,7 @@ function SimpleHoldingForm({
             value={simpleEdited.dataType || "stock"}
             onValueChange={(value) => setEditedValues({ ...simpleEdited, dataType: value })}
           >
-            <SelectTrigger id="simple-type" className="mt-1.5">
+            <SelectTrigger id="simple-type" className="mt-1.5" aria-label="Select asset type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -720,108 +825,132 @@ function SimpleHoldingForm({
         />
       </div>
       <div className="flex gap-3 pt-2">
-        <Button onClick={onSave} disabled={isSaving} className="gap-2">
-          <Save className="h-4 w-4" />
-          {isSaving ? "Saving..." : isCreating ? "Create Holding" : "Save Changes"}
+        <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+          <Save className="h-4 w-4" aria-hidden="true" />
+          {isSaving ? "Saving..." : isCreating ? "Create" : "Save Changes"}
         </Button>
         {onDelete && (
-          <Button variant="destructive" onClick={onDelete} className="gap-2">
-            <Trash2 className="h-4 w-4" />
+          <Button variant="destructive" onClick={onDelete} className="gap-2" aria-label="Delete this holding">
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
             Delete
           </Button>
         )}
+        <Button ref={ref} variant="outline" onClick={onCancel} className="ml-auto">
+          Cancel
+        </Button>
       </div>
     </div>
   );
-}
+});
 
-// Live Holding Form Component
-function LiveHoldingForm({
-  editedValues,
-  setEditedValues,
-  onSave,
-  onDelete,
-  isCreating,
-  isSaving,
-}: {
+SimpleHoldingForm.displayName = "SimpleHoldingForm";
+
+const LiveHoldingForm = forwardRef<HTMLButtonElement, {
   editedValues: Partial<Holding>;
   setEditedValues: (values: Partial<Holding>) => void;
   onSave: () => void;
   onDelete?: () => void;
   isCreating: boolean;
   isSaving: boolean;
-}) {
+  onCancel: () => void;
+}>(({ editedValues, setEditedValues, onSave, onDelete, isCreating, isSaving, onCancel }, ref) => {
   const liveEdited = editedValues as Partial<Holding>;
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = () => {
+    if (!liveEdited.symbol) {
+      setError("Symbol is required");
+      return;
+    }
+    if (!liveEdited.name) {
+      setError("Name is required");
+      return;
+    }
+    setError(null);
+    onSave();
+  };
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-        <div>
-          <a
-            href="https://api.twelvedata.com/etfs?apikey=demo&country=UK"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground hover:text-foreground underline"
-          >
-            Find UK ETFs
-          </a>
-          <label htmlFor="live-symbol" className="text-sm font-medium">Symbol</label>
-          <Input
-            id="live-symbol"
-            value={liveEdited.symbol || ""}
-            onChange={(e) => setEditedValues({ ...liveEdited, symbol: e.target.value })}
-            placeholder="e.g., ACWI"
-            className="mt-1.5"
-          />
+      {error && (
+        <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <a
+              href="https://api.twelvedata.com/etfs?apikey=demo&country=UK"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Find UK ETFs
+            </a>
+            <label htmlFor="live-symbol" className="text-sm font-medium">Symbol *</label>
+            <Input
+              id="live-symbol"
+              value={liveEdited.symbol || ""}
+              onChange={(e) => setEditedValues({ ...liveEdited, symbol: e.target.value.toUpperCase() })}
+              placeholder="e.g., ACWI"
+              className="mt-1.5"
+              required
+              aria-required="true"
+            />
+          </div>
+          <div>
+            <label htmlFor="live-exchange" className="text-sm font-medium">Exchange</label>
+            <Input
+              id="live-exchange"
+              value={liveEdited.exchange || ""}
+              onChange={(e) => setEditedValues({ ...liveEdited, exchange: e.target.value.toUpperCase() })}
+              placeholder="e.g., LSE"
+              className="mt-1.5"
+            />
+          </div>
         </div>
         <div>
-          <label htmlFor="live-exchange" className="text-sm font-medium">Exchange</label>
-          <Input
-            id="live-exchange"
-            value={liveEdited.exchange || ""}
-            onChange={(e) => setEditedValues({ ...liveEdited, exchange: e.target.value })}
-            placeholder="e.g., LSE"
-            className="mt-1.5"
-          />
-        </div>
-        <div>
-          <label htmlFor="live-name" className="text-sm font-medium">Name</label>
+          <label htmlFor="live-name" className="text-sm font-medium">Name *</label>
           <Input
             id="live-name"
             value={liveEdited.name || ""}
             onChange={(e) => setEditedValues({ ...liveEdited, name: e.target.value })}
             placeholder="e.g., iShares MSCI ACWI"
             className="mt-1.5"
+            required
+            aria-required="true"
           />
         </div>
-        <div>
-          <label htmlFor="live-account" className="text-sm font-medium">Account</label>
-          <Input
-            id="live-account"
-            value={liveEdited.accountName || ""}
-            onChange={(e) => setEditedValues({ ...liveEdited, accountName: e.target.value })}
-            placeholder="e.g., S&S ISA"
-            className="mt-1.5"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="live-account" className="text-sm font-medium">Account</label>
+            <Input
+              id="live-account"
+              value={liveEdited.accountName || ""}
+              onChange={(e) => setEditedValues({ ...liveEdited, accountName: e.target.value })}
+              placeholder="e.g., S&S ISA"
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <label htmlFor="live-currency" className="text-sm font-medium">Currency</label>
+            <Input
+              id="live-currency"
+              value={liveEdited.currency || "GBP"}
+              readOnly
+              className="mt-1.5 bg-muted"
+              aria-label="Currency (read-only)"
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="live-currency" className="text-sm font-medium">Currency</label>
-          <Input
-            id="live-currency"
-            value={liveEdited.currency || "GBP"}
-            readOnly
-            className="mt-1.5 bg-muted"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         <div>
           <label htmlFor="live-type" className="text-sm font-medium">Type</label>
           <Select
             value={liveEdited.dataType || "stock"}
             onValueChange={(value) => setEditedValues({ ...liveEdited, dataType: value })}
           >
-            <SelectTrigger id="live-type" className="mt-1.5" aria-label="Select data type">
+            <SelectTrigger id="live-type" className="mt-1.5" aria-label="Select asset type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -832,89 +961,106 @@ function LiveHoldingForm({
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <label htmlFor="live-shares" className="text-sm font-medium">Shares</label>
-          <Input
-            id="live-shares"
-            type="number"
-            step="any"
-            value={liveEdited.shares ?? ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === "" || val === "-") {
-                setEditedValues({ ...liveEdited, shares: undefined });
-              } else {
-                const parsed = parseFloat(val);
-                if (!isNaN(parsed)) {
-                  setEditedValues({ ...liveEdited, shares: parsed });
+      </div>
+
+      <div className="space-y-3 pt-2">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="live-shares" className="text-sm font-medium">Shares</label>
+            <Input
+              id="live-shares"
+              type="number"
+              step="any"
+              min="0"
+              value={liveEdited.shares ?? ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || val === "-") {
+                  setEditedValues({ ...liveEdited, shares: undefined });
+                } else {
+                  const parsed = parseFloat(val);
+                  if (!isNaN(parsed)) {
+                    setEditedValues({ ...liveEdited, shares: parsed });
+                  }
                 }
-              }
-            }}
-            placeholder="e.g., 100.5"
-            className="mt-1.5"
-          />
+              }}
+              placeholder="e.g., 100.5"
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <label htmlFor="live-purchase-date" className="text-sm font-medium">Purchase Date</label>
+            <Input
+              id="live-purchase-date"
+              type="date"
+              value={liveEdited.purchaseDate || ""}
+              onChange={(e) => setEditedValues({ ...liveEdited, purchaseDate: e.target.value })}
+              className="mt-1.5"
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="live-avg-price" className="text-sm font-medium">
-            Avg Price {liveEdited.currency === "GBp" ? "(pence)" : liveEdited.currency === "USD" ? "($)" : liveEdited.currency === "EUR" ? "(€)" : "(£)"}
-          </label>
-          <Input
-            id="live-avg-price"
-            type="number"
-            step="any"
-            value={liveEdited.avgPrice ?? ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === "" || val === "-") {
-                setEditedValues({ ...liveEdited, avgPrice: undefined });
-              } else {
-                const parsed = parseFloat(val);
-                if (!isNaN(parsed)) {
-                  setEditedValues({ ...liveEdited, avgPrice: parsed });
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="live-avg-price" className="text-sm font-medium">
+              Avg Price {liveEdited.currency === "GBp" ? "(pence)" : liveEdited.currency === "USD" ? "($)" : liveEdited.currency === "EUR" ? "(€)" : "(£)"}
+            </label>
+            <Input
+              id="live-avg-price"
+              type="number"
+              step="any"
+              min="0"
+              value={liveEdited.avgPrice ?? ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || val === "-") {
+                  setEditedValues({ ...liveEdited, avgPrice: undefined });
+                } else {
+                  const parsed = parseFloat(val);
+                  if (!isNaN(parsed)) {
+                    setEditedValues({ ...liveEdited, avgPrice: parsed });
+                  }
                 }
-              }
-            }}
-            placeholder="Enter price"
-            className="mt-1.5"
-          />
-        </div>
-        <div>
-          <label htmlFor="live-current-price" className="text-sm font-medium">
-            Current Price {liveEdited.currency === "GBp" ? "(pence)" : liveEdited.currency === "USD" ? "($)" : liveEdited.currency === "EUR" ? "(€)" : "(£)"}
-          </label>
-          <Input
-            id="live-current-price"
-            type="number"
-            step="any"
-            value={liveEdited.currentPrice ?? ""}
-            readOnly
-            placeholder="Auto-filled from API"
-            className="mt-1.5 bg-muted"
-          />
-        </div>
-        <div>
-          <label htmlFor="live-purchase-date" className="text-sm font-medium">Purchase Date</label>
-          <Input
-            id="live-purchase-date"
-            type="date"
-            value={liveEdited.purchaseDate || ""}
-            onChange={(e) => setEditedValues({ ...liveEdited, purchaseDate: e.target.value })}
-            className="mt-1.5"
-          />
+              }}
+              placeholder="Enter price"
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <label htmlFor="live-current-price" className="text-sm font-medium">
+              Current Price {liveEdited.currency === "GBp" ? "(pence)" : liveEdited.currency === "USD" ? "($)" : liveEdited.currency === "EUR" ? "(€)" : "(£)"}
+            </label>
+            <Input
+              id="live-current-price"
+              type="number"
+              step="any"
+              min="0"
+              value={liveEdited.currentPrice ?? ""}
+              readOnly
+              placeholder="Auto-filled"
+              className="mt-1.5 bg-muted"
+              aria-label="Current price (read-only, auto-filled from API)"
+            />
+          </div>
         </div>
       </div>
+
       <div className="flex gap-3 pt-2">
-        <Button onClick={onSave} disabled={isSaving} className="gap-2">
-          <Save className="h-4 w-4" />
-          {isSaving ? "Saving..." : isCreating ? "Create Holding" : "Save Changes"}
+        <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+          <Save className="h-4 w-4" aria-hidden="true" />
+          {isSaving ? "Saving..." : isCreating ? "Create" : "Save Changes"}
         </Button>
         {onDelete && (
-          <Button variant="destructive" onClick={onDelete} className="gap-2">
-            <Trash2 className="h-4 w-4" />
+          <Button variant="destructive" onClick={onDelete} className="gap-2" aria-label="Delete this holding">
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
             Delete
           </Button>
         )}
+        <Button ref={ref} variant="outline" onClick={onCancel} className="ml-auto">
+          Cancel
+        </Button>
       </div>
     </div>
   );
-}
+});
+
+LiveHoldingForm.displayName = "LiveHoldingForm";
