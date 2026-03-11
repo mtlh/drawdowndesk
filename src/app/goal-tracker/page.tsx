@@ -319,9 +319,9 @@ export default function GoalTracker() {
                                 setNewGoal({ ...newGoal, name: e.target.value });
                                 clearGoalError("name");
                               }}
-                              className={goalErrors.name ? "border-red-500" : ""}
+                              className={goalErrors.name ? "border-destructive" : ""}
                             />
-                            {goalErrors.name && <p className="text-xs text-red-500">{goalErrors.name}</p>}
+                            {goalErrors.name && <p className="text-xs text-destructive">{goalErrors.name}</p>}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>
@@ -356,9 +356,9 @@ export default function GoalTracker() {
                                   setNewGoal({ ...newGoal, targetAmount: Number(e.target.value) || 0 });
                                   clearGoalError("targetAmount");
                                 }}
-                                className={goalErrors.targetAmount ? "border-red-500" : ""}
+                                className={goalErrors.targetAmount ? "border-destructive" : ""}
                               />
-                              {goalErrors.targetAmount && <p className="text-xs text-red-500">{goalErrors.targetAmount}</p>}
+                              {goalErrors.targetAmount && <p className="text-xs text-destructive">{goalErrors.targetAmount}</p>}
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="currentAmount">Current Amount (£)</Label>
@@ -371,9 +371,9 @@ export default function GoalTracker() {
                                   setNewGoal({ ...newGoal, currentAmount: Number(e.target.value) || 0 });
                                   clearGoalError("currentAmount");
                                 }}
-                                className={goalErrors.currentAmount ? "border-red-500" : ""}
+                                className={goalErrors.currentAmount ? "border-destructive" : ""}
                               />
-                              {goalErrors.currentAmount && <p className="text-xs text-red-500">{goalErrors.currentAmount}</p>}
+                              {goalErrors.currentAmount && <p className="text-xs text-destructive">{goalErrors.currentAmount}</p>}
                             </div>
                           </div>
                           <div className="space-y-2">
@@ -386,9 +386,9 @@ export default function GoalTracker() {
                                 setNewGoal({ ...newGoal, targetDate: e.target.value });
                                 clearGoalError("targetDate");
                               }}
-                              className={goalErrors.targetDate ? "border-red-500" : ""}
+                              className={goalErrors.targetDate ? "border-destructive" : ""}
                             />
-                            {goalErrors.targetDate && <p className="text-xs text-red-500">{goalErrors.targetDate}</p>}
+                            {goalErrors.targetDate && <p className="text-xs text-destructive">{goalErrors.targetDate}</p>}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="linkedPortfolio">Link to Portfolio (optional)</Label>

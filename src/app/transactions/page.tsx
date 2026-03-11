@@ -665,12 +665,12 @@ export default function TransactionsPage() {
               <div>
                 <label htmlFor="portfolio" className="text-sm font-medium">Portfolio</label>
                 <Select value={formPortfolioId} onValueChange={(v) => { const p = portfolios.find(x => x._id === v); setFormPortfolioId(v); setFormPortfolioName(p?.name || ""); setFormExistingHoldingId(""); setFormIsNewHolding(false); clearFormError("portfolioId"); }}>
-                  <SelectTrigger id="portfolio" className={`mt-1 ${formErrors.portfolioId ? "border-red-500" : ""}`} aria-label="Select portfolio"><SelectValue placeholder="Select portfolio" /></SelectTrigger>
+                  <SelectTrigger id="portfolio" className={`mt-1 ${formErrors.portfolioId ? "border-destructive" : ""}`} aria-label="Select portfolio"><SelectValue placeholder="Select portfolio" /></SelectTrigger>
                   <SelectContent>
                     {portfolios.map(p => (<SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>))}
                   </SelectContent>
                 </Select>
-                {formErrors.portfolioId && <p className="text-xs text-red-500 mt-1">{formErrors.portfolioId}</p>}
+                {formErrors.portfolioId && <p className="text-xs text-destructive mt-1">{formErrors.portfolioId}</p>}
               </div>
 
               {formPortfolioId && (
@@ -704,8 +704,8 @@ export default function TransactionsPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label htmlFor="symbol" className="text-xs font-medium">Symbol</label>
-                      <Input id="symbol" placeholder="MSFT" value={formSymbol} onChange={(e) => { setFormSymbol(e.target.value.toUpperCase()); clearFormError("symbol"); }} className={`mt-1 ${formErrors.symbol ? "border-red-500" : ""}`} />
-                      {formErrors.symbol && <p className="text-xs text-red-500 mt-1">{formErrors.symbol}</p>}
+                      <Input id="symbol" placeholder="MSFT" value={formSymbol} onChange={(e) => { setFormSymbol(e.target.value.toUpperCase()); clearFormError("symbol"); }} className={`mt-1 ${formErrors.symbol ? "border-destructive" : ""}`} />
+                      {formErrors.symbol && <p className="text-xs text-destructive mt-1">{formErrors.symbol}</p>}
                     </div>
                     <div>
                       <label htmlFor="currency" className="text-xs font-medium">Currency</label>
@@ -750,13 +750,13 @@ export default function TransactionsPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="shares" className="text-sm font-medium">Shares</label>
-                      <Input id="shares" type="number" step="any" placeholder="100" value={formShares} onChange={(e) => { setFormShares(e.target.value); clearFormError("shares"); }} className={`mt-1 ${formErrors.shares ? "border-red-500" : ""}`} />
-                      {formErrors.shares && <p className="text-xs text-red-500 mt-1">{formErrors.shares}</p>}
+                      <Input id="shares" type="number" step="any" placeholder="100" value={formShares} onChange={(e) => { setFormShares(e.target.value); clearFormError("shares"); }} className={`mt-1 ${formErrors.shares ? "border-destructive" : ""}`} />
+                      {formErrors.shares && <p className="text-xs text-destructive mt-1">{formErrors.shares}</p>}
                     </div>
                     <div>
                       <label htmlFor="price" className="text-sm font-medium">Price</label>
-                      <Input id="price" type="number" step="any" placeholder="150.00" value={formPrice} onChange={(e) => { setFormPrice(e.target.value); clearFormError("price"); }} className={`mt-1 ${formErrors.price ? "border-red-500" : ""}`} />
-                      {formErrors.price && <p className="text-xs text-red-500 mt-1">{formErrors.price}</p>}
+                      <Input id="price" type="number" step="any" placeholder="150.00" value={formPrice} onChange={(e) => { setFormPrice(e.target.value); clearFormError("price"); }} className={`mt-1 ${formErrors.price ? "border-destructive" : ""}`} />
+                      {formErrors.price && <p className="text-xs text-destructive mt-1">{formErrors.price}</p>}
                     </div>
                   </div>
 

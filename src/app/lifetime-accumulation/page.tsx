@@ -636,7 +636,7 @@ export default function LifetimeAccumulation() {
                         </td>
                         <td className="px-6 py-4 align-top">
                           <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" onClick={handleSaveNew} className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30" aria-label="Save">
+                            <Button variant="ghost" size="icon" onClick={handleSaveNew} className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30" aria-label="Save">
                               <Save className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="icon" onClick={handleCancel} className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive" aria-label="Cancel">
@@ -719,7 +719,7 @@ export default function LifetimeAccumulation() {
                             </td>
                             <td className="px-6 py-4 align-top">
                               <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" onClick={handleSaveEdit} className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30" aria-label="Save">
+                                <Button variant="ghost" size="icon" onClick={handleSaveEdit} className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30" aria-label="Save">
                                   <Save className="w-4 h-4" />
                                 </Button>
                                 <Button variant="ghost" size="icon" onClick={handleCancel} className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive" aria-label="Cancel">

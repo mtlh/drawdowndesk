@@ -10,6 +10,7 @@ import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
+import { cn } from "@/lib/utils";
 
 const CHART_COLORS = [
   "#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", 
@@ -231,14 +232,20 @@ export default function BenchmarkComparisonPage() {
 
           {/* Timeline Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Time Period:</span>
-            <div className="flex gap-1">
+            <span className="text-sm font-medium text-muted-foreground">Time Period:</span>
+            <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
               {(["1M", "3M", "6M", "YTD", "1Y", "ALL"] as TimelineRange[]).map((range) => (
                 <Button
                   key={range}
-                  variant={timeline === range ? "default" : "outline"}
+                  variant={timeline === range ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setTimeline(range)}
+                  className={cn(
+                    "h-8 px-3 text-xs font-medium rounded-md transition-all",
+                    timeline === range 
+                      ? "shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
                 >
                   {range}
                 </Button>
@@ -247,11 +254,19 @@ export default function BenchmarkComparisonPage() {
           </div>
 
           {/* Holdings Toggle Buttons */}
-          <Card>
+          <Card className="border-muted/60">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Holdings</CardTitle>
-                <Button variant="outline" size="sm" onClick={toggleAll}>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-violet-500" />
+                  Holdings to Compare
+                </CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={toggleAll}
+                  className="gap-2"
+                >
                   {selectAll ? "Disable All" : "Enable All"}
                 </Button>
               </div>
@@ -259,36 +274,56 @@ export default function BenchmarkComparisonPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {holdingsWithPerformance.map((h) => (
-                  <Button
-                    key={h.symbol}
-                    variant={enabledHoldings.has(h.symbol) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => toggleHolding(h.symbol)}
-                    className="gap-2"
-                    style={enabledHoldings.has(h.symbol) ? { backgroundColor: h.color, borderColor: h.color } : {}}
-                  >
-                    {enabledHoldings.has(h.symbol) && <Check className="w-3 h-3" />}
-                    {h.symbol}
-                    <span className={`text-xs ${h.percentChange >= 0 ? "text-emerald-200" : "text-red-200"}`}>
-                      {h.percentChange >= 0 ? "+" : ""}{h.percentChange.toFixed(1)}%
-                    </span>
-                  </Button>
-                ))}
+                {holdingsWithPerformance.map((h) => {
+                  const isEnabled = enabledHoldings.has(h.symbol);
+                  return (
+                    <button
+                      key={h.symbol}
+                      onClick={() => toggleHolding(h.symbol)}
+                      className={cn(
+                        "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border",
+                        isEnabled 
+                          ? "border-transparent shadow-sm" 
+                          : "border-border/60 bg-background text-muted-foreground hover:border-muted-foreground hover:text-foreground"
+                      )}
+                      style={isEnabled ? { 
+                        backgroundColor: h.color + "20", 
+                        borderColor: h.color,
+                        color: h.color
+                      } : {}}
+                    >
+                      {isEnabled && <Check className="w-3.5 h-3.5" />}
+                      <span className="font-semibold">{h.symbol}</span>
+                      <span className={cn(
+                        "text-xs px-1.5 py-0.5 rounded",
+                        isEnabled 
+                          ? h.percentChange >= 0 ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-500/20 text-red-700 dark:text-red-300"
+                          : "text-muted-foreground"
+                      )}>
+                        {h.percentChange >= 0 ? "+" : ""}{h.percentChange.toFixed(1)}%
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               {holdingsWithPerformance.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No holding price history available. Refresh your holdings to track performance.
-                </p>
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                    <LineChartIcon className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    No holding price history available. Refresh your holdings to track performance.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
 
           {/* Performance Chart */}
-          <Card>
+          <Card className="border-muted/60">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <LineChartIcon className="w-5 h-5" />
+                <LineChartIcon className="w-5 h-5 text-violet-500" />
                 Percentage Performance
               </CardTitle>
               <CardDescription>Percentage gain/loss by holding (market price based)</CardDescription>
@@ -297,13 +332,22 @@ export default function BenchmarkComparisonPage() {
               {enabledHoldingsList.length > 0 && chartData.length > 0 ? (
                 <ChartContainer config={chartConfig} className="h-[calc(100vh-350px)] min-h-[500px] w-full">
                   <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <defs>
+                      {enabledHoldingsList.map((h) => (
+                        <linearGradient key={h.symbol} id={`gradient-${h.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={h.color} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={h.color} stopOpacity={0}/>
+                        </linearGradient>
+                      ))}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis
                       dataKey="date"
                       stroke="hsl(var(--muted-foreground))"
                       tickLine={false}
                       axisLine={false}
                       tick={{ fill: "currentColor", fontSize: 11 }}
+                      dy={10}
                     />
                     <YAxis
                       stroke="hsl(var(--muted-foreground))"
@@ -312,37 +356,41 @@ export default function BenchmarkComparisonPage() {
                       axisLine={false}
                       tick={{ fill: "currentColor", fontSize: 11 }}
                       domain={["auto", "auto"]}
+                      dx={-10}
                     />
                     <Tooltip
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
                         return (
-                          <div className="bg-card border border-border rounded-lg px-4 py-3 shadow-lg text-sm min-w-[320px]">
-                            <div className="font-semibold border-b border-border pb-2 mb-2">{label}</div>
-                            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                          <div className="bg-card/95 backdrop-blur-sm border border-border/60 rounded-xl px-4 py-3 shadow-xl text-sm min-w-[320px]">
+                            <div className="font-semibold text-base border-b border-border/60 pb-2 mb-3">{label}</div>
+                            <div className="space-y-2.5 max-h-[300px] overflow-y-auto">
                               {payload.map((entry) => {
                                 const holdingData = (entry.payload as Record<string, unknown>)[`_${entry.dataKey}_data`] as HoldingData | undefined;
                                 const value = entry.value as number;
                                 return (
                                   <div key={entry.dataKey as string} className="flex justify-between items-start gap-4">
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                                        <span className="font-medium">{entry.name}</span>
+                                    <div className="flex items-center gap-2.5">
+                                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
+                                      <div>
+                                        <span className="font-semibold">{entry.name}</span>
+                                        {holdingData && (
+                                          <div className="text-xs text-muted-foreground">
+                                            {holdingData.name.length > 30 ? holdingData.name.slice(0, 30) + "..." : holdingData.name}
+                                          </div>
+                                        )}
                                       </div>
-                                      {holdingData && (
-                                        <div className="text-xs text-muted-foreground ml-4">
-                                          {holdingData.name}
-                                        </div>
-                                      )}
                                     </div>
                                     <div className="text-right">
-                                      <div className={`font-bold ${value >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                      <div className={cn(
+                                        "font-bold text-base",
+                                        value >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+                                      )}>
                                         {value >= 0 ? "+" : ""}{value.toFixed(2)}%
                                       </div>
                                       {holdingData && (
                                         <div className="text-xs text-muted-foreground">
-                                          £{holdingData.currentPrice.toFixed(2)} • {(holdingData.shares).toLocaleString()} shares
+                                          £{holdingData.currentPrice.toFixed(2)}
                                         </div>
                                       )}
                                     </div>
@@ -354,7 +402,10 @@ export default function BenchmarkComparisonPage() {
                         );
                       }}
                     />
-                    <Legend />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: "20px" }}
+                      formatter={(value) => <span className="text-sm font-medium">{value}</span>}
+                    />
                     {enabledHoldingsList.map((h) => (
                       <Line
                         key={h.symbol}
@@ -362,18 +413,21 @@ export default function BenchmarkComparisonPage() {
                         dataKey={h.symbol}
                         name={h.symbol}
                         stroke={h.color}
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         dot={false}
+                        activeDot={{ r: 5, strokeWidth: 2 }}
                       />
                     ))}
                   </LineChart>
                 </ChartContainer>
               ) : (
                 <div className="h-[300px] flex flex-col items-center justify-center text-center p-6">
-                  <LineChartIcon className="w-12 h-12 text-muted-foreground mb-3" />
+                  <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                    <LineChartIcon className="w-8 h-8 text-muted-foreground" />
+                  </div>
                   <p className="text-lg font-semibold mb-2">No holdings selected</p>
-                  <p className="text-sm text-muted-foreground">
-                    Toggle on holdings above to see their performance.
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Toggle on holdings above to see their performance comparison.
                   </p>
                 </div>
               )}

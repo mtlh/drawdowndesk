@@ -835,9 +835,9 @@ export default function NetWorthPage() {
                         setNewAccountName(e.target.value);
                         clearAccountError("name");
                       }}
-                      className={`mt-1.5 ${accountErrors.name ? "border-red-500" : ""}`}
+                      className={`mt-1.5 ${accountErrors.name ? "border-destructive" : ""}`}
                     />
-                    {accountErrors.name && <p className="text-xs text-red-500 mt-1">{accountErrors.name}</p>}
+                    {accountErrors.name && <p className="text-xs text-destructive mt-1">{accountErrors.name}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -865,9 +865,9 @@ export default function NetWorthPage() {
                           setNewAccountValue(e.target.value);
                           clearAccountError("value");
                         }}
-                        className={`mt-1.5 ${accountErrors.value ? "border-red-500" : ""}`}
+                        className={`mt-1.5 ${accountErrors.value ? "border-destructive" : ""}`}
                       />
-                      {accountErrors.value && <p className="text-xs text-red-500 mt-1">{accountErrors.value}</p>}
+                      {accountErrors.value && <p className="text-xs text-destructive mt-1">{accountErrors.value}</p>}
                     </div>
                   </div>
                   <div>
