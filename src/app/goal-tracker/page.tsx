@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Target, Calendar, TrendingUp, CheckCircle2, Clock, Edit2, Trash2, Link2 } from "lucide-react"
@@ -48,6 +49,8 @@ export default function GoalTracker() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
   const [goalErrors, setGoalErrors] = useState<Record<string, string>>({})
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteTargetId, setDeleteTargetId] = useState<Id<"goals"> | null>(null)
   const [newGoal, setNewGoal] = useState({
     name: "",
     targetAmount: 0,
@@ -170,10 +173,16 @@ export default function GoalTracker() {
     setEditingGoal(null)
   }
 
-  const handleDeleteGoal = async (goalId: Id<"goals">) => {
-    if (confirm("Are you sure you want to delete this goal?")) {
-      await deleteGoal({ goalId })
-    }
+  const confirmDeleteGoal = (goalId: Id<"goals">) => {
+    setDeleteTargetId(goalId)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return
+    await deleteGoal({ goalId: deleteTargetId })
+    setDeleteConfirmOpen(false)
+    setDeleteTargetId(null)
   }
 
   const categories = [
@@ -489,7 +498,7 @@ export default function GoalTracker() {
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8 text-destructive"
-                                      onClick={() => handleDeleteGoal(goal._id)}
+                                      onClick={() => confirmDeleteGoal(goal._id)}
                                       aria-label="Delete goal"
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -712,6 +721,21 @@ export default function GoalTracker() {
                   )}
                 </DialogContent>
               </Dialog>
+
+              <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Goal</AlertDialogTitle>
+                  </AlertDialogHeader>
+                  <p className="text-muted-foreground">Are you sure you want to delete this goal? This action cannot be undone.</p>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </div>

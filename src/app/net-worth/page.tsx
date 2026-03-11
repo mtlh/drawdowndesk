@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
 import { Plus, Trash2, X, Link as LinkIcon } from "lucide-react"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Account, AccountType, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
@@ -76,6 +77,9 @@ export default function NetWorthPage() {
   const [newAccountPortfolioId, setNewAccountPortfolioId] = useState<string>("")
   const [newAccountNotes, setNewAccountNotes] = useState("")
   const [accountErrors, setAccountErrors] = useState<Record<string, string>>({})
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const accountsInitialized = useRef(false);
   useEffect(() => {
@@ -279,7 +283,7 @@ export default function NetWorthPage() {
       }
     } catch (error) {
       console.error("Failed to create account:", error)
-      alert("Failed to create account. Please try again.")
+      setFormError("Failed to create account. Please try again.")
     } finally {
       setIsSaving(false)
     }
@@ -294,6 +298,7 @@ export default function NetWorthPage() {
     setNewAccountPortfolioId("")
     setNewAccountNotes("")
     setAccountErrors({})
+    setFormError(null)
   }
 
   const clearAccountError = (field: string) => {
@@ -320,17 +325,23 @@ export default function NetWorthPage() {
   }
 
   // Delete account
-  const deleteAccount = async (accountId: string) => {
-    if (!confirm("Are you sure you want to delete this account?")) return
+  const confirmDeleteAccount = (accountId: string) => {
+    setDeleteTargetId(accountId)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return
 
     setIsSaving(true)
     try {
-      await deleteAccountMutation({ id: accountId as Id<"accounts"> })
-      setAccounts(accounts.filter(a => a._id !== accountId))
+      await deleteAccountMutation({ id: deleteTargetId as Id<"accounts"> })
+      setAccounts(accounts.filter(a => a._id !== deleteTargetId))
     } catch (error) {
       console.error("Failed to delete account:", error)
-      alert("Failed to delete account. Please try again.")
     } finally {
+      setDeleteConfirmOpen(false)
+      setDeleteTargetId(null)
       setIsSaving(false)
     }
   }
@@ -597,7 +608,7 @@ export default function NetWorthPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => deleteAccount(account._id)}
+                              onClick={() => confirmDeleteAccount(account._id)}
                               className="hover:bg-destructive/10 hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -896,6 +907,11 @@ export default function NetWorthPage() {
                       className="mt-1.5"
                     />
                   </div>
+                  {formError && (
+                    <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm" role="alert">
+                      {formError}
+                    </div>
+                  )}
                   <div className="flex gap-3 pt-2">
                     <Button variant="outline" onClick={resetForm} className="flex-1">
                       Cancel
@@ -916,6 +932,21 @@ export default function NetWorthPage() {
             </div>
           )}
         </div>
+
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Account</AlertDialogTitle>
+            </AlertDialogHeader>
+            <p className="text-muted-foreground">Are you sure you want to delete this account? This action cannot be undone.</p>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   )

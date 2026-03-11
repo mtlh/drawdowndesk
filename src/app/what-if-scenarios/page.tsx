@@ -34,7 +34,8 @@ import {
   Line,
   LineChart,
 } from "recharts";
-import { FolderOpen, Trash2, GitCompare, Plus, AlertCircle } from "lucide-react";
+import { FolderOpen, Trash2, GitCompare, Plus, AlertCircle } from "lucide-react"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -252,6 +253,9 @@ export default function WhatIfScenarios() {
 
   const [selectedScenarios, setSelectedScenarios] = useState<Id<"scenarios">[]>([]);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<Id<"scenarios"> | null>(null);
+  const [deleteTargetName, setDeleteTargetName] = useState<string>("");
   const [newScenario, setNewScenario] = useState({
     name: "",
     description: "",
@@ -369,6 +373,15 @@ export default function WhatIfScenarios() {
           ? [...prev, scenarioId]
           : prev
     );
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTargetId) return;
+    deleteScenario({ scenarioId: deleteTargetId });
+    setSelectedScenarios(prev => prev.filter(id => id !== deleteTargetId));
+    setDeleteConfirmOpen(false);
+    setDeleteTargetId(null);
+    setDeleteTargetName("");
   };
 
   return (
@@ -578,10 +591,9 @@ export default function WhatIfScenarios() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            if (confirm(`Delete "${scenario.name}"?`)) {
-                              deleteScenario({ scenarioId: scenario._id });
-                              setSelectedScenarios(prev => prev.filter(id => id !== scenario._id));
-                            }
+                            setDeleteTargetId(scenario._id);
+                            setDeleteTargetName(scenario.name);
+                            setDeleteConfirmOpen(true);
                           }}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
@@ -874,6 +886,21 @@ export default function WhatIfScenarios() {
               </Card>
             </div>
           )}
+
+          <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Scenario</AlertDialogTitle>
+              </AlertDialogHeader>
+              <p className="text-muted-foreground">Are you sure you want to delete &quot;{deleteTargetName}&quot;? This action cannot be undone.</p>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </main>
     </div>

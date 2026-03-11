@@ -53,6 +53,8 @@ export default function TransactionsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   // Multi-add state - queue of transactions
   const [transactionQueue, setTransactionQueue] = useState<TransactionFormData[]>([]);
@@ -391,14 +393,20 @@ export default function TransactionsPage() {
     }
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm("Are you sure you want to delete this transaction? This will also reverse the holding change.")) {
-      return;
-    }
+  const confirmDeleteEvent = (eventId: string) => {
+    setDeleteTargetId(eventId);
+    setDeleteConfirmOpen(true);
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return;
     try {
-      await deleteBuySellEvent({ eventId: eventId as Id<"buySellEvents"> });
+      await deleteBuySellEvent({ eventId: deleteTargetId as Id<"buySellEvents"> });
     } catch (error) {
       console.error("Failed to delete transaction:", error);
+    } finally {
+      setDeleteConfirmOpen(false);
+      setDeleteTargetId(null);
     }
   };
 
@@ -608,7 +616,7 @@ export default function TransactionsPage() {
                         <td className="px-6 py-4 text-right font-mono">{formatCurrencyValue(priceInGBP)}</td>
                         <td className="px-6 py-4 text-right font-mono font-semibold">{formatCurrencyValue(totalInGBP)}</td>
                         <td className="px-6 py-4 text-muted-foreground text-sm max-w-[150px] truncate">{event.notes || "-"}</td>
-                        <td className="px-6 py-4 text-right"><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive" aria-label="Delete transaction" onClick={() => event._id && handleDeleteEvent(event._id)}><Trash2 className="h-4 w-4" /></Button></td>
+                        <td className="px-6 py-4 text-right"><Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive" aria-label="Delete transaction" onClick={() => event._id && confirmDeleteEvent(event._id)}><Trash2 className="h-4 w-4" /></Button></td>
                       </tr>
                     );
                   })
@@ -850,6 +858,23 @@ export default function TransactionsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Editing</AlertDialogCancel>
             <AlertDialogAction onClick={confirmClose}>Discard</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this transaction? This will also reverse the holding change.
+            </DialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

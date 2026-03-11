@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Plus, Trash2, Edit2, DollarSign, TrendingUp, Percent, Calendar, AlertCircle } from "lucide-react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -85,6 +86,9 @@ export default function DividendCalculatorPage() {
   const [editingDividend, setEditingDividend] = useState<Dividend | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [incomeTaxBand, setIncomeTaxBand] = useState<string>("0")
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteTargetId, setDeleteTargetId] = useState<Id<"dividends"> | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState<DividendFormData>({
     symbol: "",
@@ -197,11 +201,12 @@ export default function DividendCalculatorPage() {
 
   const handleSave = async () => {
     if (!formData.symbol || !formData.shares || !formData.dividendPerShare) {
-      alert("Please fill in required fields")
+      setFormError("Please fill in required fields")
       return
     }
 
     setIsSaving(true)
+    setFormError(null)
     try {
       const data = {
         symbol: formData.symbol.toUpperCase(),
@@ -227,20 +232,26 @@ export default function DividendCalculatorPage() {
       setShowAddDialog(false)
     } catch (error) {
       console.error("Failed to save dividend:", error)
-      alert("Failed to save dividend. Please try again.")
+      setFormError("Failed to save dividend. Please try again.")
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleDelete = async (dividendId: Id<"dividends">) => {
-    if (confirm("Are you sure you want to delete this dividend entry?")) {
-      try {
-        await deleteDividendMutation({ dividendId })
-      } catch (error) {
-        console.error("Failed to delete dividend:", error)
-        alert("Failed to delete dividend. Please try again.")
-      }
+  const confirmDelete = (dividendId: Id<"dividends">) => {
+    setDeleteTargetId(dividendId)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return
+    try {
+      await deleteDividendMutation({ dividendId: deleteTargetId })
+    } catch (error) {
+      console.error("Failed to delete dividend:", error)
+    } finally {
+      setDeleteConfirmOpen(false)
+      setDeleteTargetId(null)
     }
   }
 
@@ -421,10 +432,10 @@ export default function DividendCalculatorPage() {
                           £{annual.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <div className="col-span-1 flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEdit(dividend)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEdit(dividend)} aria-label="Edit dividend">
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDelete(dividend._id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => confirmDelete(dividend._id)} aria-label="Delete dividend">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -585,8 +596,13 @@ export default function DividendCalculatorPage() {
                 </Select>
               </div>
             </div>
+            {formError && (
+              <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm mt-4" role="alert">
+                {formError}
+              </div>
+            )}
             <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => { setShowAddDialog(false); setFormError(null); }}>Cancel</Button>
               <Button onClick={handleSave} disabled={isSaving || !formData.symbol || !formData.shares || !formData.dividendPerShare}>
                 {isSaving ? "Saving..." : editingDividend ? "Update" : "Add Dividend"}
               </Button>
@@ -594,6 +610,21 @@ export default function DividendCalculatorPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Dividend Entry</AlertDialogTitle>
+          </AlertDialogHeader>
+          <p className="text-muted-foreground">Are you sure you want to delete this dividend entry? This action cannot be undone.</p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
