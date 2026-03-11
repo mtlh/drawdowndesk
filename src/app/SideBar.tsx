@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet, FileText, User, ArrowLeftRight, Briefcase, Calculator, Receipt, Leaf, ArrowRight, GitCompare, TrendingUp } from "lucide-react"
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet, FileText, User, ArrowLeftRight, Briefcase, Calculator, Receipt, Leaf, ArrowRight, GitCompare, TrendingUp, Landmark, BarChart3 } from "lucide-react"
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { usePathname } from "next/navigation";
 
@@ -48,11 +48,6 @@ const menuSections = [
         icon: DollarSign,
       },
       {
-        title: "Coast FI",
-        url: "/lifetime-accumulation",
-        icon: FlameKindling,
-      },
-      {
         title: "Goals",
         url: "/goal-tracker",
         icon: MonitorCheck,
@@ -74,9 +69,14 @@ const menuSections = [
     icon: Calculator,
     items: [
       {
+        title: "Coast FI",
+        url: "/lifetime-accumulation",
+        icon: FlameKindling,
+      },
+      {
         title: "Cashflow Forecast",
         url: "/cashflow-calculator",
-        icon: FlameKindling,
+        icon: BarChart3,
       },
       {
         title: "What-If Scenarios",
@@ -107,7 +107,7 @@ const menuSections = [
       {
         title: "One off Capital Gain Calculator",
         url: "/one-off-cgt",
-        icon: DollarSign,
+        icon: Landmark,
       },
       {
         title: "Bed-and-ISA",

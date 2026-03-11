@@ -301,7 +301,7 @@ export default function LifetimeAccumulation() {
       [key: string]: number | string;
     }> = [];
 
-    const realReturn = (1 + annualReturn / 100) / (1 + inflation / 100) - 1;
+    const nominalReturn = annualReturn / 100;
 
     // Get initial account values from the first record
     const firstRecord = accumulations[0];
@@ -363,7 +363,7 @@ export default function LifetimeAccumulation() {
         const monthlyContribution = contributionsMap[name] || 0;
         const annualContribution = monthlyContribution * 12;
         // Apply growth then add annual contribution
-        accountValues[name] = accountValues[name] * (1 + realReturn) + annualContribution;
+        accountValues[name] = accountValues[name] * (1 + nominalReturn) + annualContribution;
       });
 
       const taxYear = lastTaxYear + (age - lastAge);
@@ -399,11 +399,13 @@ export default function LifetimeAccumulation() {
 
     // 4% rule: annual income = portfolio × 0.04
     const fourPercentAnnual = portfolio * 0.04;
+    const fourPercentAnnualInflationAdjusted = inflationAdjusted * 0.04;
 
     // 375 rule (monthly): monthly income = portfolio ÷ 375
     const rule375Monthly = portfolio / 375;
     // Yearly equivalent: (portfolio ÷ 375) × 12
     const rule375Annual = rule375Monthly * 12;
+    const rule375AnnualInflationAdjusted = (inflationAdjusted / 375) * 12;
 
     // Years of drawdown (assuming 4% withdrawal)
     const yearsOfDrawdown = 25;
@@ -412,8 +414,10 @@ export default function LifetimeAccumulation() {
       portfolio,
       inflationAdjusted,
       fourPercentAnnual,
+      fourPercentAnnualInflationAdjusted,
       rule375Monthly,
       rule375Annual,
+      rule375AnnualInflationAdjusted,
       yearsOfDrawdown,
     };
   }, [projectionData, retirementAge, currentAge, inflation]);
@@ -498,10 +502,10 @@ export default function LifetimeAccumulation() {
                     <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">4% Rule</span>
                   </div>
                   <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                    £{retirementEstimates.fourPercentAnnual.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr
+                    £{retirementEstimates.fourPercentAnnualInflationAdjusted.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    £{(retirementEstimates.fourPercentAnnual / 12).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/mo
+                  <div className="text-xs text-muted-foreground mt-1">
+                    £{retirementEstimates.fourPercentAnnual.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr @ {inflation}% inflation
                   </div>
                 </div>
                 {/* 375 Rule */}
@@ -511,10 +515,10 @@ export default function LifetimeAccumulation() {
                     <span className="text-xs font-medium text-amber-600 dark:text-amber-400">375 Rule</span>
                   </div>
                   <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                    £{retirementEstimates.rule375Annual.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr
+                    £{retirementEstimates.rule375AnnualInflationAdjusted.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    £{retirementEstimates.rule375Monthly.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/mo
+                  <div className="text-xs text-muted-foreground mt-1">
+                    £{retirementEstimates.rule375Annual.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr @ {inflation}% inflation
                   </div>
                 </div>
               </div>
