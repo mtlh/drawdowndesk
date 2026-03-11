@@ -6,8 +6,10 @@ import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { ToastProvider } from "@/hooks/useToast";
 import { AppSidebar } from "./SideBar";
 import { AppHeader } from "@/components/AppHeader";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Login from "./login";
 import { Button } from "@/components/ui/button";
 
@@ -102,12 +104,16 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
       ) : (
         // Other pages - with sidebar
         <AppShell>
-          <Authenticated>
-            {children}
-          </Authenticated>
-          <Unauthenticated>
-            <PleaseSignIn />
-          </Unauthenticated>
+          <ErrorBoundary>
+            <ToastProvider>
+              <Authenticated>
+                {children}
+              </Authenticated>
+              <Unauthenticated>
+                <PleaseSignIn />
+              </Unauthenticated>
+            </ToastProvider>
+          </ErrorBoundary>
         </AppShell>
       )}
     </ConvexAuthProvider>
