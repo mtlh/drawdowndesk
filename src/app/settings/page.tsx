@@ -339,7 +339,7 @@ function SettingsContent() {
           </div>
 
           {savedMessage && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md">
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-md">
               {savedMessage}
             </div>
           )}

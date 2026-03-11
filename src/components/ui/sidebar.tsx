@@ -26,10 +26,12 @@ import {
 } from "@/components/ui/tooltip"
 
 const SIDEBAR_STORAGE_KEY = "sidebar_state"
-const SIDEBAR_WIDTH = "16rem"
+const SIDEBAR_WIDTH_KEY = "sidebar_width"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const MIN_SIDEBAR_WIDTH = 280
+const MAX_SIDEBAR_WIDTH = 500
 
 // Helper to get initial sidebar state from localStorage
 function getInitialSidebarState(): boolean {
@@ -42,6 +44,21 @@ function getInitialSidebarState(): boolean {
   }
 }
 
+// Helper to get initial sidebar width from localStorage
+function getInitialSidebarWidth(): number {
+  if (typeof window === "undefined") return 320
+  try {
+    const stored = localStorage.getItem(SIDEBAR_WIDTH_KEY)
+    const width = parseInt(stored || "", 10)
+    if (!isNaN(width) && width >= MIN_SIDEBAR_WIDTH && width <= MAX_SIDEBAR_WIDTH) {
+      return width
+    }
+  } catch {
+    // Ignore
+  }
+  return 320
+}
+
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
   open: boolean
@@ -50,6 +67,8 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  sidebarWidth: number
+  setSidebarWidth: (width: number) => void
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -82,6 +101,9 @@ function SidebarProvider({
   // Use provided defaultOpen, or fall back to localStorage
   const initialOpen = defaultOpen !== undefined ? defaultOpen : getInitialSidebarState()
 
+  // Sidebar width state
+  const [sidebarWidth, setSidebarWidth] = React.useState(getInitialSidebarWidth)
+
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(initialOpen)
@@ -109,6 +131,17 @@ function SidebarProvider({
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
+
+  // Helper to set sidebar width and persist to localStorage
+  const handleSetSidebarWidth = React.useCallback((width: number) => {
+    const newWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, width))
+    setSidebarWidth(newWidth)
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(newWidth))
+    } catch {
+      // Ignore storage errors
+    }
+  }, [])
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -139,8 +172,10 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      sidebarWidth,
+      setSidebarWidth: handleSetSidebarWidth,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, sidebarWidth, handleSetSidebarWidth]
   )
 
   return (
@@ -150,7 +185,7 @@ function SidebarProvider({
           data-slot="sidebar-wrapper"
           style={
             {
-              "--sidebar-width": SIDEBAR_WIDTH,
+              "--sidebar-width": `${sidebarWidth}px`,
               "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
               ...style,
             } as React.CSSProperties
@@ -314,6 +349,56 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
         "hover:group-data-[collapsible=offcanvas]:bg-sidebar group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full",
         "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
         "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SidebarResizeHandle({ className, ...props }: React.ComponentProps<"div">) {
+  const { sidebarWidth, setSidebarWidth, open, isMobile } = useSidebar()
+  const isResizing = React.useRef(false)
+  const startX = React.useRef(0)
+  const startWidth = React.useRef(0)
+
+  const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
+    if (isMobile || !open) return
+    e.preventDefault()
+    isResizing.current = true
+    startX.current = e.clientX
+    startWidth.current = sidebarWidth
+    document.body.style.cursor = "ew-resize"
+    document.body.style.userSelect = "none"
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isResizing.current) return
+      const delta = moveEvent.clientX - startX.current
+      const newWidth = startWidth.current + delta
+      setSidebarWidth(newWidth)
+    }
+
+    const handleMouseUp = () => {
+      isResizing.current = false
+      document.body.style.cursor = ""
+      document.body.style.userSelect = ""
+      document.removeEventListener("mousemove", handleMouseMove)
+      document.removeEventListener("mouseup", handleMouseUp)
+    }
+
+    document.addEventListener("mousemove", handleMouseMove)
+    document.addEventListener("mouseup", handleMouseUp)
+  }, [isMobile, open, sidebarWidth, setSidebarWidth])
+
+  if (isMobile || !open) return null
+
+  return (
+    <div
+      data-sidebar="resize-handle"
+      data-slot="sidebar-resize-handle"
+      onMouseDown={handleMouseDown}
+      className={cn(
+        "absolute inset-y-0 z-30 w-1 cursor-ew-resize border-l border-transparent hover:border-sidebar-border transition-colors right-0 top-0",
         className
       )}
       {...props}
@@ -737,6 +822,7 @@ export {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
+  SidebarResizeHandle,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,

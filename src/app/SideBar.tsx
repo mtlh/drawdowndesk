@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubItem,
+  SidebarResizeHandle,
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
 import { Separator } from "@/components/ui/separator"
@@ -154,6 +155,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r border-border/50">
+      <SidebarResizeHandle />
       <div className="pt-4 flex flex-col h-full">
         {/* Fixed Header */}
         <div className="flex-none px-2 mb-2">
