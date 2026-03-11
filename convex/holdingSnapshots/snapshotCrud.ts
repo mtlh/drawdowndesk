@@ -82,10 +82,12 @@ export const createHoldingSnapshotsBatch = mutation({
       price: v.float64(),
       snapshotDate: v.optional(v.string()),
     })),
+    userId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const authUserId = await getAuthUserId(ctx);
+    const userId = args.userId || authUserId;
+    if (!userId) throw new Error("User ID required");
 
     const snapshotDate = new Date().toISOString().split("T")[0];
     const results: string[] = [];

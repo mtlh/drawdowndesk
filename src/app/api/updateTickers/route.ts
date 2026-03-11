@@ -194,7 +194,10 @@ export async function GET(request: Request) {
   try {
     await convex.mutation(
       api.holdingSnapshots.snapshotCrud.createHoldingSnapshotsBatch,
-      { snapshots: results.map(q => ({ symbol: q.symbol, price: q.price })) }
+      { 
+        snapshots: results.map(q => ({ symbol: q.symbol, price: q.price })),
+        userId: userId ? userId as Id<"users"> : undefined
+      }
     );
   } catch (snapshotError) {
     console.error("Failed to save holding snapshots:", snapshotError);
