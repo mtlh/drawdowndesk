@@ -89,39 +89,6 @@ export default function PortfolioOverview() {
     return getPortfolioAllocationData(portfolioSummary.portfolios);
   }, [portfolioSummary]);
 
-  // Calculate 1-day changes from snapshots
-  const oneDayChanges = useMemo(() => {
-    if (!portfolioData.success || !getPortfolioSnapshots || "error" in getPortfolioSnapshots || getPortfolioSnapshots.length === 0) return {};
-
-    const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split("T")[0];
-
-    const changes: Record<string, { oneDayChange: number; oneDayChangePercent: number }> = {};
-
-    // Get portfolio IDs from the data
-    const portfolioMap = new Map(portfolioData.data.map(p => [p._id, p.name]));
-
-    for (const [portfolioId, portfolioName] of portfolioMap) {
-      const todaySnapshots = getPortfolioSnapshots.filter(s =>
-        s.portfolioId === portfolioId && s.snapshotDate === today
-      );
-      const yesterdaySnapshots = getPortfolioSnapshots.filter(s =>
-        s.portfolioId === portfolioId && s.snapshotDate === yesterdayStr
-      );
-
-      const todayValue = todaySnapshots.length > 0 ? todaySnapshots[0].totalValue : 0;
-      const yesterdayValue = yesterdaySnapshots.length > 0 ? yesterdaySnapshots[0].totalValue : 0;
-      const change = todayValue - yesterdayValue;
-      const changePercent = yesterdayValue > 0 ? (change / yesterdayValue) * 100 : 0;
-
-      changes[portfolioName] = { oneDayChange: change, oneDayChangePercent: changePercent };
-    }
-
-    return changes;
-  }, [getPortfolioSnapshots, portfolioData]);
-
   const hasSnapshots = getPortfolioSnapshots && Array.isArray(getPortfolioSnapshots) && getPortfolioSnapshots.length > 0;
 
   const performanceData = useMemo(() => {
@@ -241,16 +208,6 @@ export default function PortfolioOverview() {
 
   // Handle case where portfolioSummary is null (no holdings)
   const summary = portfolioSummary ?? { totalValue: 0, totalChange: 0, totalChangePercent: 0, portfolios: [] };
-
-  // Merge 1-day changes into portfolio allocation data
-  const portfolioAllocationWithPerformance = portfolioAllocationData.map(item => {
-    const change = oneDayChanges[item.name];
-    return {
-      ...item,
-      oneDayChange: change?.oneDayChange ?? 0,
-      oneDayChangePercent: change?.oneDayChangePercent ?? 0,
-    };
-  });
 
   const assetTypeData = calculateAssetTypeAllocation(summary.portfolios)
   const accountAllocationData = getAccountAllocationData(summary.portfolios)
