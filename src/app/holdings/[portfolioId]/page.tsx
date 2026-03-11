@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Save, Trash2, Plus, TrendingUp, TrendingDown, Briefcase, PieChart as PieChartIcon, Wallet, BarChart3 } from "lucide-react"
+import { ArrowLeft, Save, Trash2, Plus, TrendingUp, TrendingDown, Briefcase, PieChart as PieChartIcon, Wallet, BarChart3, Search, X } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
@@ -56,6 +56,7 @@ export default function PortfolioHoldingsPage() {
   const [editedSimpleValues, setEditedSimpleValues] = useState<Partial<SimpleHolding>>({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'holding' | 'simpleHolding' | 'portfolio'; id: string } | null>(null);
+  const [searchWithinPortfolio, setSearchWithinPortfolio] = useState("");
 
   const initialized = useRef(false);
   useEffect(() => {
@@ -79,6 +80,25 @@ export default function PortfolioHoldingsPage() {
     simpleHoldings.filter((h) => h.portfolioId === portfolioId), 
     [simpleHoldings, portfolioId]
   );
+
+  const filteredPortfolioHoldings = useMemo(() => {
+    if (!searchWithinPortfolio.trim()) return portfolioHoldings;
+    const term = searchWithinPortfolio.toLowerCase();
+    return portfolioHoldings.filter(h => 
+      h.symbol?.toLowerCase().includes(term) || 
+      h.name.toLowerCase().includes(term) ||
+      h.accountName?.toLowerCase().includes(term)
+    );
+  }, [portfolioHoldings, searchWithinPortfolio]);
+
+  const filteredPortfolioSimpleHoldings = useMemo(() => {
+    if (!searchWithinPortfolio.trim()) return portfolioSimpleHoldings;
+    const term = searchWithinPortfolio.toLowerCase();
+    return portfolioSimpleHoldings.filter(h => 
+      h.name.toLowerCase().includes(term) ||
+      h.accountName?.toLowerCase().includes(term)
+    );
+  }, [portfolioSimpleHoldings, searchWithinPortfolio]);
 
   const isManual = useMemo(() => {
     if (!getPortfolioData || isError(getPortfolioData) || !isPortfolioArray(getPortfolioData)) return false;
@@ -489,118 +509,103 @@ export default function PortfolioHoldingsPage() {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-1">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <PieChartIcon className="w-4 h-4" aria-hidden="true" />
-                  Allocation
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {chartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <PieChart aria-label="Portfolio allocation chart">
-                      <Pie
-                        data={chartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={2}
-                        dataKey="value"
-                        nameKey="name"
-                      >
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip
-                        formatter={(value: number) => `£${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                        contentStyle={{
-                          backgroundColor: "var(--background)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Legend
-                        layout="vertical"
-                        verticalAlign="middle"
-                        align="right"
-                        formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-[280px] flex items-center justify-center text-muted-foreground" role="status">
-                    No data to display
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Briefcase className="w-4 h-4" aria-hidden="true" />
                   {isManual ? "Holdings" : "Investments"}
                 </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {isManual ? (
-                  portfolioSimpleHoldings.length === 0 ? (
-                    <div className="py-12 text-center" role="status">
-                      <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" aria-hidden="true" />
-                      <p className="text-muted-foreground">No holdings yet</p>
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchWithinPortfolio}
+                    onChange={(e) => setSearchWithinPortfolio(e.target.value)}
+                    className="w-[150px] h-8 pl-8 pr-8 text-sm"
+                    aria-label="Search holdings"
+                  />
+                  {searchWithinPortfolio && (
+                    <button
+                      onClick={() => setSearchWithinPortfolio("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {isManual ? (
+                filteredPortfolioSimpleHoldings.length === 0 ? (
+                  <div className="py-12 text-center" role="status">
+                    <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" aria-hidden="true" />
+                    <p className="text-muted-foreground">{searchWithinPortfolio ? "No holdings match your search" : "No holdings yet"}</p>
+                    {!searchWithinPortfolio && (
                       <Button size="sm" onClick={openCreateSheet} className="mt-3 gap-1.5">
                         <Plus className="h-4 w-4" aria-hidden="true" />
                         Add Holding
                       </Button>
-                    </div>
-                  ) : (
-                    <ul className="divide-y" role="list" aria-label="Manual holdings list">
-                      {portfolioSimpleHoldings.map((holding) => (
-                        <li
-                          key={holding._id}
-                          className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer focus-within:bg-muted/30 focus-within:outline-none"
-                          onClick={() => openEditSheet(holding._id || null)}
-                          onKeyDown={(e) => handleKeyDown(e, holding._id || null)}
-                          tabIndex={0}
-                          role="listitem"
-                          aria-label={`${holding.name}, £${holding.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center" aria-hidden="true">
-                              <Briefcase className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                            <div>
-                              <div className="font-medium">{holding.name || "Unnamed"}</div>
-                              <div className="text-sm text-muted-foreground">{holding.accountName || "No account"}</div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-semibold">£{holding.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                            {holding.dataType && (
-                              <div className="text-xs text-muted-foreground capitalize">{holding.dataType}</div>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )
+                    )}
+                  </div>
                 ) : (
-                  portfolioHoldings.length === 0 ? (
-                    <div className="py-12 text-center" role="status">
-                      <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" aria-hidden="true" />
-                      <p className="text-muted-foreground">No holdings yet</p>
-                      <Button size="sm" onClick={openCreateSheet} className="mt-3 gap-1.5">
-                        <Plus className="h-4 w-4" aria-hidden="true" />
-                        Add Holding
-                      </Button>
-                    </div>
-                  ) : (
-                    <ul className="divide-y" role="list" aria-label="Investment holdings list">
-                      {portfolioHoldings.map((holding) => {
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b text-xs text-muted-foreground">
+                          <th className="text-left px-4 py-3 font-medium">Name</th>
+                          <th className="text-left px-4 py-3 font-medium">Account</th>
+                          <th className="text-right px-4 py-3 font-medium">Type</th>
+                          <th className="text-right px-4 py-3 font-medium">Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPortfolioSimpleHoldings.map((holding) => (
+                          <tr
+                            key={holding._id}
+                            className="border-b hover:bg-muted/30 transition-colors cursor-pointer"
+                            onClick={() => openEditSheet(holding._id || null)}
+                          >
+                            <td className="px-4 py-3 font-medium">{holding.name || "Unnamed"}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{holding.accountName || "—"}</td>
+                            <td className="px-4 py-3 text-muted-foreground capitalize">{holding.dataType || "—"}</td>
+                            <td className="px-4 py-3 text-right font-semibold">£{holding.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : filteredPortfolioHoldings.length === 0 ? (
+                <div className="py-12 text-center" role="status">
+                  <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" aria-hidden="true" />
+                  <p className="text-muted-foreground">{searchWithinPortfolio ? "No holdings match your search" : "No holdings yet"}</p>
+                  {!searchWithinPortfolio && (
+                    <Button size="sm" onClick={openCreateSheet} className="mt-3 gap-1.5">
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      Add Holding
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b text-xs text-muted-foreground">
+                        <th className="text-left px-4 py-3 font-medium">Symbol</th>
+                        <th className="text-left px-4 py-3 font-medium">Name</th>
+                        <th className="text-right px-4 py-3 font-medium">Shares</th>
+                        <th className="text-right px-4 py-3 font-medium">Price</th>
+                        <th className="text-right px-4 py-3 font-medium">Cost</th>
+                        <th className="text-right px-4 py-3 font-medium">Value</th>
+                        <th className="text-right px-4 py-3 font-medium">Gain/Loss</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPortfolioHoldings.map((holding) => {
                         const currency = holding.currency || "GBP";
                         const marketValue = holding.shares * holding.currentPrice;
                         const marketValueInPounds = getPriceInPounds(marketValue, currency);
@@ -608,53 +613,40 @@ export default function PortfolioHoldingsPage() {
                         const costInPounds = getPriceInPounds(cost, currency);
                         const gainLoss = marketValueInPounds - costInPounds;
                         const gainLossPercent = costInPounds > 0 ? (gainLoss / costInPounds) * 100 : 0;
-
                         return (
-                          <li
+                          <tr
                             key={holding._id}
-                            className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer focus-within:bg-muted/30 focus-within:outline-none"
+                            className="border-b hover:bg-muted/30 transition-colors cursor-pointer"
                             onClick={() => openEditSheet(holding._id || null)}
-                            onKeyDown={(e) => handleKeyDown(e, holding._id || null)}
-                            tabIndex={0}
-                            role="listitem"
-                            aria-label={`${holding.symbol}, £${marketValueInPounds.toLocaleString(undefined, { minimumFractionDigits: 2 })}, ${gainLossPercent >= 0 ? "+" : ""}${gainLossPercent.toFixed(1)}%`}
                           >
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/20 flex items-center justify-center" aria-hidden="true">
-                                <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
-                                  {holding.symbol.slice(0, 2).toUpperCase()}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="font-medium flex items-center gap-1.5">
-                                  <span className="px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                    {holding.symbol}
-                                  </span>
-                                  {holding.exchange && <span className="text-xs text-muted-foreground">.{holding.exchange}</span>}
-                                </div>
-                                <div className="text-sm text-muted-foreground truncate max-w-[200px]">{holding.name}</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-semibold">£{marketValueInPounds.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                              <div className={`text-xs ${gainLossPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                                {gainLossPercent >= 0 ? "+" : ""}{gainLossPercent.toFixed(1)}%
-                              </div>
-                            </div>
-                          </li>
+                            <td className="px-4 py-3">
+                              <span className="px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                {holding.symbol}
+                              </span>
+                              {holding.exchange && <span className="text-xs text-muted-foreground ml-1">.{holding.exchange}</span>}
+                            </td>
+                            <td className="px-4 py-3 max-w-[200px] truncate">{holding.name}</td>
+                            <td className="px-4 py-3 text-right text-muted-foreground">{holding.shares.toLocaleString()}</td>
+                            <td className="px-4 py-3 text-right text-muted-foreground">£{holding.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td className="px-4 py-3 text-right text-muted-foreground">£{costInPounds.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td className="px-4 py-3 text-right font-semibold">£{marketValueInPounds.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td className={`px-4 py-3 text-right font-medium ${gainLossPercent >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                              {gainLossPercent >= 0 ? "+" : ""}{gainLossPercent.toFixed(1)}%
+                            </td>
+                          </tr>
                         );
                       })}
-                    </ul>
-                  )
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </main>
 
       <Sheet open={isSheetOpen} onOpenChange={(open) => !open && closeSheet()}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-6 me-4 sm:me-8">
           <SheetHeader className="mb-6">
             <SheetTitle className="flex items-center gap-2">
               {isCreatingNew ? (

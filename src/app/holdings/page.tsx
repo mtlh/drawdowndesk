@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, X, LineChart as LineChartIcon, TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon, Building2, Filter, ArrowUpDown, Search } from "lucide-react"
+import { Plus, X, LineChart as LineChartIcon, TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon, Building2, Filter, ArrowUpDown, Search, Check, Loader2, Copy } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -41,12 +41,22 @@ export default function HoldingsPage() {
   const [newPortfolioType, setNewPortfolioType] = useState<"live" | "manual">("live");
   const [portfolioNameError, setPortfolioNameError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [sortBy, setSortBy] = useState<"date" | "value">("date");
+  const [sortBy, setSortBy] = useState<"date" | "value">(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('portfolio_sort_by');
+      return (saved as "date" | "value") || "date";
+    }
+    return "date";
+  });
   const [typeFilter, setTypeFilter] = useState<"all" | "live" | "manual">("all");
   const [accountFilter, setAccountFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTimeline, setSelectedTimeline] = useState<TimelineRange>("1M");
   const [performanceModalPortfolioId, setPerformanceModalPortfolioId] = useState<string | null>(null);
+  const [savingPortfolioId, setSavingPortfolioId] = useState<string | null>(null);
+  const [renamedPortfolioId, setRenamedPortfolioId] = useState<string | null>(null);
+  const [copiedValue, setCopiedValue] = useState<string | null>(null);
+  const [selectedHoldings, setSelectedHoldings] = useState<Set<string>>(new Set());
 
   const initialized = useRef(false);
   useEffect(() => {
@@ -69,6 +79,14 @@ export default function HoldingsPage() {
 
   // Prevent body scroll when modal is open
   useBodyScrollLock(showNewPortfolioForm)
+
+  // Persist sort preference
+  useEffect(() => {
+    localStorage.setItem('portfolio_sort_by', sortBy);
+  }, [sortBy]);
+
+  // Debounce ref for portfolio rename
+  const debouncedUpdateRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
   // Get unique account names from holdings
   const uniqueAccounts = useMemo(() => {
@@ -287,25 +305,51 @@ export default function HoldingsPage() {
     }
   }
 
-  // Update portfolio name
-  const updatePortfolioName = async (portfolioId: string, name: string) => {
+  // Update portfolio name with debounce
+  
+  const updatePortfolioName = (portfolioId: string, name: string) => {
     setPortfolios(
       portfolios.map((p) =>
         p.id === portfolioId ? { ...p, portfolio: { ...p.portfolio, name, lastUpdated: new Date().toISOString() } } : p,
       ),
     );
 
-    try {
-      // Persist the name change to Convex
-      await updatePortfolioMutation({ 
-        id: portfolioId as Id<"portfolios">, 
-        name 
-      });
-    } catch (error) {
-      console.error("Failed to update portfolio name:", error);
-      setPortfolioNameError("Failed to update portfolio name. Please try again.");
+    // Clear existing timeout for this portfolio
+    if (debouncedUpdateRef.current[portfolioId]) {
+      clearTimeout(debouncedUpdateRef.current[portfolioId]);
     }
+
+    // Show saving indicator
+    setSavingPortfolioId(portfolioId);
+
+    // Debounce the API call
+    debouncedUpdateRef.current[portfolioId] = setTimeout(async () => {
+      try {
+        await updatePortfolioMutation({ 
+          id: portfolioId as Id<"portfolios">, 
+          name 
+        });
+        setSavingPortfolioId(null);
+        setRenamedPortfolioId(portfolioId);
+        setTimeout(() => setRenamedPortfolioId(null), 2000);
+      } catch (error) {
+        console.error("Failed to update portfolio name:", error);
+        setSavingPortfolioId(null);
+        setPortfolioNameError("Failed to update portfolio name. Please try again.");
+      }
+    }, 500);
   }
+
+  // Copy to clipboard
+  const copyToClipboard = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedValue(label);
+      setTimeout(() => setCopiedValue(null), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -489,11 +533,11 @@ export default function HoldingsPage() {
                           addPortfolio();
                         }
                       }}
-                      className={`mt-1.5 ${portfolioNameError ? "border-red-500 focus:border-red-500" : ""}`}
+                      className={`mt-1.5 ${portfolioNameError ? "border-destructive focus:border-destructive" : ""}`}
                       aria-invalid={!!portfolioNameError}
                     />
                     {portfolioNameError && (
-                      <p className="text-xs text-red-500 mt-1">{portfolioNameError}</p>
+                      <p className="text-xs text-destructive mt-1">{portfolioNameError}</p>
                     )}
                   </div>
                   <div>
@@ -594,6 +638,12 @@ export default function HoldingsPage() {
                             style={{ backgroundColor: 'transparent', border: 'none' }}
                             className="border-none p-0 text-lg font-semibold shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 bg-transparent min-w-[120px]"
                           />
+                          {savingPortfolioId === portfolioExpanded.id && (
+                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                          )}
+                          {renamedPortfolioId === portfolioExpanded.id && (
+                            <Check className="w-4 h-4 text-emerald-600" />
+                          )}
                         </div>
                         <Button
                           variant="ghost"
@@ -659,15 +709,22 @@ export default function HoldingsPage() {
                     <CardContent className="flex-1 flex items-center justify-center pt-2 px-4 pb-5">
                       {isManual ? (
                         portfolioSimpleHoldings.length === 0 ? (
-                          <Link
-                            href={`/holdings/${portfolioExpanded.id}`}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                          >
-                            <div className="py-8 text-center text-muted-foreground hover:text-foreground">
-                              No holdings in this portfolio yet.
-                              <div className="mt-4 text-sm font-medium">Click to add holdings</div>
+                          <div className="py-8 text-center">
+                            <div className="text-muted-foreground mb-4">No holdings in this portfolio yet.</div>
+                            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                              <Link href={`/holdings/${portfolioExpanded.id}`}>
+                                <Button size="sm" className="gap-1.5">
+                                  <Plus className="h-4 w-4" />
+                                  Add Holding
+                                </Button>
+                              </Link>
+                              <Link href={`/holdings/${portfolioExpanded.id}`}>
+                                <Button variant="outline" size="sm">
+                                  View Portfolio
+                                </Button>
+                              </Link>
                             </div>
-                          </Link>
+                          </div>
                         ) : allocationData.length === 0 ? (
                           <Link
                             href={`/holdings/${portfolioExpanded.id}`}
@@ -713,15 +770,22 @@ export default function HoldingsPage() {
                           </Link>
                         )
                       ) : portfolioHoldings.length === 0 ? (
-                        <Link
-                          href={`/holdings/${portfolioExpanded.id}`}
-                          className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                          <div className="py-8 text-center text-muted-foreground hover:text-foreground">
-                            No holdings in this portfolio yet.
-                            <div className="mt-4 text-sm font-medium">Click to add holdings</div>
+                        <div className="py-8 text-center">
+                          <div className="text-muted-foreground mb-4">No holdings in this portfolio yet.</div>
+                          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                            <Link href={`/holdings/${portfolioExpanded.id}`}>
+                              <Button size="sm" className="gap-1.5">
+                                <Plus className="h-4 w-4" />
+                                Add Holding
+                              </Button>
+                            </Link>
+                            <Link href={`/holdings/${portfolioExpanded.id}`}>
+                              <Button variant="outline" size="sm">
+                                View Portfolio
+                              </Button>
+                            </Link>
                           </div>
-                        </Link>
+                        </div>
                       ) : allocationData.length === 0 ? (
                         <Link
                           href={`/holdings/${portfolioExpanded.id}`}
