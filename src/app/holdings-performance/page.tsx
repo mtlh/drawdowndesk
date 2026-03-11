@@ -119,7 +119,7 @@ export default function BenchmarkComparisonPage() {
       const all = new Set(holdingsWithPerformance.map(h => h.symbol));
       setEnabledHoldings(all);
     }
-  }, [holdingsWithPerformance.length]);
+  }, [holdingsWithPerformance, enabledHoldings.size]);
 
   const toggleHolding = (symbol: string) => {
     const newSet = new Set(enabledHoldings);

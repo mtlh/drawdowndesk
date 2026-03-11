@@ -281,7 +281,7 @@ export default function HoldingsPage() {
       }
     } catch (error) {
       console.error("Failed to create portfolio:", error);
-      alert("Failed to create portfolio. Please try again.");
+      setPortfolioNameError("Failed to create portfolio. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -303,7 +303,7 @@ export default function HoldingsPage() {
       });
     } catch (error) {
       console.error("Failed to update portfolio name:", error);
-      alert("Failed to update portfolio name. Please try again.");
+      setPortfolioNameError("Failed to update portfolio name. Please try again.");
     }
   }
 

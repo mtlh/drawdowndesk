@@ -381,7 +381,7 @@ export default function LifetimeAccumulation() {
     }
 
     return data;
-  }, [accumulations, currentAge, retirementAge, annualReturn, inflation, allAccountNames, contributions]);
+  }, [accumulations, currentAge, retirementAge, annualReturn, allAccountNames, contributions]);
 
   // Calculate retirement income estimates using TOTAL values
   const retirementEstimates = useMemo(() => {
