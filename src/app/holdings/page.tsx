@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, X, LineChart as LineChartIcon, TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon, Building2, Filter, ArrowUpDown, Search, Check, Loader2, Copy } from "lucide-react"
+import { Plus, X, LineChart as LineChartIcon, TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon, Building2, Filter, ArrowUpDown, Search, Check, Loader2 } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -55,8 +55,6 @@ export default function HoldingsPage() {
   const [performanceModalPortfolioId, setPerformanceModalPortfolioId] = useState<string | null>(null);
   const [savingPortfolioId, setSavingPortfolioId] = useState<string | null>(null);
   const [renamedPortfolioId, setRenamedPortfolioId] = useState<string | null>(null);
-  const [copiedValue, setCopiedValue] = useState<string | null>(null);
-  const [selectedHoldings, setSelectedHoldings] = useState<Set<string>>(new Set());
 
   const initialized = useRef(false);
   useEffect(() => {
@@ -339,17 +337,6 @@ export default function HoldingsPage() {
       }
     }, 500);
   }
-
-  // Copy to clipboard
-  const copyToClipboard = async (value: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopiedValue(label);
-      setTimeout(() => setCopiedValue(null), 2000);
-    } catch (error) {
-      console.error("Failed to copy:", error);
-    }
-  };
 
   return (
     <div className="flex min-h-screen bg-background">

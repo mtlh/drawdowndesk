@@ -15,23 +15,6 @@ import { api } from "../../../../convex/_generated/api"
 import { Id } from "../../../../convex/_generated/dataModel"
 import { getPriceInPounds } from "@/lib/utils"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  Legend
-} from "recharts"
-import { CHART_COLORS_MAIN } from "@/lib/constants"
-
-const COLORS = CHART_COLORS_MAIN
-
-interface ChartData {
-  name: string;
-  value: number;
-  color: string;
-}
 
 export default function PortfolioHoldingsPage() {
   const params = useParams()
@@ -128,27 +111,6 @@ export default function PortfolioHoldingsPage() {
   const totalGain = totalValue - totalCost;
   const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
 
-  const chartData: ChartData[] = useMemo(() => {
-    if (isManual) {
-      const accountMap = new Map<string, number>();
-      portfolioSimpleHoldings.forEach(h => {
-        const key = h.accountName || "Unassigned";
-        const current = accountMap.get(key) || 0;
-        accountMap.set(key, current + h.value);
-      });
-      return Array.from(accountMap.entries()).map(([name, value], index) => ({
-        name,
-        value,
-        color: COLORS[index % COLORS.length]
-      }));
-    }
-    return portfolioHoldings.map((h, index) => ({
-      name: h.symbol,
-      value: getPriceInPounds(h.shares * h.currentPrice, h.currency),
-      color: COLORS[index % COLORS.length]
-    }));
-  }, [isManual, portfolioHoldings, portfolioSimpleHoldings]);
-
   useEffect(() => {
     if (isSheetOpen && closeButtonRef.current) {
       closeButtonRef.current.focus()
@@ -210,13 +172,6 @@ export default function PortfolioHoldingsPage() {
     setEditedValues({});
     setEditedSimpleValues({});
   }, []);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent, holdingId: string | null) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      openEditSheet(holdingId);
-    }
-  }, [openEditSheet]);
 
   if (!getPortfolioData) {
     return <LoadingSpinner fullScreen />;
