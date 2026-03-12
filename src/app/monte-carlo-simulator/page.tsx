@@ -20,7 +20,7 @@ import React, { useState } from "react";
 import { monteCarloReturn } from "../../../convex/calculators/runMonteCarlo"
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonChart, SkeletonText } from "@/components/ui/skeleton";
 import { TrendingUp, GitBranch, Calculator } from "lucide-react";
 
 export default function MonteCarloSimulator() {
@@ -34,7 +34,38 @@ export default function MonteCarloSimulator() {
   }) as unknown as monteCarloReturn;
 
   if (monteCarloReturn === undefined) {
-    return <LoadingSpinner fullScreen message="Loading historical returns..." />
+    return (
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-14 h-14 rounded-xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-9 w-80" />
+              </div>
+            </div>
+
+            <SkeletonCard className="h-[100px] p-6" />
+
+            <SkeletonCard className="h-[500px] p-6">
+              <SkeletonCardHeader className="pb-2">
+                <SkeletonText lines={2} />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <SkeletonChart className="h-[350px]" />
+              </SkeletonCardContent>
+            </SkeletonCard>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonCard key={i} className="h-[120px] p-6" />
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (monteCarloReturn && monteCarloReturn.error) {

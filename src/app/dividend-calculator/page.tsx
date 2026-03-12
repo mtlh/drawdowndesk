@@ -12,7 +12,7 @@ import { Plus, Trash2, Edit2, DollarSign, TrendingUp, Percent, Calendar, AlertCi
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonChart, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 interface Dividend {
@@ -109,6 +109,42 @@ export default function DividendCalculatorPage() {
     return portfoliosData || []
   }, [portfoliosData])
 
+  const holdingsOptions = useMemo((): { symbols: string[]; accounts: string[]; bySymbol: Map<string, { name: string; accountName?: string; portfolioId?: string; shares: number; avgPrice: number; currency: string }> } => {
+    if (!portfolios.length) return { symbols: [], accounts: [], bySymbol: new Map() }
+    
+    const symbols = new Set<string>()
+    const accounts = new Set<string>()
+    const bySymbol = new Map<string, { name: string; accountName?: string; portfolioId?: string; shares: number; avgPrice: number; currency: string }>()
+
+    portfolios.forEach(p => {
+      // Add from live holdings
+      p.holdings?.forEach(h => {
+        symbols.add(h.symbol)
+        if (h.accountName) accounts.add(h.accountName)
+        bySymbol.set(h.symbol, { 
+          name: h.name, 
+          accountName: h.accountName, 
+          portfolioId: h.portfolioId,
+          shares: h.shares,
+          avgPrice: h.avgPrice,
+          currency: h.currency || "GBP"
+        })
+      })
+      // Add from simple holdings
+      p.simpleHoldings?.forEach(h => {
+        symbols.add(h.name)
+        if (h.accountName) accounts.add(h.accountName)
+        // Simple holdings don't have symbol, skip
+      })
+    })
+
+    return { 
+      symbols: Array.from(symbols).sort(), 
+      accounts: Array.from(accounts).sort(),
+      bySymbol 
+    }
+  }, [portfolios])
+
   const dividends = useMemo(() => {
     if (!dividendsData || "error" in dividendsData) return []
     return dividendsData.dividends || []
@@ -166,6 +202,25 @@ export default function DividendCalculatorPage() {
       effectiveTaxRate,
     }
   }, [dividends, incomeTaxBand])
+
+  const handleSymbolChange = (symbol: string) => {
+    if (symbol === "custom") {
+      setFormData({ ...formData, symbol: "", name: "", accountName: "", shares: "", currency: "GBP" })
+    } else {
+      const holding = holdingsOptions.bySymbol.get(symbol)
+      if (holding) {
+        setFormData({ 
+          ...formData, 
+          symbol, 
+          name: holding.name,
+          accountName: holding.accountName || "",
+          portfolioId: holding.portfolioId || "",
+          shares: holding.shares.toString(),
+          currency: holding.currency
+        })
+      }
+    }
+  }
 
   const handleOpenAdd = () => {
     setEditingDividend(null)
@@ -256,7 +311,45 @@ export default function DividendCalculatorPage() {
   }
 
   if (dividendsData === undefined) {
-    return <LoadingSpinner fullScreen message="Loading dividends..." />
+    return (
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <Skeleton className="h-10 w-32" />
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonCard key={i} className="h-[100px] p-6" />
+              ))}
+            </div>
+
+            <SkeletonCard className="h-[400px] p-6">
+              <SkeletonCardHeader className="pb-2">
+                <SkeletonText lines={2} />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <SkeletonChart className="h-[300px]" />
+              </SkeletonCardContent>
+            </SkeletonCard>
+
+            <SkeletonCard className="h-[400px] p-6">
+              <SkeletonCardHeader className="pb-2">
+                <SkeletonText lines={2} />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <SkeletonList count={8} />
+              </SkeletonCardContent>
+            </SkeletonCard>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -495,27 +588,38 @@ export default function DividendCalculatorPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="symbol">Symbol *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="symbol">Symbol *</Label>
+              {holdingsOptions.symbols.length > 0 ? (
+                <Select 
+                  value={holdingsOptions.bySymbol.has(formData.symbol) ? formData.symbol : (formData.symbol ? "custom" : "none")} 
+                  onValueChange={(v) => {
+                    if (v === "none") {
+                      setFormData({ ...formData, symbol: "", name: "", accountName: "", shares: "", currency: "GBP" })
+                    } else if (v === "custom") {
+                      setFormData({ ...formData, symbol: "", name: formData.name || "", accountName: formData.accountName, shares: formData.shares, currency: formData.currency })
+                    } else {
+                      handleSymbolChange(v)
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select holding" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {holdingsOptions.symbols.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                    <SelectItem value="custom">+ Custom symbol</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
                 <Input
                   id="symbol"
                   placeholder="MSFT"
                   value={formData.symbol}
                   onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
-                <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -528,19 +632,42 @@ export default function DividendCalculatorPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="account">Account</Label>
-              <Input
-                id="account"
-                placeholder="e.g., S&S ISA"
-                value={formData.accountName}
-                onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
-              />
+              {holdingsOptions.accounts.length > 0 ? (
+                <Select 
+                  value={holdingsOptions.accounts.includes(formData.accountName) ? formData.accountName : (formData.accountName ? "custom" : "none")}
+                  onValueChange={(v) => {
+                    if (v === "none") {
+                      setFormData({ ...formData, accountName: "" })
+                    } else if (v === "custom") {
+                      // Keep current value for custom
+                    } else {
+                      setFormData({ ...formData, accountName: v })
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {holdingsOptions.accounts.map(a => (
+                      <SelectItem key={a} value={a}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="account"
+                  placeholder="e.g., S&S ISA"
+                  value={formData.accountName}
+                  onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="portfolio">Link to Portfolio</Label>
-              <Select value={formData.portfolioId} onValueChange={(v) => setFormData({ ...formData, portfolioId: v })}>
+              <Select value={formData.portfolioId || "none"} onValueChange={(v) => setFormData({ ...formData, portfolioId: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Select portfolio (optional)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {portfolios.map((p) => (
                     <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>
                   ))}
@@ -585,10 +712,10 @@ export default function DividendCalculatorPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="paymentMonth">Primary Payment Month</Label>
-                <Select value={formData.paymentMonth} onValueChange={(v) => setFormData({ ...formData, paymentMonth: v })}>
+                <Select value={formData.paymentMonth || "none"} onValueChange={(v) => setFormData({ ...formData, paymentMonth: v === "none" ? "" : v })}>
                   <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {MONTHS.map((m) => (
                       <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>
                     ))}

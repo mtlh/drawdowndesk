@@ -14,7 +14,7 @@ import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 import { Id } from "../../../../convex/_generated/dataModel"
 import { getPriceInPounds } from "@/lib/utils"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
 
 export default function PortfolioHoldingsPage() {
   const params = useParams()
@@ -174,7 +174,32 @@ export default function PortfolioHoldingsPage() {
   }, []);
 
   if (!getPortfolioData) {
-    return <LoadingSpinner fullScreen />;
+    return (
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-10 h-10 rounded-lg" />
+              <Skeleton className="h-8 w-64" />
+            </div>
+
+            <div className="flex gap-3">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+
+            <SkeletonCard className="h-[500px] p-6">
+              <SkeletonCardHeader className="pb-2">
+                <SkeletonText lines={2} />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <SkeletonList count={6} />
+              </SkeletonCardContent>
+            </SkeletonCard>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (isError(getPortfolioData)) {

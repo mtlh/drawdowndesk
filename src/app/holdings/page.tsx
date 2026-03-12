@@ -19,7 +19,7 @@ import { getPriceInPounds } from "@/lib/utils"
 import { validateField, commonRules } from "@/lib/validation"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
 import { PieChartTooltip, ChartTooltip } from "@/components/chart-tooltip"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
 
 type PortfolioExpanded = {
   portfolio: Portfolio
@@ -242,7 +242,45 @@ export default function HoldingsPage() {
 
   // Early returns AFTER all hooks
   if (!getPortfolioData) {
-    return <LoadingSpinner fullScreen message="Loading portfolio..." />;
+    return (
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-4 w-96" />
+              </div>
+              <div className="flex gap-3">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonCard key={i} className="h-[180px] p-6" />
+              ))}
+            </div>
+
+            <SkeletonCard className="h-[500px] p-6">
+              <SkeletonCardHeader className="pb-2">
+                <SkeletonText lines={2} />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <SkeletonList count={6} />
+              </SkeletonCardContent>
+            </SkeletonCard>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (isError(getPortfolioData)) {

@@ -19,7 +19,7 @@ import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { getPriceInPounds } from "@/lib/utils"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
 
 interface SelectedHolding {
   symbol: string
@@ -324,7 +324,40 @@ export default function BedAndISAPage() {
   }, [selectedHolding, taxInfo, harvestedLossAmount])
 
   if (!getPortfolioData) {
-    return <LoadingSpinner fullScreen message="Loading holdings..." />
+    return (
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-14 h-14 rounded-xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-8 w-48" />
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <SkeletonCard className="h-[400px] p-6">
+                <SkeletonCardHeader className="pb-2">
+                  <SkeletonText lines={2} />
+                </SkeletonCardHeader>
+                <SkeletonCardContent>
+                  <SkeletonList count={5} />
+                </SkeletonCardContent>
+              </SkeletonCard>
+              <SkeletonCard className="h-[400px] p-6">
+                <SkeletonCardHeader className="pb-2">
+                  <SkeletonText lines={2} />
+                </SkeletonCardHeader>
+                <SkeletonCardContent>
+                  <SkeletonList count={5} />
+                </SkeletonCardContent>
+              </SkeletonCard>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (

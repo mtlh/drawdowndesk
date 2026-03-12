@@ -47,7 +47,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { CreateTakeHome, TaxInfo } from "@/lib/createTakeHome";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonChart, SkeletonText } from "@/components/ui/skeleton";
 
 // Account types with different tax treatments
 type AccountType = "pension" | "isa" | "gia";
@@ -375,7 +375,58 @@ export default function RetirementCashflowCalculator() {
 
   // Loading/error states
   if (!taxBandInformation || !userSettings) {
-    return <LoadingSpinner fullScreen message="Loading tax information..." />;
+    return (
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-4 w-96" />
+              </div>
+              <div className="flex gap-3">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonCard key={i} className="h-[100px] p-6" />
+              ))}
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <SkeletonCard className="h-[350px] p-6">
+                <SkeletonCardHeader className="pb-2">
+                  <SkeletonText lines={2} />
+                </SkeletonCardHeader>
+                <SkeletonCardContent>
+                  <SkeletonChart className="h-[250px]" />
+                </SkeletonCardContent>
+              </SkeletonCard>
+              <SkeletonCard className="h-[350px] p-6">
+                <SkeletonCardHeader className="pb-2">
+                  <SkeletonText lines={2} />
+                </SkeletonCardHeader>
+                <SkeletonCardContent>
+                  <SkeletonChart className="h-[250px]" />
+                </SkeletonCardContent>
+              </SkeletonCard>
+            </div>
+
+            <SkeletonCard className="h-[400px] p-6">
+              <SkeletonCardHeader className="pb-2">
+                <SkeletonText lines={2} />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <SkeletonChart className="h-[300px]" />
+              </SkeletonCardContent>
+            </SkeletonCard>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (taxBandInformation && 'error' in taxBandInformation && taxBandInformation.error) {
