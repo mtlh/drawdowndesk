@@ -330,8 +330,9 @@ export default function BenchmarkComparisonPage() {
             </CardHeader>
             <CardContent>
               {enabledHoldingsList.length > 0 && chartData.length > 0 ? (
-                <ChartContainer config={chartConfig} className="h-[calc(100vh-350px)] min-h-[500px] w-full">
-                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <div className="overflow-visible">
+                  <ChartContainer config={chartConfig} className="h-[calc(100vh-350px)] min-h-[500px] w-full overflow-visible">
+                    <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       {enabledHoldingsList.map((h) => (
                         <linearGradient key={h.symbol} id={`gradient-${h.symbol}`} x1="0" y1="0" x2="0" y2="1">
@@ -362,7 +363,7 @@ export default function BenchmarkComparisonPage() {
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
                         return (
-                          <div className="bg-card/95 backdrop-blur-sm border border-border/60 rounded-xl px-4 py-3 shadow-xl text-sm min-w-[320px]">
+                          <div className="bg-card/95 backdrop-blur-sm border border-border/60 rounded-xl px-4 py-3 shadow-xl text-sm min-w-[320px] z-50">
                             <div className="font-semibold text-base border-b border-border/60 pb-2 mb-3">{label}</div>
                             <div className="space-y-2.5 max-h-[300px] overflow-y-auto">
                               {payload.map((entry) => {
@@ -419,7 +420,8 @@ export default function BenchmarkComparisonPage() {
                       />
                     ))}
                   </LineChart>
-                </ChartContainer>
+                  </ChartContainer>
+                </div>
               ) : (
                 <div className="h-[300px] flex flex-col items-center justify-center text-center p-6">
                   <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
