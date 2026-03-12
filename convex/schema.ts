@@ -175,7 +175,7 @@ export default defineSchema({
         userId: v.id("users"),                          // Authenticated user ID
         portfolioId: v.optional(v.id("portfolios")),    // Optional portfolio ID for per-portfolio snapshots
         totalValue: v.float64(),                       // Total portfolio value in GBP
-        costBasis: v.float64(),                        // Total cost basis (sum of avgPrice * shares)
+        costBasis: v.optional(v.float64()),            // Total cost basis (sum of avgPrice * shares)
         snapshotDate: v.string(),                      // Date of snapshot (YYYY-MM-DD)
         lastUpdated: v.optional(v.string()),
     }).index("by_userDate", ["userId", "snapshotDate"]).index("by_userPortfolioDate", ["userId", "portfolioId", "snapshotDate"]),

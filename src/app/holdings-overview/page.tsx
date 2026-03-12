@@ -36,7 +36,7 @@ type PortfolioSnapshot = {
   userId: string;
   portfolioId?: string;
   totalValue: number;
-  costBasis: number;
+  costBasis?: number;
   snapshotDate: string;
   lastUpdated?: string;
 };
@@ -95,7 +95,7 @@ export default function PortfolioOverview() {
   const performanceData = useMemo(() => {
     if (!hasSnapshots) return [];
 
-    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; costBasis: number; snapshotDate: string }>;
+    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; costBasis?: number; snapshotDate: string }>;
     
     // Group by date and portfolio - include all portfolios
     const dateMap = new Map<string, Map<string, { totalValue: number; costBasis: number }>>();
@@ -108,7 +108,7 @@ export default function PortfolioOverview() {
       const current = portfolioMap.get(key) || { totalValue: 0, costBasis: 0 };
       portfolioMap.set(key, { 
         totalValue: current.totalValue + s.totalValue,
-        costBasis: current.costBasis + s.costBasis 
+        costBasis: current.costBasis + (s.costBasis || 0)
       });
     });
 
@@ -176,14 +176,14 @@ export default function PortfolioOverview() {
   const ytdValue = (() => {
     if (!hasSnapshots || !portfolioSummary) return null;
 
-    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; costBasis: number; snapshotDate: string }>;
+    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; costBasis?: number; snapshotDate: string }>;
     
     // Get year start value (total only)
     const yearStartSnapshot = snapshots
       .filter(s => !s.portfolioId && new Date(s.snapshotDate).getFullYear() === currentYear)
       .sort((a, b) => a.snapshotDate.localeCompare(b.snapshotDate))[0];
 
-    if (!yearStartSnapshot || yearStartSnapshot.costBasis <= 0) return null;
+    if (!yearStartSnapshot || !yearStartSnapshot.costBasis || yearStartSnapshot.costBasis <= 0) return null;
     if (!portfolioSummary.totalValue) return null;
 
     // Calculate YTD % based on cost basis: (totalValue - costBasis) / costBasis
