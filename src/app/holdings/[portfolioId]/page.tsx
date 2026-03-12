@@ -14,6 +14,7 @@ import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 import { Id } from "../../../../convex/_generated/dataModel"
 import { getPriceInPounds } from "@/lib/utils"
+import { useToast } from "@/hooks/useToast"
 import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
 
 export default function PortfolioHoldingsPage() {
@@ -21,6 +22,7 @@ export default function PortfolioHoldingsPage() {
   const router = useRouter()
   const portfolioId = params.portfolioId as string
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const { addToast } = useToast()
 
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const updateHoldingMutation = useMutation(api.portfolio.updateUserHoldings.updateUserHolding);
@@ -277,6 +279,7 @@ export default function PortfolioHoldingsPage() {
         if (newData && isPortfolioArray(newData)) {
           setHoldings(newData.flatMap((p) => p.holdings));
         }
+        addToast("success", "Holding added successfully");
       } else {
         await updateHoldingMutation({
           _id: selectedHoldingId as Id<"holdings">,
@@ -297,8 +300,12 @@ export default function PortfolioHoldingsPage() {
             ? { ...editedValues, _id: h._id } as Holding
             : h
         ));
+        addToast("success", "Holding updated successfully");
       }
       closeSheet();
+    } catch (error) {
+      console.error("Failed to save:", error);
+      addToast("error", "Failed to save. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -316,16 +323,20 @@ export default function PortfolioHoldingsPage() {
       if (deleteTarget.type === 'holding') {
         await deleteHoldingsMutation({ holdingId: deleteTarget.id as Id<"holdings"> });
         setHoldings(holdings.filter((h) => h._id !== deleteTarget.id));
+        addToast("success", "Holding deleted successfully");
       } else if (deleteTarget.type === 'simpleHolding') {
         await deleteSimpleHoldingMutation({ holdingId: deleteTarget.id as Id<"simpleHoldings"> });
         setSimpleHoldings(simpleHoldings.filter((h) => h._id !== deleteTarget.id));
+        addToast("success", "Holding deleted successfully");
       } else if (deleteTarget.type === 'portfolio') {
         await deletePortfolioMutation({ id: portfolioId as Id<"portfolios"> });
         router.push("/holdings");
+        addToast("success", "Portfolio deleted successfully");
       }
       closeSheet();
     } catch (error) {
       console.error("Failed to delete:", error);
+      addToast("error", "Failed to delete. Please try again.");
     } finally {
       setDeleteConfirmOpen(false);
       setDeleteTarget(null);
@@ -352,6 +363,7 @@ export default function PortfolioHoldingsPage() {
         if (newData && isPortfolioArray(newData)) {
           setSimpleHoldings(newData.flatMap((p) => p.simpleHoldings || []));
         }
+        addToast("success", "Holding added successfully");
       } else {
         await updateSimpleHoldingMutation({
           _id: selectedHoldingId as Id<"simpleHoldings">,
@@ -367,8 +379,12 @@ export default function PortfolioHoldingsPage() {
             ? { ...editedSimpleValues, _id: h._id } as SimpleHolding
             : h
         ));
+        addToast("success", "Holding updated successfully");
       }
       closeSheet();
+    } catch (error) {
+      console.error("Failed to save:", error);
+      addToast("error", "Failed to save. Please try again.");
     } finally {
       setIsSaving(false);
     }

@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Account, AccountType, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
+import { useToast } from "@/hooks/useToast"
 import { validateForm, commonRules, ValidationRule } from "@/lib/validation"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
@@ -59,6 +60,7 @@ export default function NetWorthPage() {
   const createAccountMutation = useMutation(api.accounts.accountCrud.createAccount)
   const updateAccountMutation = useMutation(api.accounts.accountCrud.updateAccount)
   const deleteAccountMutation = useMutation(api.accounts.accountCrud.deleteAccount)
+  const { addToast } = useToast()
 
   const [accounts, setAccounts] = useState<AccountWithPortfolio[]>([])
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
@@ -281,10 +283,12 @@ export default function NetWorthPage() {
 
         setAccounts([...accounts, newAccount])
         resetForm()
+        addToast("success", `Account "${newAccountName}" created successfully`)
       }
     } catch (error) {
       console.error("Failed to create account:", error)
       setFormError("Failed to create account. Please try again.")
+      addToast("error", "Failed to create account. Please try again.")
     } finally {
       setIsSaving(false)
     }
@@ -338,8 +342,10 @@ export default function NetWorthPage() {
     try {
       await deleteAccountMutation({ id: deleteTargetId as Id<"accounts"> })
       setAccounts(accounts.filter(a => a._id !== deleteTargetId))
+      addToast("success", "Account deleted successfully")
     } catch (error) {
       console.error("Failed to delete account:", error)
+      addToast("error", "Failed to delete account. Please try again.")
     } finally {
       setDeleteConfirmOpen(false)
       setDeleteTargetId(null)

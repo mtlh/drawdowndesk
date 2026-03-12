@@ -18,6 +18,7 @@ import { CHART_COLORS, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/cons
 import { getPriceInPounds } from "@/lib/utils"
 import { validateField, commonRules } from "@/lib/validation"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
+import { useToast } from "@/hooks/useToast"
 import { PieChartTooltip, ChartTooltip } from "@/components/chart-tooltip"
 import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
 
@@ -32,6 +33,7 @@ export default function HoldingsPage() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const updatePortfolioMutation = useMutation(api.portfolio.updateUserPortfolio.updateUserPortfolio);
   const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
+  const { addToast } = useToast()
 
   const [portfolios, setPortfolios] = useState<PortfolioExpanded[]>([]);
   const [holdings, setHoldings] = useState<Holding[]>([]);
@@ -310,7 +312,6 @@ export default function HoldingsPage() {
 
     setIsSaving(true);
     try {
-      // Call the mutation to persist in Convex (no ID needed for new portfolio)
       const result = await updatePortfolioMutation({ 
         name: newPortfolioName,
         portfolioType: newPortfolioType
@@ -332,10 +333,12 @@ export default function HoldingsPage() {
         setNewPortfolioName("");
         setNewPortfolioType("live");
         setPortfolioNameError(null);
+        addToast("success", `Portfolio "${newPortfolioName}" created successfully`);
       }
     } catch (error) {
       console.error("Failed to create portfolio:", error);
       setPortfolioNameError("Failed to create portfolio. Please try again.");
+      addToast("error", "Failed to create portfolio. Please try again.");
     } finally {
       setIsSaving(false);
     }
