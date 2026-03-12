@@ -75,6 +75,7 @@ export default function TransactionsPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Multi-add state - queue of transactions
   const [transactionQueue, setTransactionQueue] = useState<TransactionFormData[]>([]);
@@ -119,6 +120,30 @@ export default function TransactionsPage() {
       localStorage.setItem('transactions_sort_direction', sortDirection)
     }
   }, [sortDirection])
+
+  // Track unsaved changes
+  useEffect(() => {
+    const hasUnsaved = transactionQueue.length > 0 || 
+      formSymbol !== "" || 
+      formName !== "" || 
+      formShares !== "" || 
+      formPrice !== "";
+    setHasChanges(hasUnsaved);
+  }, [transactionQueue, formSymbol, formName, formShares, formPrice]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
 
   const initialized = useMemo(() => {
     if (getPortfolioData && isPortfolioArray(getPortfolioData)) {

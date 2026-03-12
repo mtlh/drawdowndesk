@@ -39,6 +39,7 @@ export default function PortfolioHoldingsPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editedValues, setEditedValues] = useState<Partial<Holding>>({});
   const [editedSimpleValues, setEditedSimpleValues] = useState<Partial<SimpleHolding>>({});
+  const [hasChanges, setHasChanges] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'holding' | 'simpleHolding' | 'portfolio'; id: string } | null>(null);
   const [searchWithinPortfolio, setSearchWithinPortfolio] = useState("");
@@ -55,6 +56,26 @@ export default function PortfolioHoldingsPage() {
       setSimpleHoldings(getPortfolioData.flatMap((p) => p.simpleHoldings || []));
     }
   }, [getPortfolioData]);
+
+  // Track unsaved changes
+  useEffect(() => {
+    const hasUnsavedChanges = isSheetOpen && (Object.keys(editedValues).length > 0 || Object.keys(editedSimpleValues).length > 0);
+    setHasChanges(hasUnsavedChanges);
+  }, [editedValues, editedSimpleValues, isSheetOpen]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
 
   const portfolioHoldings = useMemo(() => 
     holdings.filter((h) => h.portfolioId === portfolioId), 

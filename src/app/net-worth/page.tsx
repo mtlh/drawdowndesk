@@ -99,6 +99,7 @@ export default function NetWorthPage() {
   const [newAccountValue, setNewAccountValue] = useState("")
   const [newAccountPortfolioId, setNewAccountPortfolioId] = useState<string>("")
   const [newAccountNotes, setNewAccountNotes] = useState("")
+  const [hasChanges, setHasChanges] = useState(false)
   const [accountErrors, setAccountErrors] = useState<Record<string, string>>({})
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
@@ -137,6 +138,26 @@ export default function NetWorthPage() {
       localStorage.setItem('networth_sort_by', sortBy)
     }
   }, [sortBy])
+
+  // Track unsaved changes
+  useEffect(() => {
+    const hasUnsaved = newAccountName !== "" || newAccountValue !== "";
+    setHasChanges(hasUnsaved);
+  }, [newAccountName, newAccountValue]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
 
   // Prevent body scroll when modal is open
   useBodyScrollLock(showNewAccountForm)
