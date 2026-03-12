@@ -120,22 +120,37 @@ export default function PortfolioOverview() {
     });
 
     // Get initial values for each portfolio (for % calculation)
-    const firstDateMap = sortedDates[0][1];
+    // Use the FIRST NON-ZERO value for each portfolio, not just the first date
     const initialValues: Record<string, number> = {};
     portfolioKeys.forEach(key => {
-      initialValues[key] = firstDateMap.get(key) || 0;
+      initialValues[key] = 0;
     });
+    for (const [, portfolioMap] of sortedDates) {
+      portfolioKeys.forEach(key => {
+        if (initialValues[key] === 0) {
+          const val = portfolioMap.get(key);
+          if (val !== undefined && val > 0) {
+            initialValues[key] = val;
+          }
+        }
+      });
+    }
 
     // Build data with percentage changes for each portfolio
+    const lastKnownValues: Record<string, number> = {};
     return sortedDates.map(([date, portfolioMap]) => {
       const dataPoint: Record<string, string | number> = {
         date: new Date(date).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
       };
       
       portfolioKeys.forEach(key => {
-        const value = portfolioMap.get(key) || 0;
+        const value = portfolioMap.get(key);
+        if (value !== undefined) {
+          lastKnownValues[key] = value;
+        }
+        const currentValue = lastKnownValues[key] || 0;
         const initial = initialValues[key];
-        const percentChange = initial > 0 ? ((value - initial) / initial) * 100 : 0;
+        const percentChange = initial > 0 && currentValue > 0 ? ((currentValue - initial) / initial) * 100 : 0;
         dataPoint[key] = percentChange;
       });
 
