@@ -7,6 +7,7 @@ import { Id } from "../_generated/dataModel";
 export const savePortfolioSnapshot = mutation({
   args: {
     totalValue: v.float64(),
+    costBasis: v.float64(),
   },
 
   handler: async (ctx, args) => {
@@ -28,6 +29,7 @@ export const savePortfolioSnapshot = mutation({
       await ctx.db.replace(existingSnapshots[0]._id, {
         ...existingSnapshots[0],
         totalValue: args.totalValue,
+        costBasis: args.costBasis,
         lastUpdated: new Date().toISOString(),
       });
     } else {
@@ -35,6 +37,7 @@ export const savePortfolioSnapshot = mutation({
       await ctx.db.insert("portfolioSnapshots", {
         userId,
         totalValue: args.totalValue,
+        costBasis: args.costBasis,
         snapshotDate: today,
         lastUpdated: new Date().toISOString(),
       });
@@ -66,10 +69,12 @@ export const calculateAndSaveSnapshot = mutation({
       .collect();
 
     let totalValue = 0;
-    const portfolioValues: { portfolioId: Id<"portfolios">; value: number }[] = [];
+    let totalCostBasis = 0;
+    const portfolioValues: { portfolioId: Id<"portfolios">; value: number; costBasis: number }[] = [];
 
     for (const portfolio of portfolios) {
       let portfolioValue = 0;
+      let portfolioCostBasis = 0;
 
       // Add value from live holdings
       const holdings = await ctx.db
@@ -82,9 +87,13 @@ export const calculateAndSaveSnapshot = mutation({
       for (const holding of holdings) {
         const shares = holding.shares || 0;
         const currentPrice = holding.currentPrice || 0;
+        const avgPrice = holding.avgPrice || 0;
         const holdingValue = shares * currentPrice;
+        const holdingCostBasis = shares * avgPrice;
         portfolioValue += holdingValue;
+        portfolioCostBasis += holdingCostBasis;
         totalValue += holdingValue;
+        totalCostBasis += holdingCostBasis;
       }
 
       // Add value from simple holdings (manual portfolios like pensions/OICS)
@@ -98,10 +107,14 @@ export const calculateAndSaveSnapshot = mutation({
       for (const simpleHolding of simpleHoldings) {
         const holdingValue = simpleHolding.value || 0;
         portfolioValue += holdingValue;
+        // Simple holdings don't have avgPrice, so use current value as cost basis
+        // This means no unrealized gains/losses tracked for manual holdings
+        portfolioCostBasis += holdingValue;
         totalValue += holdingValue;
+        totalCostBasis += holdingValue;
       }
 
-      portfolioValues.push({ portfolioId: portfolio._id, value: portfolioValue });
+      portfolioValues.push({ portfolioId: portfolio._id, value: portfolioValue, costBasis: portfolioCostBasis });
     }
 
     const today = new Date().toISOString().split("T")[0];
@@ -119,12 +132,14 @@ export const calculateAndSaveSnapshot = mutation({
       await ctx.db.replace(existingTotalSnapshot._id, {
         ...existingTotalSnapshot,
         totalValue,
+        costBasis: totalCostBasis,
         lastUpdated: new Date().toISOString(),
       });
     } else {
       await ctx.db.insert("portfolioSnapshots", {
         userId,
         totalValue,
+        costBasis: totalCostBasis,
         snapshotDate: today,
         lastUpdated: new Date().toISOString(),
       });
@@ -146,6 +161,7 @@ export const calculateAndSaveSnapshot = mutation({
         await ctx.db.replace(existingPortfolioSnapshots[0]._id, {
           ...existingPortfolioSnapshots[0],
           totalValue: pv.value,
+          costBasis: pv.costBasis,
           lastUpdated: new Date().toISOString(),
         });
       } else {
@@ -153,6 +169,7 @@ export const calculateAndSaveSnapshot = mutation({
           userId,
           portfolioId: pv.portfolioId,
           totalValue: pv.value,
+          costBasis: pv.costBasis,
           snapshotDate: today,
           lastUpdated: new Date().toISOString(),
         });

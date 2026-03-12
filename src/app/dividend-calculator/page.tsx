@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Plus, Trash2, Edit2, DollarSign, TrendingUp, Percent, Calendar, AlertCircle } from "lucide-react"
@@ -109,39 +109,51 @@ export default function DividendCalculatorPage() {
     return portfoliosData || []
   }, [portfoliosData])
 
-  const holdingsOptions = useMemo((): { symbols: string[]; accounts: string[]; bySymbol: Map<string, { name: string; accountName?: string; portfolioId?: string; shares: number; avgPrice: number; currency: string }> } => {
-    if (!portfolios.length) return { symbols: [], accounts: [], bySymbol: new Map() }
+  type HoldingOption = { key: string; displayKey: string; symbol: string; name: string; accountName?: string; portfolioId?: string; shares: number; avgPrice: number; currency: string }
+  type HoldingsByAccount = { accountName: string; holdings: HoldingOption[] }
+
+  const holdingsOptions = useMemo((): { all: HoldingOption[]; byAccount: HoldingsByAccount[] } => {
+    if (!portfolios.length) return { all: [], byAccount: [] }
     
-    const symbols = new Set<string>()
-    const accounts = new Set<string>()
-    const bySymbol = new Map<string, { name: string; accountName?: string; portfolioId?: string; shares: number; avgPrice: number; currency: string }>()
+    const holdingsList: HoldingOption[] = []
 
     portfolios.forEach(p => {
-      // Add from live holdings
       p.holdings?.forEach(h => {
-        symbols.add(h.symbol)
-        if (h.accountName) accounts.add(h.accountName)
-        bySymbol.set(h.symbol, { 
-          name: h.name, 
-          accountName: h.accountName, 
+        const displayKey = `${h.symbol}`
+        const key = `${h._id}`
+        holdingsList.push({
+          key,
+          displayKey,
+          symbol: h.symbol,
+          name: h.name,
+          accountName: h.accountName,
           portfolioId: h.portfolioId,
           shares: h.shares,
           avgPrice: h.avgPrice,
           currency: h.currency || "GBP"
         })
       })
-      // Add from simple holdings
-      p.simpleHoldings?.forEach(h => {
-        symbols.add(h.name)
-        if (h.accountName) accounts.add(h.accountName)
-        // Simple holdings don't have symbol, skip
-      })
     })
 
+    const byAccountMap = new Map<string, HoldingOption[]>()
+    holdingsList.forEach(h => {
+      const account = h.accountName || "Unassigned"
+      if (!byAccountMap.has(account)) {
+        byAccountMap.set(account, [])
+      }
+      byAccountMap.get(account)!.push(h)
+    })
+
+    const byAccount: HoldingsByAccount[] = Array.from(byAccountMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([accountName, holdings]) => ({
+        accountName,
+        holdings: holdings.sort((a, b) => a.displayKey.localeCompare(b.displayKey))
+      }))
+
     return { 
-      symbols: Array.from(symbols).sort(), 
-      accounts: Array.from(accounts).sort(),
-      bySymbol 
+      all: holdingsList.sort((a, b) => a.displayKey.localeCompare(b.displayKey)),
+      byAccount
     }
   }, [portfolios])
 
@@ -203,15 +215,17 @@ export default function DividendCalculatorPage() {
     }
   }, [dividends, incomeTaxBand])
 
-  const handleSymbolChange = (symbol: string) => {
-    if (symbol === "custom") {
+  const handleHoldingChange = (key: string) => {
+    if (key === "custom") {
       setFormData({ ...formData, symbol: "", name: "", accountName: "", shares: "", currency: "GBP" })
+    } else if (key === "none") {
+      setFormData({ ...formData, symbol: "", name: "", accountName: "", portfolioId: "", shares: "", currency: "GBP" })
     } else {
-      const holding = holdingsOptions.bySymbol.get(symbol)
+      const holding = holdingsOptions.all.find(h => h.key === key)
       if (holding) {
         setFormData({ 
           ...formData, 
-          symbol, 
+          symbol: holding.symbol, 
           name: holding.name,
           accountName: holding.accountName || "",
           portfolioId: holding.portfolioId || "",
@@ -355,9 +369,9 @@ export default function DividendCalculatorPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
-        <div className="p-4 lg:p-8 space-y-6">
+        <div className="p-4 lg:p-8">
           {/* Header */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Dividends</h1>
               <p className="text-muted-foreground mt-1">Track your dividend income and yields</p>
@@ -368,213 +382,215 @@ export default function DividendCalculatorPage() {
             </Button>
           </div>
 
-          {/* Tax Notice for GIA */}
-          {summary.giaTotal > 0 && (
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-amber-800 dark:text-amber-200">£500 Dividend Allowance</h3>
-                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                    You have <strong>£{summary.giaTotal.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</strong> in GIA dividends. 
-                    The first <strong>£{DIVIDEND_ALLOWANCE}</strong> is tax-free. 
-                    Select your income tax band below to calculate potential tax due.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tax Band Selector */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Dividend Tax Calculator</CardTitle>
-              <CardDescription>Select your income tax band to calculate dividend tax</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="flex-1 w-full sm:w-auto">
-                  <label className="text-sm font-medium mb-2 block">Income Tax Band</label>
-                  <Select value={incomeTaxBand} onValueChange={setIncomeTaxBand}>
-                    <SelectTrigger className="w-full sm:w-[280px]">
-                      <SelectValue placeholder="Select tax band" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INCOME_TAX_BANDS.map((band) => (
-                        <SelectItem key={band.value} value={band.value}>
-                          {band.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex-1 w-full sm:w-auto pt-4 sm:pt-0">
-                  <div className="text-sm text-muted-foreground">Taxable GIA Dividends</div>
-                  <div className="text-xl font-semibold">£{summary.taxableGia.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</div>
-                </div>
-                <div className="flex-1 w-full sm:w-auto pt-4 sm:pt-0">
-                  <div className="text-sm text-muted-foreground">Est. Tax Due</div>
-                  <div className="text-xl font-semibold text-red-600 dark:text-red-400">
-                    £{summary.dividendTaxDue.toLocaleString("en-GB", { minimumFractionDigits: 2 })}
-                  </div>
-                </div>
-                <div className="flex-1 w-full sm:w-auto pt-4 sm:pt-0">
-                  <div className="text-sm text-muted-foreground">Net After Tax</div>
-                  <div className="text-xl font-semibold text-emerald-600 dark:text-emerald-400">
-                    £{(summary.totalAnnual - summary.dividendTaxDue).toLocaleString("en-GB", { minimumFractionDigits: 2 })}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Annual Dividends</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  £{summary.totalAnnual.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-                <p className="text-xs text-muted-foreground">per year</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Monthly Average</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  £{(summary.totalAnnual / 12).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-                <p className="text-xs text-muted-foreground">per month</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-between space-y--row items-center justify0 pb-2">
-                <CardTitle className="text-sm font-medium">Holdings</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{summary.count}</div>
-                <p className="text-xs text-muted-foreground">dividend paying stocks</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Effective Tax Rate</CardTitle>
-                <Percent className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{summary.effectiveTaxRate.toFixed(2)}%</div>
-                <p className="text-xs text-muted-foreground">of total dividends</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Dividends List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Dividend Holdings</CardTitle>
-              <CardDescription>Your dividend-paying investments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {dividends.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <DollarSign className="w-7 h-7 text-muted-foreground" />
-                  </div>
-                  <p className="text-lg font-semibold mb-2">No dividends added yet</p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Add your dividend-paying holdings to track your income.
-                  </p>
-                  <Button onClick={handleOpenAdd}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add First Dividend
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground pb-2 border-b">
-                    <div className="col-span-2">Symbol</div>
-                    <div className="col-span-3">Name</div>
-                    <div className="col-span-2 text-right">Shares</div>
-                    <div className="col-span-2 text-right">Div/Share</div>
-                    <div className="col-span-2 text-right">Annual</div>
-                    <div className="col-span-1"></div>
-                  </div>
-                  {dividends.map((dividend) => {
-                    const annual = calculateAnnualDividend(dividend)
-                    return (
-                      <div
-                        key={dividend._id}
-                        className="grid grid-cols-12 gap-4 items-center py-3 border-b last:border-0 hover:bg-muted/30 rounded-lg px-2 -mx-2 transition-colors"
-                      >
-                        <div className="col-span-2 font-medium">{dividend.symbol}</div>
-                        <div className="col-span-3 text-muted-foreground truncate">{dividend.name}</div>
-                        <div className="col-span-2 text-right font-mono">{dividend.shares.toLocaleString("en-GB", { maximumFractionDigits: 2 })}</div>
-                        <div className="col-span-2 text-right font-mono">
-                          {dividend.currency === "GBp" ? "£" : dividend.currency === "USD" ? "$" : "€"}{dividend.dividendPerShare.toFixed(2)}
-                          <span className="text-xs text-muted-foreground ml-1">/{dividend.frequency === "quarterly" ? "qtr" : dividend.frequency === "monthly" ? "mo" : "yr"}</span>
-                        </div>
-                        <div className="col-span-2 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                          £{annual.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </div>
-                        <div className="col-span-1 flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEdit(dividend)} aria-label="Edit dividend">
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => confirmDelete(dividend._id)} aria-label="Delete dividend">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Left Column - Dividends List */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Dividends List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Dividend Holdings</CardTitle>
+                  <CardDescription>Your dividend-paying investments</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {dividends.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                        <DollarSign className="w-7 h-7 text-muted-foreground" />
                       </div>
-                    )
-                  })}
+                      <p className="text-lg font-semibold mb-2">No dividends added yet</p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Add your dividend-paying holdings to track your income.
+                      </p>
+                      <Button onClick={handleOpenAdd}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Dividend
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground pb-2 border-b">
+                        <div className="col-span-2">Symbol</div>
+                        <div className="col-span-3">Name</div>
+                        <div className="col-span-2 text-right">Shares</div>
+                        <div className="col-span-2 text-right">Div/Share</div>
+                        <div className="col-span-2 text-right">Annual</div>
+                        <div className="col-span-1"></div>
+                      </div>
+                      {dividends.map((dividend) => {
+                        const annual = calculateAnnualDividend(dividend)
+                        return (
+                          <div
+                            key={dividend._id}
+                            className="grid grid-cols-12 gap-4 items-center py-3 border-b last:border-0 hover:bg-muted/30 rounded-lg px-2 -mx-2 transition-colors"
+                          >
+                            <div className="col-span-2 font-medium">{dividend.symbol}</div>
+                            <div className="col-span-3 text-muted-foreground truncate">{dividend.name}</div>
+                            <div className="col-span-2 text-right font-mono">{dividend.shares.toLocaleString("en-GB", { maximumFractionDigits: 2 })}</div>
+                            <div className="col-span-2 text-right font-mono">
+                              {dividend.currency === "GBP" || dividend.currency === "GBp" ? "£" : dividend.currency === "USD" ? "$" : dividend.currency === "EUR" ? "€" : "£"}{dividend.dividendPerShare.toFixed(2)}
+                              <span className="text-xs text-muted-foreground ml-1">/{dividend.frequency === "quarterly" ? "qtr" : dividend.frequency === "monthly" ? "mo" : "yr"}</span>
+                            </div>
+                            <div className="col-span-2 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                              £{annual.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                            <div className="col-span-1 flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEdit(dividend)} aria-label="Edit dividend">
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => confirmDelete(dividend._id)} aria-label="Delete dividend">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column - Planning */}
+            <div className="space-y-6">
+              {/* Tax Notice for GIA */}
+              {summary.giaTotal > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-amber-800 dark:text-amber-200">£500 Dividend Allowance</h3>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                        You have <strong>£{summary.giaTotal.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</strong> in GIA dividends. 
+                        The first <strong>£{DIVIDEND_ALLOWANCE}</strong> is tax-free. 
+                        Select your income tax band below to calculate potential tax due.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          {/* By Account Breakdown */}
-          {Object.keys(summary.byAccount).length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2">
+              {/* Tax Band Selector */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">By Account</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Tax Calculator</CardTitle>
+                  <CardDescription>Calculate your dividend tax</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {Object.entries(summary.byAccount).map(([account, amount]) => (
-                      <div key={account} className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{account}</span>
-                        <span className="font-mono">£{amount.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</span>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Income Tax Band</label>
+                      <Select value={incomeTaxBand} onValueChange={setIncomeTaxBand}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select tax band" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INCOME_TAX_BANDS.map((band) => (
+                            <SelectItem key={band.value} value={band.value}>
+                              {band.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-sm text-muted-foreground">Taxable GIA</div>
+                      <div className="text-sm font-semibold text-right">£{summary.taxableGia.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</div>
+                      <div className="text-sm text-muted-foreground">Est. Tax Due</div>
+                      <div className="text-sm font-semibold text-red-600 dark:text-red-400 text-right">
+                        £{summary.dividendTaxDue.toLocaleString("en-GB", { minimumFractionDigits: 2 })}
                       </div>
-                    ))}
+                      <div className="text-sm text-muted-foreground font-medium">Net After Tax</div>
+                      <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 text-right">
+                        £{(summary.totalAnnual - summary.dividendTaxDue).toLocaleString("en-GB", { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">By Currency</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {Object.entries(summary.byCurrency).map(([currency, amount]) => (
-                      <div key={currency} className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{currency}</span>
-                        <span className="font-mono">£{amount.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+
+              {/* Summary Cards */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Total Annual</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      £{summary.totalAnnual.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">per year</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Monthly Avg</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      £{(summary.totalAnnual / 12).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">per month</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Holdings</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{summary.count}</div>
+                    <p className="text-xs text-muted-foreground">stocks</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Tax Rate</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{summary.effectiveTaxRate.toFixed(2)}%</div>
+                    <p className="text-xs text-muted-foreground">effective</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* By Account Breakdown */}
+              {Object.keys(summary.byAccount).length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">By Account</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {Object.entries(summary.byAccount).map(([account, amount]) => (
+                        <div key={account} className="flex justify-between items-center">
+                          <span className="text-sm font-medium">{account}</span>
+                          <span className="font-mono">£{amount.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* By Currency Breakdown */}
+              {Object.keys(summary.byCurrency).length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">By Currency</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {Object.entries(summary.byCurrency).map(([currency, amount]) => (
+                        <div key={currency} className="flex justify-between items-center">
+                          <span className="text-sm font-medium">{currency}</span>
+                          <span className="font-mono">£{amount.toLocaleString("en-GB", { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </main>
 
@@ -589,27 +605,24 @@ export default function DividendCalculatorPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="symbol">Symbol *</Label>
-              {holdingsOptions.symbols.length > 0 ? (
+              <Label htmlFor="holding">Holding *</Label>
+              {holdingsOptions.all.length > 0 ? (
                 <Select 
-                  value={holdingsOptions.bySymbol.has(formData.symbol) ? formData.symbol : (formData.symbol ? "custom" : "none")} 
-                  onValueChange={(v) => {
-                    if (v === "none") {
-                      setFormData({ ...formData, symbol: "", name: "", accountName: "", shares: "", currency: "GBP" })
-                    } else if (v === "custom") {
-                      setFormData({ ...formData, symbol: "", name: formData.name || "", accountName: formData.accountName, shares: formData.shares, currency: formData.currency })
-                    } else {
-                      handleSymbolChange(v)
-                    }
-                  }}
+                  value={holdingsOptions.all.some(h => h.symbol === formData.symbol && h.accountName === formData.accountName) ? holdingsOptions.all.find(h => h.symbol === formData.symbol && h.accountName === formData.accountName)?.key || "none" : (formData.symbol ? "custom" : "none")} 
+                  onValueChange={handleHoldingChange}
                 >
-                  <SelectTrigger><SelectValue placeholder="Select holding" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Select holding" /></SelectTrigger>
+                  <SelectContent className="max-w-[400px] max-h-[300px]" position="popper">
                     <SelectItem value="none">None</SelectItem>
-                    {holdingsOptions.symbols.map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem value="custom">+ Custom</SelectItem>
+                    {holdingsOptions.byAccount.map(group => (
+                      <SelectGroup key={group.accountName}>
+                        <SelectLabel>{group.accountName}</SelectLabel>
+                        {group.holdings.map(h => (
+                          <SelectItem key={h.key} value={h.key}>{h.displayKey}</SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
-                    <SelectItem value="custom">+ Custom symbol</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
@@ -629,38 +642,6 @@ export default function DividendCalculatorPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="account">Account</Label>
-              {holdingsOptions.accounts.length > 0 ? (
-                <Select 
-                  value={holdingsOptions.accounts.includes(formData.accountName) ? formData.accountName : (formData.accountName ? "custom" : "none")}
-                  onValueChange={(v) => {
-                    if (v === "none") {
-                      setFormData({ ...formData, accountName: "" })
-                    } else if (v === "custom") {
-                      // Keep current value for custom
-                    } else {
-                      setFormData({ ...formData, accountName: v })
-                    }
-                  }}
-                >
-                  <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {holdingsOptions.accounts.map(a => (
-                      <SelectItem key={a} value={a}>{a}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id="account"
-                  placeholder="e.g., S&S ISA"
-                  value={formData.accountName}
-                  onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
-                />
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="portfolio">Link to Portfolio</Label>

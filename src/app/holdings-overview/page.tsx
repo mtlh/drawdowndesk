@@ -117,19 +117,19 @@ export default function PortfolioOverview() {
 
     if (sortedDates.length === 0) return [];
 
-    // Build data with percentage changes for each portfolio based on cost basis
+    // Build data with percentage changes - all use cost basis (market performance only)
     return sortedDates.map(([date, portfolioMap]) => {
       const dataPoint: Record<string, string | number> = {
         date: new Date(date).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
       };
       
-      portfolioMap.forEach((value, key) => {
+      portfolioMap.forEach((value, _key) => {
         // Calculate % change from cost basis: (totalValue - costBasis) / costBasis
         // This shows market performance excluding cash flows (deposits/withdrawals)
         const percentChange = value.costBasis > 0 && value.totalValue > 0 
           ? ((value.totalValue - value.costBasis) / value.costBasis) * 100 
           : 0;
-        dataPoint[key] = percentChange;
+        dataPoint[_key] = percentChange;
       });
 
       return dataPoint;
@@ -188,10 +188,13 @@ export default function PortfolioOverview() {
 
     // Calculate YTD % based on cost basis: (totalValue - costBasis) / costBasis
     const currentCostBasis = portfolioSummary.totalCostBasis || portfolioSummary.totalValue;
+    if (currentCostBasis <= 0) return null;
+    
     const currentPerformance = ((portfolioSummary.totalValue - currentCostBasis) / currentCostBasis) * 100;
     const yearStartPerformance = ((yearStartSnapshot.totalValue - yearStartSnapshot.costBasis) / yearStartSnapshot.costBasis) * 100;
     
-    return currentPerformance - yearStartPerformance;
+    const ytd = currentPerformance - yearStartPerformance;
+    return isNaN(ytd) ? 0 : ytd;
   })();
 
   // Handle loading state

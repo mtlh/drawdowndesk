@@ -37,10 +37,10 @@ export function RefreshButton({
         throw new Error("Failed to update holdings with latest prices");
       }
 
-      // Then save portfolio snapshot with current total value
+      // Then save portfolio snapshot with current total value and cost basis
       if (portfolioData.success) {
-        const totalValue = calculatePortfolioSummary(normalizePortfolios(portfolioData.data)).totalValue;
-        await saveSnapshot({ totalValue });
+        const summary = calculatePortfolioSummary(normalizePortfolios(portfolioData.data));
+        await saveSnapshot({ totalValue: summary.totalValue, costBasis: summary.totalCostBasis });
       }
 
       // Also update net worth snapshot

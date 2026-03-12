@@ -25,6 +25,7 @@ export interface CalculatedPortfolio {
 
 export interface PortfolioSummary {
   totalValue: number
+  totalCostBasis: number
   totalChange: number
   totalChangePercent: number
   portfolios: CalculatedPortfolio[]
@@ -155,6 +156,7 @@ export function calculatePortfolioSummary(portfoliosWithHoldings: PortfoliosWith
 
   return {
     totalValue,
+    totalCostBasis,
     totalChange,
     totalChangePercent,
     portfolios,
