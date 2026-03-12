@@ -26,7 +26,7 @@ import { PortfolioDataResult } from "@/hooks/usePortfolioData"
 import { CustomTreemap } from "@/components/customTreeMap/customTreeMap"
 import { CHART_COLORS_MAIN, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 import { ChartTooltip, PieChartTooltip } from "@/components/chart-tooltip"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonChart, SkeletonText } from "@/components/ui/skeleton"
 import { ErrorDisplay } from "@/components/ui/error-display"
 
 const COLORS = CHART_COLORS_MAIN
@@ -36,6 +36,7 @@ type PortfolioSnapshot = {
   userId: string;
   portfolioId?: string;
   totalValue: number;
+  costBasis: number;
   snapshotDate: string;
   lastUpdated?: string;
 };
@@ -94,18 +95,21 @@ export default function PortfolioOverview() {
   const performanceData = useMemo(() => {
     if (!hasSnapshots) return [];
 
-    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; snapshotDate: string }>;
+    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; costBasis: number; snapshotDate: string }>;
     
     // Group by date and portfolio - include all portfolios
-    const dateMap = new Map<string, Map<string, number>>();
+    const dateMap = new Map<string, Map<string, { totalValue: number; costBasis: number }>>();
     snapshots.forEach(s => {
       if (!dateMap.has(s.snapshotDate)) {
         dateMap.set(s.snapshotDate, new Map());
       }
       const portfolioMap = dateMap.get(s.snapshotDate)!;
       const key = s.portfolioId || "total";
-      const current = portfolioMap.get(key) || 0;
-      portfolioMap.set(key, current + s.totalValue);
+      const current = portfolioMap.get(key) || { totalValue: 0, costBasis: 0 };
+      portfolioMap.set(key, { 
+        totalValue: current.totalValue + s.totalValue,
+        costBasis: current.costBasis + s.costBasis 
+      });
     });
 
     // Convert to array and sort by date
@@ -113,44 +117,18 @@ export default function PortfolioOverview() {
 
     if (sortedDates.length === 0) return [];
 
-    // Get all portfolio keys
-    const portfolioKeys = new Set<string>();
-    sortedDates.forEach(([, portfolioMap]) => {
-      portfolioMap.forEach((_, key) => portfolioKeys.add(key));
-    });
-
-    // Get initial values for each portfolio (for % calculation)
-    // Use the FIRST NON-ZERO value for each portfolio, not just the first date
-    const initialValues: Record<string, number> = {};
-    portfolioKeys.forEach(key => {
-      initialValues[key] = 0;
-    });
-    for (const [, portfolioMap] of sortedDates) {
-      portfolioKeys.forEach(key => {
-        if (initialValues[key] === 0) {
-          const val = portfolioMap.get(key);
-          if (val !== undefined && val > 0) {
-            initialValues[key] = val;
-          }
-        }
-      });
-    }
-
-    // Build data with percentage changes for each portfolio
-    const lastKnownValues: Record<string, number> = {};
+    // Build data with percentage changes for each portfolio based on cost basis
     return sortedDates.map(([date, portfolioMap]) => {
       const dataPoint: Record<string, string | number> = {
         date: new Date(date).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
       };
       
-      portfolioKeys.forEach(key => {
-        const value = portfolioMap.get(key);
-        if (value !== undefined) {
-          lastKnownValues[key] = value;
-        }
-        const currentValue = lastKnownValues[key] || 0;
-        const initial = initialValues[key];
-        const percentChange = initial > 0 && currentValue > 0 ? ((currentValue - initial) / initial) * 100 : 0;
+      portfolioMap.forEach((value, key) => {
+        // Calculate % change from cost basis: (totalValue - costBasis) / costBasis
+        // This shows market performance excluding cash flows (deposits/withdrawals)
+        const percentChange = value.costBasis > 0 && value.totalValue > 0 
+          ? ((value.totalValue - value.costBasis) / value.costBasis) * 100 
+          : 0;
         dataPoint[key] = percentChange;
       });
 
@@ -193,27 +171,93 @@ export default function PortfolioOverview() {
     return [Math.min(min - padding, 0), Math.max(max + padding, 0)];
   })();
 
-  // Calculate YTD from raw snapshots
+  // Calculate YTD from raw snapshots using cost basis
   const currentYear = new Date().getFullYear();
   const ytdValue = (() => {
     if (!hasSnapshots || !portfolioSummary) return null;
 
-    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; snapshotDate: string }>;
+    const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; costBasis: number; snapshotDate: string }>;
     
     // Get year start value (total only)
     const yearStartSnapshot = snapshots
       .filter(s => !s.portfolioId && new Date(s.snapshotDate).getFullYear() === currentYear)
       .sort((a, b) => a.snapshotDate.localeCompare(b.snapshotDate))[0];
 
-    if (!yearStartSnapshot || yearStartSnapshot.totalValue <= 0) return null;
+    if (!yearStartSnapshot || yearStartSnapshot.costBasis <= 0) return null;
     if (!portfolioSummary.totalValue) return null;
 
-    return ((portfolioSummary.totalValue - yearStartSnapshot.totalValue) / yearStartSnapshot.totalValue) * 100;
+    // Calculate YTD % based on cost basis: (totalValue - costBasis) / costBasis
+    const currentCostBasis = portfolioSummary.totalCostBasis || portfolioSummary.totalValue;
+    const currentPerformance = ((portfolioSummary.totalValue - currentCostBasis) / currentCostBasis) * 100;
+    const yearStartPerformance = ((yearStartSnapshot.totalValue - yearStartSnapshot.costBasis) / yearStartSnapshot.costBasis) * 100;
+    
+    return currentPerformance - yearStartPerformance;
   })();
 
   // Handle loading state
   if (portfolioData.isLoading) {
-    return <LoadingSpinner fullScreen />;
+    return (
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-14 h-14 rounded-xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-9 w-48" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 lg:max-w-3xl">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonCard key={i} className="h-[88px] p-4" />
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-8">
+              <SkeletonCard className="lg:col-span-5 h-[400px] p-6">
+                <SkeletonCardHeader className="pb-2">
+                  <SkeletonText lines={2} />
+                </SkeletonCardHeader>
+                <SkeletonCardContent>
+                  <SkeletonChart className="h-[300px]" />
+                </SkeletonCardContent>
+              </SkeletonCard>
+
+              <div className="lg:col-span-3 space-y-6">
+                <SkeletonCard className="h-[190px] p-6">
+                  <SkeletonCardHeader className="pb-2">
+                    <SkeletonText lines={2} />
+                  </SkeletonCardHeader>
+                  <SkeletonCardContent>
+                    <SkeletonChart className="h-[100px]" />
+                  </SkeletonCardContent>
+                </SkeletonCard>
+                <SkeletonCard className="h-[190px] p-6">
+                  <SkeletonCardHeader className="pb-2">
+                    <SkeletonText lines={2} />
+                  </SkeletonCardHeader>
+                  <SkeletonCardContent>
+                    <SkeletonChart className="h-[100px]" />
+                  </SkeletonCardContent>
+                </SkeletonCard>
+              </div>
+            </div>
+
+            <SkeletonCard className="h-[350px] p-6">
+              <SkeletonCardHeader className="pb-2">
+                <SkeletonText lines={2} />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <SkeletonChart className="h-[250px]" />
+              </SkeletonCardContent>
+            </SkeletonCard>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   // Handle error state

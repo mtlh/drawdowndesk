@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonChart, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
@@ -347,7 +348,59 @@ export default function NetWorthPage() {
   }
 
   if (!getAccountsData) {
-    return <LoadingSpinner message="Loading accounts…" fullScreen />
+    return (
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-14 h-14 rounded-xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-9 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              <SkeletonCard className="lg:col-span-2 h-[400px] p-6">
+                <SkeletonCardHeader className="pb-2">
+                  <SkeletonText lines={2} />
+                </SkeletonCardHeader>
+                <SkeletonCardContent>
+                  <SkeletonChart className="h-[300px]" />
+                </SkeletonCardContent>
+              </SkeletonCard>
+
+              <SkeletonCard className="h-[400px] p-6">
+                <SkeletonCardHeader className="pb-2">
+                  <SkeletonText lines={2} />
+                </SkeletonCardHeader>
+                <SkeletonCardContent>
+                  <SkeletonList count={5} />
+                </SkeletonCardContent>
+              </SkeletonCard>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <SkeletonCard key={i} className="h-[100px] p-4" />
+              ))}
+            </div>
+
+            <SkeletonCard className="h-[500px] p-6">
+              <SkeletonCardHeader className="pb-2">
+                <SkeletonText lines={2} />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <SkeletonList count={6} />
+              </SkeletonCardContent>
+            </SkeletonCard>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if ('error' in getAccountsData) {

@@ -8,7 +8,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardTitle, SkeletonCardContent, SkeletonButton, SkeletonChart } from "@/components/ui/skeleton";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
 import { cn } from "@/lib/utils";
 
@@ -192,7 +192,63 @@ export default function BenchmarkComparisonPage() {
   const enabledHoldingsList = holdingsWithPerformance.filter(h => enabledHoldings.has(h.symbol));
 
   if (portfolioData.isLoading) {
-    return <LoadingSpinner fullScreen message="Loading portfolio..." />;
+    return (
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-14 h-14 rounded-xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-8 w-64" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-24" />
+              <div className="flex gap-1">
+                {["1M", "3M", "6M", "YTD", "1Y", "ALL"].map((range) => (
+                  <SkeletonButton key={range} />
+                ))}
+              </div>
+            </div>
+
+            <SkeletonCard>
+              <SkeletonCardHeader>
+                <div className="flex items-center justify-between">
+                  <SkeletonCardTitle />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+                <Skeleton className="h-4 w-64 mt-2" />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-20 rounded-lg" />
+                  ))}
+                </div>
+              </SkeletonCardContent>
+            </SkeletonCard>
+
+            <SkeletonCard>
+              <SkeletonCardHeader>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="w-5 h-5 rounded-full" />
+                  <SkeletonCardTitle />
+                </div>
+                <Skeleton className="h-4 w-72 mt-2" />
+              </SkeletonCardHeader>
+              <SkeletonCardContent>
+                <SkeletonChart />
+              </SkeletonCardContent>
+            </SkeletonCard>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (!portfolioData.success) {
