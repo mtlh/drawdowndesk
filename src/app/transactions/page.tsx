@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,10 +46,30 @@ export default function TransactionsPage() {
 
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [holdings, setHoldings] = useState<Holding[]>([]);
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
-  const [sortField, setSortField] = useState<SortField>("purchaseDate");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('transactions_filter_portfolio') || "all"
+    }
+    return "all"
+  });
+  const [dateFilter, setDateFilter] = useState<DateFilter>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('transactions_filter_date') as DateFilter) || "all"
+    }
+    return "all"
+  });
+  const [sortField, setSortField] = useState<SortField>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('transactions_sort_field') as SortField) || "purchaseDate"
+    }
+    return "purchaseDate"
+  });
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('transactions_sort_direction') as SortDirection) || "desc"
+    }
+    return "desc"
+  });
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -74,6 +94,31 @@ export default function TransactionsPage() {
   const [formNotes, setFormNotes] = useState("");
   const [formIsBuy, setFormIsBuy] = useState(true);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Persist filter preferences to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('transactions_filter_portfolio', selectedPortfolioId)
+    }
+  }, [selectedPortfolioId])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('transactions_filter_date', dateFilter)
+    }
+  }, [dateFilter])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('transactions_sort_field', sortField)
+    }
+  }, [sortField])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('transactions_sort_direction', sortDirection)
+    }
+  }, [sortDirection])
 
   const initialized = useMemo(() => {
     if (getPortfolioData && isPortfolioArray(getPortfolioData)) {

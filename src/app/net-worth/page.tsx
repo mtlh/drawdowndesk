@@ -67,10 +67,30 @@ export default function NetWorthPage() {
   const [portfolioHoldings, setPortfolioHoldings] = useState<{accountName: string, portfolios: { id: string, name: string }[], value: number}[]>([])
   const [showNewAccountForm, setShowNewAccountForm] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [filterType, setFilterType] = useState<AccountType | "all">("all")
-  const [filterTag, setFilterTag] = useState<string>("all")
-  const [filterPortfolio, setFilterPortfolio] = useState<string>("all")
-  const [sortBy, setSortBy] = useState<"value" | "name" | "type">("value")
+  const [filterType, setFilterType] = useState<AccountType | "all">(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('networth_filter_type') as AccountType | "all") || "all"
+    }
+    return "all"
+  })
+  const [filterTag, setFilterTag] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('networth_filter_tag') || "all"
+    }
+    return "all"
+  })
+  const [filterPortfolio, setFilterPortfolio] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('networth_filter_portfolio') || "all"
+    }
+    return "all"
+  })
+  const [sortBy, setSortBy] = useState<"value" | "name" | "type">(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('networth_sort_by') as "value" | "name" | "type") || "value"
+    }
+    return "value"
+  })
 
   // Form state
   const [newAccountName, setNewAccountName] = useState("")
@@ -92,6 +112,31 @@ export default function NetWorthPage() {
       setPortfolios(getAccountsData.portfolios as Portfolio[])
     }
   }, [getAccountsData])
+
+  // Persist filter preferences to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('networth_filter_type', filterType)
+    }
+  }, [filterType])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('networth_filter_tag', filterTag)
+    }
+  }, [filterTag])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('networth_filter_portfolio', filterPortfolio)
+    }
+  }, [filterPortfolio])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('networth_sort_by', sortBy)
+    }
+  }, [sortBy])
 
   // Prevent body scroll when modal is open
   useBodyScrollLock(showNewAccountForm)
