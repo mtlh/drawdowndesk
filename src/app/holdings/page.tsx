@@ -16,7 +16,6 @@ import { RefreshButton } from "@/components/RefreshHoldingsButton"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, CartesianGrid, XAxis, YAxis } from "recharts"
 import { CHART_COLORS, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
 import { getPriceInPounds } from "@/lib/utils"
-import { validateField, commonRules } from "@/lib/validation"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
 import { useToast } from "@/hooks/useToast"
 import { PieChartTooltip, ChartTooltip } from "@/components/chart-tooltip"
@@ -98,6 +97,21 @@ export default function HoldingsPage() {
     });
     return Array.from(accounts).sort();
   }, [holdings]);
+
+  // Real-time validation for portfolio name
+  useEffect(() => {
+    if (!newPortfolioName.trim()) {
+      setPortfolioNameError(null);
+      return;
+    }
+    if (newPortfolioName.trim().length < 2) {
+      setPortfolioNameError("Portfolio name must be at least 2 characters");
+    } else if (newPortfolioName.trim().length > 50) {
+      setPortfolioNameError("Portfolio name must be 50 characters or less");
+    } else {
+      setPortfolioNameError(null);
+    }
+  }, [newPortfolioName]);
 
   // Reusable pie chart tooltip
   const PieTooltip = PieChartTooltip({})
@@ -294,19 +308,8 @@ export default function HoldingsPage() {
   }
 
   // Add new portfolio
-  // Validate portfolio name
-  const validatePortfolioName = (): boolean => {
-    const error = validateField(newPortfolioName.trim(), [
-      commonRules.required("Portfolio name is required"),
-      commonRules.minLength(2, "Portfolio name must be at least 2 characters"),
-      commonRules.maxLength(50, "Portfolio name must be 50 characters or less"),
-    ]);
-    setPortfolioNameError(error);
-    return !error;
-  };
-
   const addPortfolio = async () => {
-    if (!validatePortfolioName()) {
+    if (!newPortfolioName.trim() || portfolioNameError) {
       return;
     }
 
@@ -551,11 +554,7 @@ export default function HoldingsPage() {
                       id="portfolio-name"
                       placeholder="e.g., Retirement Fund, Growth Portfolio"
                       value={newPortfolioName}
-                      onChange={(e) => {
-                        setNewPortfolioName(e.target.value);
-                        if (portfolioNameError) setPortfolioNameError(null);
-                      }}
-                      onBlur={validatePortfolioName}
+                      onChange={(e) => setNewPortfolioName(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           addPortfolio();

@@ -159,6 +159,22 @@ export default function NetWorthPage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasChanges]);
 
+  // Real-time validation
+  useEffect(() => {
+    const errors: Record<string, string> = {};
+    if (newAccountName.trim() && newAccountName.trim().length < 2) {
+      errors.name = "Name must be at least 2 characters";
+    }
+    if (newAccountName.trim() && newAccountName.trim().length > 50) {
+      errors.name = "Name must be 50 characters or less";
+    }
+    const numValue = parseFloat(newAccountValue);
+    if (newAccountValue && (isNaN(numValue) || numValue < 0)) {
+      errors.value = "Please enter a valid positive number";
+    }
+    setAccountErrors(errors);
+  }, [newAccountName, newAccountValue]);
+
   // Prevent body scroll when modal is open
   useBodyScrollLock(showNewAccountForm)
 
