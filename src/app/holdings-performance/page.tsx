@@ -328,7 +328,7 @@ export default function BenchmarkComparisonPage() {
               </CardTitle>
               <CardDescription>Percentage gain/loss by holding (market price based)</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-visible">
               {enabledHoldingsList.length > 0 && chartData.length > 0 ? (
                 <div className="overflow-visible">
                   <ChartContainer config={chartConfig} className="h-[calc(100vh-350px)] min-h-[500px] w-full overflow-visible">
@@ -363,9 +363,9 @@ export default function BenchmarkComparisonPage() {
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
                         return (
-                          <div className="bg-card/95 backdrop-blur-sm border border-border/60 rounded-xl px-4 py-3 shadow-xl text-sm min-w-[320px] z-50">
+                          <div className="bg-card/95 backdrop-blur-sm border border-border/60 rounded-xl px-4 py-3 shadow-xl text-sm min-w-[320px] z-[100] pointer-events-none">
                             <div className="font-semibold text-base border-b border-border/60 pb-2 mb-3">{label}</div>
-                            <div className="space-y-2.5 max-h-[300px] overflow-y-auto">
+                            <div className="flex flex-col space-y-2.5 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent pointer-events-auto">
                               {payload.map((entry) => {
                                 const holdingData = (entry.payload as Record<string, unknown>)[`_${entry.dataKey}_data`] as HoldingData | undefined;
                                 const value = entry.value as number;
