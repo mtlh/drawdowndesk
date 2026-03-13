@@ -217,24 +217,46 @@ export const syncAllAutoSyncGoals = mutation({
       (goal) => goal.linkedPortfolioId && goal.autoSyncPortfolio
     );
 
+    if (autoSyncGoals.length === 0) {
+      return { syncedCount: 0 };
+    }
+
+    // Fetch all holdings and simpleHoldings upfront to avoid N+1 queries
+    const allHoldings = await ctx.db
+      .query("holdings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    const allSimpleHoldings = await ctx.db
+      .query("simpleHoldings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Group holdings by portfolioId
+    const holdingsByPortfolioId = new Map<string, typeof allHoldings>();
+    for (const holding of allHoldings) {
+      if (holding.portfolioId) {
+        const existing = holdingsByPortfolioId.get(holding.portfolioId) || [];
+        existing.push(holding);
+        holdingsByPortfolioId.set(holding.portfolioId, existing);
+      }
+    }
+
+    // Group simpleHoldings by portfolioId
+    const simpleHoldingsByPortfolioId = new Map<string, typeof allSimpleHoldings>();
+    for (const holding of allSimpleHoldings) {
+      const existing = simpleHoldingsByPortfolioId.get(holding.portfolioId) || [];
+      existing.push(holding);
+      simpleHoldingsByPortfolioId.set(holding.portfolioId, existing);
+    }
+
     let syncedCount = 0;
 
-    // Sync each goal
+    // Sync each goal using pre-fetched data
     for (const goal of autoSyncGoals) {
-      // Get portfolio value
-      const holdings = await ctx.db
-        .query("holdings")
-        .withIndex("by_portfolio", q =>
-          q.eq("userId", userId).eq("portfolioId", goal.linkedPortfolioId!)
-        )
-        .collect();
-
-      const simpleHoldings = await ctx.db
-        .query("simpleHoldings")
-        .withIndex("by_portfolio", q =>
-          q.eq("userId", userId).eq("portfolioId", goal.linkedPortfolioId!)
-        )
-        .collect();
+      // Get portfolio value from pre-fetched data
+      const holdings = holdingsByPortfolioId.get(goal.linkedPortfolioId!) || [];
+      const simpleHoldings = simpleHoldingsByPortfolioId.get(goal.linkedPortfolioId!) || [];
 
       const holdingsValue = holdings.reduce((sum, h) => {
         const rawValue = (h.shares || 0) * (h.currentPrice || 0);
