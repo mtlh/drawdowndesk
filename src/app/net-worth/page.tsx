@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo, useRef } from "react"
+import { useEffect, useState, useMemo, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -399,7 +399,7 @@ export default function NetWorthPage() {
   };
 
   // Update account value inline
-  const updateAccountValue = async (accountId: string, newValue: number) => {
+  const updateAccountValue = useCallback(async (accountId: string, newValue: number) => {
     setAccounts(accounts.map(a =>
       a._id === accountId ? { ...a, value: newValue, lastUpdated: new Date().toISOString() } : a
     ))
@@ -409,15 +409,15 @@ export default function NetWorthPage() {
     } catch (error) {
       console.error("Failed to update account:", error)
     }
-  }
+  }, [accounts, updateAccountMutation])
 
   // Delete account
-  const confirmDeleteAccount = (accountId: string) => {
+  const confirmDeleteAccount = useCallback((accountId: string) => {
     setDeleteTargetId(accountId)
     setDeleteConfirmOpen(true)
-  }
+  }, [])
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTargetId) return
 
     setIsSaving(true)
@@ -433,7 +433,7 @@ export default function NetWorthPage() {
       setDeleteTargetId(null)
       setIsSaving(false)
     }
-  }
+  }, [deleteTargetId, accounts, deleteAccountMutation, addToast])
 
   if (!getAccountsData) {
     return (

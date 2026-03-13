@@ -146,12 +146,19 @@ export default function HoldingsPage() {
       const stats = getPortfolioStats(p.id, p.portfolio.portfolioType)
       return sum + stats.totalCost
     }, 0)
-  }, [portfolios, getPortfolioStats])
+    }, [portfolios, getPortfolioStats])
 
-  const totalHoldingsGain = totalHoldingsValue - totalHoldingsCost
-  const totalHoldingsGainPercent = totalHoldingsCost > 0 ? (totalHoldingsGain / totalHoldingsCost) * 100 : 0
-  const totalLivePortfolios = portfolios.filter(p => p.portfolio.portfolioType !== "manual").length
-  const totalManualPortfolios = portfolios.filter(p => p.portfolio.portfolioType === "manual").length
+  const derivedStats = useMemo(() => ({
+    gain: totalHoldingsValue - totalHoldingsCost,
+    gainPercent: totalHoldingsCost > 0 ? ((totalHoldingsValue - totalHoldingsCost) / totalHoldingsCost) * 100 : 0,
+    liveCount: portfolios.filter(p => p.portfolio.portfolioType !== "manual").length,
+    manualCount: portfolios.filter(p => p.portfolio.portfolioType === "manual").length,
+  }), [portfolios, totalHoldingsValue, totalHoldingsCost]);
+
+  const totalHoldingsGain = derivedStats.gain;
+  const totalHoldingsGainPercent = derivedStats.gainPercent;
+  const totalLivePortfolios = derivedStats.liveCount;
+  const totalManualPortfolios = derivedStats.manualCount;
 
   // Calculate allocation data for pie chart - aggregates duplicates by name
   const getPortfolioAllocationData = useCallback((portfolioId: string, portfolioType?: "live" | "manual") => {

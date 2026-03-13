@@ -114,8 +114,8 @@ export default function LifetimeAccumulation() {
           monthlyAmount: monthlyAmount as number,
         }));
         setContributions(loaded);
-      } catch {
-        // Invalid JSON, ignore
+      } catch (error) {
+        console.warn("Failed to parse continuous contributions JSON:", error);
       }
     }
   }, [continuousContributionsData]);
@@ -125,7 +125,8 @@ export default function LifetimeAccumulation() {
     if (!breakdown) return {};
     try {
       return JSON.parse(breakdown);
-    } catch {
+    } catch (error) {
+      console.warn("Failed to parse breakdown JSON:", error);
       return {};
     }
   };

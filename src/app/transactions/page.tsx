@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -363,7 +363,7 @@ export default function TransactionsPage() {
     }
   };
 
-  const addToQueue = () => {
+  const addToQueue = useCallback(() => {
     setFormErrors({});
     const newTxn: TransactionFormData = {
       id: Date.now().toString(),
@@ -394,11 +394,11 @@ export default function TransactionsPage() {
     setFormPrice("");
     setFormNotes("");
     setFormIsBuy(true);
-  };
+  }, [formPortfolioId, formPortfolioName, formExistingHoldingId, formIsNewHolding, formSymbol, formName, selectedHolding?.accountName, formCurrency, formShares, formPrice, formDate, formNotes, formIsBuy, transactionQueue]);
 
-  const removeFromQueue = (id: string) => {
+  const removeFromQueue = useCallback((id: string) => {
     setTransactionQueue(transactionQueue.filter(t => t.id !== id));
-  };
+  }, [transactionQueue]);
 
   const handleSaveTransactions = async () => {
     // Validate current form if it's not valid but queue has items
