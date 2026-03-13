@@ -1,11 +1,7 @@
 import { getPriceInPounds } from "./utils"
+import { EXTENDED_PALETTE } from "./constants"
 
-// Extended palette for treemap accounts
-const EXTENDED_PALETTE = [
-  "#4F46E5", "#10B981", "#F59E0B", "#EC4899", "#06B6D4",
-  "#8B5CF6", "#14B8A6", "#EF4444", "#84CC16", "#F97316",
-  "#6366F1", "#34D399", "#FBBF24", "#F472B6", "#22D3EE",
-];
+// Extended palette for treemap accounts - now imported from constants
 
 export interface CalculatedHolding extends Holding {
   marketValue: number
@@ -164,7 +160,7 @@ export function calculatePortfolioSummary(portfoliosWithHoldings: PortfoliosWith
 }
 
 // Generate allocation data for charts
-export function getPortfolioAllocationData(portfolios: CalculatedPortfolio[]) {
+export function getPortfolioAllocationData(portfolios: CalculatedPortfolio[]): Array<{name: string; value: number}> {
   return portfolios.map((portfolio) => ({
     name: portfolio.name,
     value: portfolio.value,
@@ -172,7 +168,7 @@ export function getPortfolioAllocationData(portfolios: CalculatedPortfolio[]) {
 }
 
 // Generate mock historical data based on current portfolio value
-export function generateMockPerformanceData(currentValue: number) {
+export function generateMockPerformanceData(currentValue: number): Array<{date: string; value: number}> {
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
   const startValue = currentValue * 0.86 // Start at 86% of current value
   const increment = (currentValue - startValue) / 11
@@ -183,7 +179,7 @@ export function generateMockPerformanceData(currentValue: number) {
   }))
 }
 
-export function calculateAssetTypeAllocation(portfolios: CalculatedPortfolio[]) {
+export function calculateAssetTypeAllocation(portfolios: CalculatedPortfolio[]): Array<{name: string; value: number}> {
   const allocationMap: Record<string, number> = {}
 
   portfolios.forEach((portfolio) => {
@@ -208,13 +204,14 @@ export function calculateAssetTypeAllocation(portfolios: CalculatedPortfolio[]) 
   }))
 }
 
+interface TreemapNode {
+  name: string
+  value?: number
+  children?: TreemapNode[]
+}
+
 // Generate treemap data from all holdings grouped by account
-export function generateHoldingsTreemapData(portfolios: CalculatedPortfolio[]) {
-  interface TreemapNode {
-    name: string
-    value?: number
-    children?: TreemapNode[]
-  }
+export function generateHoldingsTreemapData(portfolios: CalculatedPortfolio[]): TreemapNode[] {
 
   // Group all holdings by account - flatten to just account -> individual holdings
   const holdingsByAccount: Record<string, Array<{ symbol: string; marketValue: number; holdingType: string }>> = {}
@@ -263,7 +260,7 @@ export function generateHoldingsTreemapData(portfolios: CalculatedPortfolio[]) {
 }
 
 // Generate allocation data by accounts
-export function getAccountAllocationData(portfolios: CalculatedPortfolio[]) {
+export function getAccountAllocationData(portfolios: CalculatedPortfolio[]): Array<{name: string; value: number}> {
   const accountMap: Record<string, number> = {}
 
   portfolios.forEach((portfolio) => {

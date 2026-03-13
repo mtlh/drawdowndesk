@@ -39,7 +39,8 @@ function getInitialSidebarState(): boolean {
   try {
     const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
     return stored !== "collapsed"
-  } catch {
+  } catch (error) {
+    console.error("Failed to read sidebar state from localStorage:", error)
     return true
   }
 }
@@ -53,8 +54,8 @@ function getInitialSidebarWidth(): number {
     if (!isNaN(width) && width >= MIN_SIDEBAR_WIDTH && width <= MAX_SIDEBAR_WIDTH) {
       return width
     }
-  } catch {
-    // Ignore
+  } catch (error) {
+    console.error("Failed to read sidebar width from localStorage:", error)
   }
   return 320
 }

@@ -31,3 +31,10 @@ export const DONUT_OUTER_RADIUS = 100;
 export const CURRENT_TAX_YEAR = 2025;
 export const TAX_YEAR_START_MONTH = 4; // April
 export const TAX_YEAR_START_DAY = 6;   // 6th April
+
+// Extended palette for treemap and other visualizations with many items
+export const EXTENDED_PALETTE = [
+  "#4F46E5", "#10B981", "#F59E0B", "#EC4899", "#06B6D4",
+  "#8B5CF6", "#14B8A6", "#EF4444", "#84CC16", "#F97316",
+  "#6366F1", "#34D399", "#FBBF24", "#F472B6", "#22D3EE",
+] as const;

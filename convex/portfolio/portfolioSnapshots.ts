@@ -68,6 +68,35 @@ export const calculateAndSaveSnapshot = mutation({
       .withIndex("by_userPorfolio", q => q.eq("userId", userId))
       .collect();
 
+    // Fetch all holdings and simpleHoldings upfront to avoid N+1 queries
+    const allHoldings = await ctx.db
+      .query("holdings")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    const allSimpleHoldings = await ctx.db
+      .query("simpleHoldings")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    // Group holdings by portfolioId (filtering out undefined portfolioId)
+    const holdingsByPortfolio = new Map<Id<"portfolios">, typeof allHoldings>();
+    for (const holding of allHoldings) {
+      if (holding.portfolioId) {
+        const existing = holdingsByPortfolio.get(holding.portfolioId) || [];
+        existing.push(holding);
+        holdingsByPortfolio.set(holding.portfolioId, existing);
+      }
+    }
+
+    // Group simpleHoldings by portfolioId
+    const simpleHoldingsByPortfolio = new Map<Id<"portfolios">, typeof allSimpleHoldings>();
+    for (const holding of allSimpleHoldings) {
+      const existing = simpleHoldingsByPortfolio.get(holding.portfolioId) || [];
+      existing.push(holding);
+      simpleHoldingsByPortfolio.set(holding.portfolioId, existing);
+    }
+
     let totalValue = 0;
     let totalCostBasis = 0;
     const portfolioValues: { portfolioId: Id<"portfolios">; value: number; costBasis: number }[] = [];
@@ -76,13 +105,8 @@ export const calculateAndSaveSnapshot = mutation({
       let portfolioValue = 0;
       let portfolioCostBasis = 0;
 
-      // Add value from live holdings
-      const holdings = await ctx.db
-        .query("holdings")
-        .withIndex("by_portfolio", q =>
-          q.eq("userId", userId).eq("portfolioId", portfolio._id)
-        )
-        .collect();
+      // Use pre-fetched holdings
+      const holdings = holdingsByPortfolio.get(portfolio._id) || [];
 
       for (const holding of holdings) {
         const shares = holding.shares || 0;
@@ -96,19 +120,12 @@ export const calculateAndSaveSnapshot = mutation({
         totalCostBasis += holdingCostBasis;
       }
 
-      // Add value from simple holdings (manual portfolios like pensions/OICS)
-      const simpleHoldings = await ctx.db
-        .query("simpleHoldings")
-        .withIndex("by_portfolio", q =>
-          q.eq("userId", userId).eq("portfolioId", portfolio._id)
-        )
-        .collect();
+      // Use pre-fetched simple holdings
+      const simpleHoldings = simpleHoldingsByPortfolio.get(portfolio._id) || [];
 
       for (const simpleHolding of simpleHoldings) {
         const holdingValue = simpleHolding.value || 0;
         portfolioValue += holdingValue;
-        // Simple holdings don't have avgPrice, so use current value as cost basis
-        // This means no unrealized gains/losses tracked for manual holdings
         portfolioCostBasis += holdingValue;
         totalValue += holdingValue;
         totalCostBasis += holdingValue;

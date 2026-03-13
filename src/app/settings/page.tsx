@@ -158,7 +158,8 @@ function SettingsContent() {
       })
       setSavedMessage("Personal allowance saved!")
       setEditingAllowance(false)
-    } catch {
+    } catch (error) {
+      console.error("Failed to save personal allowance:", error)
       setSavedMessage("Error saving allowance")
     }
     setIsSaving(false)
@@ -172,7 +173,8 @@ function SettingsContent() {
       await deleteAllowance({ userId: user._id as Id<"users">, taxYear: CURRENT_TAX_YEAR })
       setAllowanceState(DEFAULT_ALLOWANCE)
       setSavedMessage("Reset to default allowance")
-    } catch {
+    } catch (error) {
+      console.error("Failed to reset personal allowance:", error)
       setSavedMessage("Error resetting allowance")
     }
     setIsSaving(false)
@@ -196,7 +198,8 @@ function SettingsContent() {
       })
       setSavedMessage(`Tax band "${band.bandName}" saved!`)
       setEditingBandIndex(null)
-    } catch {
+    } catch (error) {
+      console.error("Failed to save tax band:", error)
       setSavedMessage("Error saving tax band")
     }
     setIsSaving(false)
@@ -223,7 +226,8 @@ function SettingsContent() {
         bandName: band.bandName,
       })
       setSavedMessage(`Reset "${band.bandName}" to default`)
-    } catch {
+    } catch (error) {
+      console.error("Failed to reset tax band:", error)
       setSavedMessage("Error resetting tax band")
     }
     setIsSaving(false)
@@ -246,7 +250,8 @@ function SettingsContent() {
       })
       setSavedMessage(`CGT for "${c.assetType}" saved!`)
       setEditingCgtIndex(null)
-    } catch {
+    } catch (error) {
+      console.error("Failed to save CGT:", error)
       setSavedMessage("Error saving CGT")
     }
     setIsSaving(false)
@@ -271,7 +276,8 @@ function SettingsContent() {
         assetType: c.assetType,
       })
       setSavedMessage(`Reset CGT for "${c.assetType}" to default`)
-    } catch {
+    } catch (error) {
+      console.error("Failed to reset CGT:", error)
       setSavedMessage("Error resetting CGT")
     }
     setIsSaving(false)
@@ -291,7 +297,8 @@ function SettingsContent() {
       })
       setSavedMessage("State pension settings saved!")
       setEditingStatePension(false)
-    } catch {
+    } catch (error) {
+      console.error("Failed to save state pension settings:", error)
       setSavedMessage("Error saving state pension settings")
     }
     setIsSaving(false)
@@ -312,7 +319,8 @@ function SettingsContent() {
       })
       setSavedMessage("Assumptions saved!")
       setEditingAssumptions(false)
-    } catch {
+    } catch (error) {
+      console.error("Failed to save assumptions:", error)
       setSavedMessage("Error saving assumptions")
     }
     setIsSaving(false)

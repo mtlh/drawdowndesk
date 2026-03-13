@@ -16,12 +16,23 @@ import {
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { monteCarloReturn } from "../../../convex/calculators/runMonteCarlo"
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonChart, SkeletonText } from "@/components/ui/skeleton";
 import { TrendingUp, GitBranch, Calculator } from "lucide-react";
+
+const CHART_COLORS = [
+  "#4F46E5",
+  "#10B981",
+  "#F59E0B",
+  "#EC4899",
+  "#06B6D4",
+  "#8B5CF6",
+  "#EF4444",
+  "#14B8A6",
+];
 
 export default function MonteCarloSimulator() {
 
@@ -32,6 +43,18 @@ export default function MonteCarloSimulator() {
     assetName: assetName,
     yearPeriod: timePeriod
   }) as unknown as monteCarloReturn;
+
+  const percentileCards = useMemo(() => {
+    if (!monteCarloReturn?.percentitleReturns) return null;
+    return monteCarloReturn.percentitleReturns.map(([key, value]) => {
+      const isWorst = key === "Worst 5%";
+      const isBest = key === "Best 5%";
+      const isMedian = key === "Median";
+      return { key, value, isWorst, isBest, isMedian };
+    });
+  }, [monteCarloReturn?.percentitleReturns]);
+
+  const caseKeys = useMemo(() => monteCarloReturn?.caseKeys ?? [], [monteCarloReturn?.caseKeys]);
 
   if (monteCarloReturn === undefined) {
     return (
@@ -168,35 +191,30 @@ export default function MonteCarloSimulator() {
               <CardContent className="p-6">
                 {/* Percentile Stats Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-8">
-                  {monteCarloReturn.percentitleReturns.map(([key, value]) => {
-                    const isWorst = key === "Worst 5%";
-                    const isBest = key === "Best 5%";
-                    const isMedian = key === "Median";
-                    return (
-                      <div
-                        key={key}
-                        className={`relative overflow-hidden rounded-xl p-4 border ${
-                          isWorst 
-                            ? "bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border-red-200/50 dark:border-red-800/50"
-                            : isBest
-                            ? "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200/50 dark:border-emerald-800/50"
-                            : isMedian
-                            ? "bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200/50 dark:border-blue-800/50"
-                            : "bg-gradient-to-br from-violet-50 to-violet-100/50 dark:from-violet-950/30 dark:to-violet-900/20 border-violet-200/50 dark:border-violet-800/50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          {isWorst && <span className="text-xs font-medium text-red-600 dark:text-red-400">{key}</span>}
-                          {isBest && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{key}</span>}
-                          {isMedian && <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{key}</span>}
-                          {!isWorst && !isBest && !isMedian && <span className="text-xs font-medium text-violet-600 dark:text-violet-400">{key}</span>}
-                        </div>
-                        <span className="text-2xl font-bold">
-                          {value}
-                        </span>
+                  {percentileCards?.map(({ key, value, isWorst, isBest, isMedian }) => (
+                    <div
+                      key={key}
+                      className={`relative overflow-hidden rounded-xl p-4 border ${
+                        isWorst 
+                          ? "bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border-red-200/50 dark:border-red-800/50"
+                          : isBest
+                          ? "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200/50 dark:border-emerald-800/50"
+                          : isMedian
+                          ? "bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200/50 dark:border-blue-800/50"
+                          : "bg-gradient-to-br from-violet-50 to-violet-100/50 dark:from-violet-950/30 dark:to-violet-900/20 border-violet-200/50 dark:border-violet-800/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        {isWorst && <span className="text-xs font-medium text-red-600 dark:text-red-400">{key}</span>}
+                        {isBest && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{key}</span>}
+                        {isMedian && <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{key}</span>}
+                        {!isWorst && !isBest && !isMedian && <span className="text-xs font-medium text-violet-600 dark:text-violet-400">{key}</span>}
                       </div>
-                    )
-                  })}
+                      <span className="text-2xl font-bold">
+                        {value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Chart */}
@@ -246,12 +264,12 @@ export default function MonteCarloSimulator() {
                           );
                         }}
                       />
-                      {monteCarloReturn.caseKeys.map((key) => (
+                      {caseKeys.map((key, index) => (
                         <Line
                           key={key}
                           type="monotone"
                           dataKey={key}
-                          stroke={`#${Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0")}`}
+                          stroke={CHART_COLORS[index % CHART_COLORS.length]}
                           strokeWidth={2}
                           dot={false}
                         />

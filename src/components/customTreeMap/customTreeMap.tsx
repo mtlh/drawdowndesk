@@ -1,6 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts";
 import type { TreemapNode } from "./treeMapNode";
+import { EXTENDED_PALETTE } from "@/lib/constants";
 
 // Type for Recharts Treemap content props
 interface TreemapContentProps {
@@ -34,13 +35,6 @@ const formatValue = (val: number): string => {
   return `£${val.toFixed(0)}`;
 };
 
-// Extended palette for more accounts
-const EXTENDED_PALETTE = [
-  "#4F46E5", "#10B981", "#F59E0B", "#EC4899", "#06B6D4",
-  "#8B5CF6", "#14B8A6", "#EF4444", "#84CC16", "#F97316",
-  "#6366F1", "#34D399", "#FBBF24", "#F472B6", "#22D3EE",
-];
-
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -66,7 +60,7 @@ export const CustomTreemap: React.FC<CustomTreemapProps> = ({ data }) => {
   }, [data]);
 
   // Custom content renderer for the hierarchical treemap
-  const renderContent = (props: TreemapContentProps): React.ReactElement => {
+  const renderContent = useCallback((props: TreemapContentProps): React.ReactElement => {
     const { x = 0, y = 0, width = 0, height = 0, name = "", value = 0, accountColor } = props;
 
     // Determine if this is an account or holding by checking if name exists in our account colors
@@ -132,10 +126,10 @@ export const CustomTreemap: React.FC<CustomTreemapProps> = ({ data }) => {
         )}
       </g>
     );
-  };
+  }, [accountColors]);
 
   // Tooltip renderer
-  const renderTooltip = (props: { active?: boolean; payload?: Array<{ payload: { name: string; value?: number; accountName?: string; accountValue?: number } }> }) => {
+  const renderTooltip = useCallback((props: { active?: boolean; payload?: Array<{ payload: { name: string; value?: number; accountName?: string; accountValue?: number } }> }) => {
     if (!props.active || !props.payload?.length) return null;
     const payload = props.payload[0].payload;
 
@@ -170,7 +164,7 @@ export const CustomTreemap: React.FC<CustomTreemapProps> = ({ data }) => {
         </div>
       </div>
     );
-  };
+  }, [totalValue]);
 
   // Sort accounts by value descending for better visualization
   const sortedData = useMemo(
