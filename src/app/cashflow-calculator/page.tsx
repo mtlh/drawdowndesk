@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -324,7 +324,7 @@ export default function RetirementCashflowCalculator() {
   };
 
   // Sync values with user settings when they load
-  useMemo(() => {
+  useEffect(() => {
     if (userSettings) {
       setStatePension(userSettings.statePensionAmount);
       setStatePensionAge(userSettings.statePensionAge);

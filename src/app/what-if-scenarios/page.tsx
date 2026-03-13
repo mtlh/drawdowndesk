@@ -300,7 +300,7 @@ export default function WhatIfScenarios() {
     }).filter(Boolean);
   }, [selectedScenarios, scenarios, taxBandInformation]);
 
-  const comparisonSummary = comparisonData.map(s => ({
+  const comparisonSummary = useMemo(() => comparisonData.map(s => ({
     name: s!.name,
     totalPortfolio: s!.totalPortfolio,
     startAge: s!.startAge,
@@ -308,7 +308,7 @@ export default function WhatIfScenarios() {
     totalTax: s!.summary.totalTax,
     yearsUntilDepleted: s!.summary.yearsUntilDepleted,
     finalTotalValue: s!.summary.finalTotalValue,
-  }));
+  })), [comparisonData]);
 
   if (!taxBandInformation || !userSettings) {
     return (

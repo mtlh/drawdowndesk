@@ -162,17 +162,25 @@ export const calculateAndSaveSnapshot = mutation({
       });
     }
 
+    // Fetch all portfolio snapshots for today at once to avoid N+1 queries
+    const allPortfolioSnapshots = await ctx.db
+      .query("portfolioSnapshots")
+      .withIndex("by_userDate", q => q.eq("userId", userId).eq("snapshotDate", today))
+      .collect();
+
+    // Group snapshots by portfolioId
+    const snapshotsByPortfolioId = new Map<Id<"portfolios">, typeof allPortfolioSnapshots>();
+    for (const snapshot of allPortfolioSnapshots) {
+      if (snapshot.portfolioId) {
+        const existing = snapshotsByPortfolioId.get(snapshot.portfolioId) || [];
+        existing.push(snapshot);
+        snapshotsByPortfolioId.set(snapshot.portfolioId, existing);
+      }
+    }
+
     // Save per-portfolio snapshots
     for (const pv of portfolioValues) {
-      // Query specifically for this portfolio's snapshot using the new index
-      const existingPortfolioSnapshots = await ctx.db
-        .query("portfolioSnapshots")
-        .withIndex("by_userPortfolioDate", q =>
-          q.eq("userId", userId)
-           .eq("portfolioId", pv.portfolioId)
-           .eq("snapshotDate", today)
-        )
-        .collect();
+      const existingPortfolioSnapshots = snapshotsByPortfolioId.get(pv.portfolioId) || [];
 
       if (existingPortfolioSnapshots.length > 0) {
         await ctx.db.replace(existingPortfolioSnapshots[0]._id, {
