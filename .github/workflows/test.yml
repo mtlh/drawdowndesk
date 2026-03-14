@@ -20,9 +20,14 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel
 
+      - name: Pull Vercel Environment
+        run: vercel pull --yes --environment=preview
+
+      - name: Build Project
+        run: vercel build --prod
+
       - name: Deploy to Vercel
-        run: |
-          vercel --token ${{ secrets.VERCEL_TOKEN }} --org-id ${{ secrets.VERCEL_ORG_ID }} --project-id ${{ secrets.VERCEL_PROJECT_ID }} --prod
+        run: vercel deploy --prebuilt --prod
 
   test:
     needs: deploy
