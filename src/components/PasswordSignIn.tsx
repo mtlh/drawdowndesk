@@ -35,7 +35,7 @@ export function PasswordSignIn() {
       } else {
         router.push("/holdings");
       }
-    } catch (err) {
+    } catch {
       setError("Invalid email or password");
     } finally {
       setLoading(false);

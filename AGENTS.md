@@ -28,6 +28,13 @@ npx convex dev          # Start Convex dev server and regenerate API types after
 npm run electron:dev    # Run Electron with local dev server
 npm run electron:start # Run Electron locally (requires dev server running)
 npm run electron:build # Build desktop app to release/DrawdownDesk-win32-x64/
+
+# Testing (requires JEST_USERNAME and JEST_PASSWORD in .env.local)
+npm run test           # Run Playwright tests with pre/post cleanup
+npm run test:headed    # Run tests in headed mode
+npm run test:ui        # Run tests with UI mode
+npm run test:debug     # Run tests in debug mode
+npm run test:install   # Install Playwright browsers
 ```
 
 ## Architecture
