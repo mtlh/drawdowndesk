@@ -38,7 +38,7 @@ export function SignOut() {
   const { signOut } = useAuthActions();
   return (
     <button
-      onClick={() => void signOut()}
+      onClick={() => void signOut().then(() => window.location.href = "/")}
       className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 transition-colors"
     >
       Sign out
