@@ -7,7 +7,7 @@ dotenv.config({ path: path.resolve(__dirname, ".env.local"), quiet: true });
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
-  workers: undefined,
+  workers: process.env.CI ? 1 : undefined,
   forbidOnly: !!process.env.CI,
   retries: 0,
   timeout: 120000,
