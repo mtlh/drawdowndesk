@@ -24,12 +24,19 @@ export function PasswordSignIn() {
     try {
       const result = await signIn("password", formData);
       if (result && "error" in result) {
-        setError(result.error as string);
+        const errorMsg = result.error as string;
+        if (errorMsg.includes("InvalidAccountId") || errorMsg.includes("no user found")) {
+          setError("Invalid email or password");
+        } else if (errorMsg.includes("already exists")) {
+          setError("An account with this email already exists");
+        } else {
+          setError(errorMsg);
+        }
       } else {
         router.push("/holdings");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError("Invalid email or password");
     } finally {
       setLoading(false);
     }
