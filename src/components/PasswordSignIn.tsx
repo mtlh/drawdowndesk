@@ -2,12 +2,14 @@
 
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
 export function PasswordSignIn() {
   const { signIn } = useAuthActions();
+  const router = useRouter();
   const [step, setStep] = useState<"signIn" | "signUp">("signIn");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -23,6 +25,8 @@ export function PasswordSignIn() {
       const result = await signIn("password", formData);
       if (result && "error" in result) {
         setError(result.error as string);
+      } else {
+        router.push("/holdings");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
