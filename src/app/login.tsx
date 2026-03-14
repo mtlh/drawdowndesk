@@ -159,12 +159,12 @@ export default function Login() {
               </div>
 
               {/* Dashboard Content */}
-              <div className="p-4 space-y-3">
+              <div className="p-5 space-y-4">
                 {/* Main Value Display */}
-                <div className="text-center py-4">
-                  <div className="text-sm text-slate-400 mb-1">Total Portfolio Value</div>
-                  <div className="text-4xl font-bold text-white">£248,592</div>
-                  <div className="text-sm text-emerald-400 font-medium mt-1">+£27,431 (12.4%) this year</div>
+                <div className="text-center py-5">
+                  <div className="text-base text-slate-400 mb-1">Total Portfolio Value</div>
+                  <div className="text-5xl font-bold text-white">£248,592</div>
+                  <div className="text-base text-emerald-400 font-medium mt-1">+£27,431 (12.4%) this year</div>
                 </div>
 
                 {/* Performance Chart - Full Width */}
@@ -176,7 +176,7 @@ export default function Login() {
                       <span className="px-2 py-0.5 text-slate-400 text-xs">1Y</span>
                     </div>
                   </div>
-                  <ResponsiveContainer width="100%" height={100}>
+                  <ResponsiveContainer width="100%" height={110}>
                     <AreaChart data={performanceData}>
                       <defs>
                         <linearGradient id="colorValuePreviewNew" x1="0" y1="0" x2="0" y2="1">
@@ -193,11 +193,11 @@ export default function Login() {
                 </div>
 
                 {/* Allocation & Top Holdings */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   {/* Allocation */}
-                  <div className="bg-slate-800/40 rounded-lg p-3 border border-white/5">
-                    <h2 className="text-sm font-semibold text-white mb-2">Allocation</h2>
-                    <ResponsiveContainer width="100%" height={70}>
+                  <div className="bg-slate-800/40 rounded-lg p-4 border border-white/5">
+                    <h2 className="text-sm font-semibold text-white mb-3">Allocation</h2>
+                    <ResponsiveContainer width="100%" height={80}>
                       <PieChart>
                         <Pie data={portfolioData} dataKey="value" cx="50%" cy="50%" innerRadius={18} outerRadius={32} paddingAngle={2}>
                           {portfolioData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
@@ -218,9 +218,9 @@ export default function Login() {
                   </div>
 
                   {/* Top Holdings */}
-                  <div className="bg-slate-800/40 rounded-lg p-3 border border-white/5">
-                    <h2 className="text-sm font-semibold text-white mb-2">Top Holdings</h2>
-                    <div className="space-y-2">
+                  <div className="bg-slate-800/40 rounded-lg p-4 border border-white/5">
+                    <h2 className="text-sm font-semibold text-white mb-3">Top Holdings</h2>
+                    <div className="space-y-3">
                       {[{ symbol: "AAPL", value: "£48,230", change: "+2.4%", color: "#10B981" }, { symbol: "Vanguard", value: "£42,100", change: "+1.8%", color: "#10B981" }, { symbol: "MSFT", value: "£37,890", change: "-0.6%", color: "#EF4444" }].map((h, i) => (
                         <div key={i} className="flex items-center justify-between">
                           <div>
@@ -235,18 +235,18 @@ export default function Login() {
                 </div>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-slate-800/40 rounded-lg p-2 border border-white/5 text-center">
-                    <div className="text-xs text-slate-400">YTD Return</div>
-                    <div className="text-lg font-bold text-emerald-400">+11.1%</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-slate-800/40 rounded-lg p-3 border border-white/5 text-center">
+                    <div className="text-sm text-slate-400">YTD Return</div>
+                    <div className="text-xl font-bold text-emerald-400">+11.1%</div>
                   </div>
-                  <div className="bg-slate-800/40 rounded-lg p-2 border border-white/5 text-center">
-                    <div className="text-xs text-slate-400">Dividends</div>
-                    <div className="text-lg font-bold text-white">£3,240</div>
+                  <div className="bg-slate-800/40 rounded-lg p-3 border border-white/5 text-center">
+                    <div className="text-sm text-slate-400">Dividends</div>
+                    <div className="text-xl font-bold text-white">£3,240</div>
                   </div>
-                  <div className="bg-slate-800/40 rounded-lg p-2 border border-white/5 text-center">
-                    <div className="text-xs text-slate-400">Goals</div>
-                    <div className="text-lg font-bold text-white">2/5</div>
+                  <div className="bg-slate-800/40 rounded-lg p-3 border border-white/5 text-center">
+                    <div className="text-sm text-slate-400">Goals</div>
+                    <div className="text-xl font-bold text-white">2/5</div>
                   </div>
                 </div>
               </div>

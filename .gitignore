@@ -51,3 +51,5 @@ next-env.d.ts
 
 # Playwright screenshots
 /screenshots/
+/test-results/
+/playwright-report/
