@@ -52,7 +52,6 @@ jobs:
       - name: Run tests
         run: npm run test
         env:
-          CI: "true"
-          BASE_URL: https://drawdowndesk.vercel.app
+          DEPLOYED_URL: https://drawdowndesk.vercel.app
           JEST_USERNAME: ${{ secrets.JEST_USERNAME }}
           JEST_PASSWORD: ${{ secrets.JEST_PASSWORD }}
