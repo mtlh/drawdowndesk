@@ -40,7 +40,7 @@ async function cleanupPage(page: any, pagePath: string, deleteSelector: string) 
   }
 }
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const BASE_URL = process.env.CI ? "https://drawdowndesk.vercel.app" : "http://localhost:3000";
 
 async function authenticate(page: any) {
   console.log("Authenticating for global setup...");
