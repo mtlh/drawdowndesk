@@ -1,8 +1,8 @@
 "use client"
 
 import { SignIn } from "@/components/SignIn"
-import { Button } from "@/components/ui/button"
-import { Github, TrendingUp, Target, Wallet, BarChart3, PiggyBank, Calculator } from "lucide-react"
+import { PasswordSignIn } from "@/components/PasswordSignIn"
+import { Github, TrendingUp, Target, Wallet } from "lucide-react"
 import Image from "next/image"
 import favicon from "./favicon.ico"
 import {
@@ -64,7 +64,7 @@ export default function Login() {
   ]
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden bg-[#030712]">
+    <div className="min-h-screen w-full flex items-stretch justify-center p-4 sm:p-6 lg:p-12 relative overflow-hidden bg-[#030712]">
       {/* Animated cosmic background */}
       <div className="absolute inset-0 bg-[#030712]">
         {/* Deep space gradient base */}
@@ -105,93 +105,49 @@ export default function Login() {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12">
+      <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col xl:flex-row items-center xl:items-stretch justify-center gap-6 lg:gap-12 pt-[8vh]">
         {/* Left side - Branding & Login */}
-        <div className="w-full lg:w-5/12 text-center lg:text-left">
+        <div className="w-full xl:w-6/12 flex flex-col justify-center h-full">
           {/* Logo */}
-          <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
+          <div className="flex items-center justify-center xl:justify-start gap-3 mb-6">
             <div className="relative">
               <Image src={favicon} alt="Drawdown Desk" width={48} height={48} className="rounded-xl" />
               <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-xl blur opacity-30"></div>
             </div>
-            <span className="text-2xl lg:text-4xl font-bold text-white tracking-tight">Drawdown Desk</span>
+            <span className="text-2xl lg:text-4xl font-bold text-white tracking-tight flex items-center gap-3">
+              Drawdown Desk
+              <a href="https://github.com/mtlh/drawdowndesk" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">
+                <Github className="w-5 h-5 lg:w-6 lg:h-6" />
+              </a>
+            </span>
           </div>
 
           {/* Hero text */}
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-tight mb-4 text-center xl:text-left">
             Your investments,
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400">
               perfectly tracked
             </span>
           </h1>
-          <p className="text-slate-400 text-base lg:text-lg mb-8 max-w-md mx-auto lg:mx-0">
+          <p className="text-slate-400 text-base lg:text-lg mb-8 max-w-md mx-auto xl:mx-0 text-center xl:text-left">
             Track portfolios, simulate retirement, and plan UK taxes with powerful visualisations.
           </p>
 
           {/* Sign in buttons */}
-          <div className="space-y-3 w-full max-w-sm mx-auto lg:mx-0">
-            <div className="w-full">
-              <div className="group">
+          <div className="space-y-3 w-full max-w-lg mx-auto xl:mx-0 text-center xl:text-left">
+            <div className="p-5 rounded-xl bg-slate-900/50 border border-white/10">
+              <div className="group mb-4">
                 <SignIn />
               </div>
-            </div>
-            <a href="https://github.com/mtlh/drawdowndesk" target="_blank" rel="noopener noreferrer" className="block w-full">
-              <Button style={{ backgroundColor: '#000000', borderColor: '#374151' }} className="w-full gap-2 h-11 text-sm hover:bg-gray-800 text-white transition-all font-semibold">
-                <Github className="w-4 h-4" />
-                View on GitHub
-              </Button>
-            </a>
-          </div>
-
-          {/* Feature highlights */}
-          <div className="mt-10 pt-8 border-t border-white/10">
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto lg:mx-0">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                  <BarChart3 className="w-5 h-5 text-indigo-400" />
-                </div>
-                <div>
-                  <span className="text-sm text-white font-medium">Portfolio</span>
-                  <p className="text-xs text-slate-400">Live prices</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                  <Calculator className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <span className="text-sm text-white font-medium">Tax</span>
-                  <p className="text-xs text-slate-400">UK CGT & income</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <span className="text-sm text-white font-medium">Monte Carlo</span>
-                  <p className="text-xs text-slate-400">Simulations</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                  <PiggyBank className="w-5 h-5 text-violet-400" />
-                </div>
-                <div>
-                  <span className="text-sm text-white font-medium">Cashflow</span>
-                  <p className="text-xs text-slate-400">Income forecast</p>
-                </div>
-              </div>
+              <p className="text-xs text-slate-400 mb-3 text-center">or sign in with email & password</p>
+              <PasswordSignIn />
             </div>
           </div>
         </div>
 
         {/* Right side - Dashboard preview */}
-        <div className="hidden lg:block w-full lg:w-7/12">
+        <div className="hidden xl:block w-full xl:w-6/12 h-full">
           <div className="relative">
             {/* Glow effect behind card */}
             <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-emerald-500/20 rounded-3xl blur-2xl"></div>
@@ -223,46 +179,46 @@ export default function Login() {
               <div className="p-4 space-y-3">
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-slate-800/60 rounded-xl p-3 border border-white/5">
+                  <div className="bg-slate-800/60 rounded-lg p-3 border border-white/5">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                        <Wallet className="w-4 h-4 text-indigo-400" />
+                      <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                        <Wallet className="w-5 h-5 text-indigo-400" />
                       </div>
-                      <span className="text-xs font-bold text-emerald-400">+12.4%</span>
+                      <span className="text-sm font-bold text-emerald-400">+12.4%</span>
                     </div>
-                    <div className="text-[10px] text-slate-400">Total Value</div>
-                    <div className="text-xl font-bold text-white">£248k</div>
+                    <div className="text-sm text-slate-400">Total Value</div>
+                    <div className="text-2xl font-bold text-white">£248k</div>
                   </div>
 
-                  <div className="bg-slate-800/60 rounded-xl p-3 border border-white/5">
+                  <div className="bg-slate-800/60 rounded-lg p-4 border border-white/5">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-emerald-400" />
+                      <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                        <TrendingUp className="w-5 h-5 text-emerald-400" />
                       </div>
-                      <span className="text-xs font-bold text-emerald-400">+11.1%</span>
+                      <span className="text-sm font-bold text-emerald-400">+11.1%</span>
                     </div>
-                    <div className="text-[10px] text-slate-400">YTD Return</div>
-                    <div className="text-xl font-bold text-white">+£25k</div>
+                    <div className="text-sm text-slate-400">YTD Return</div>
+                    <div className="text-2xl font-bold text-white">+£25k</div>
                   </div>
 
-                  <div className="bg-slate-800/60 rounded-xl p-3 border border-white/5">
+                  <div className="bg-slate-800/60 rounded-lg p-3 border border-white/5">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                        <Target className="w-4 h-4 text-amber-400" />
+                      <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                        <Target className="w-5 h-5 text-amber-400" />
                       </div>
                     </div>
-                    <div className="text-[10px] text-slate-400">Goals</div>
-                    <div className="text-xl font-bold text-white">2<span className="text-slate-400 font-normal">/5</span></div>
+                    <div className="text-sm text-slate-400">Goals</div>
+                    <div className="text-2xl font-bold text-white">2<span className="text-slate-400 font-normal">/5</span></div>
                   </div>
                 </div>
 
                 {/* Performance Chart */}
-                <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-bold text-white">Performance</h2>
-                    <div className="flex gap-1 bg-slate-700/50 p-0.5 rounded-lg">
-                      <span className="px-3 py-1 bg-indigo-500 text-white text-[10px] font-bold rounded-md">6M</span>
-                      <span className="px-3 py-1 text-slate-400 text-[10px] font-medium">1Y</span>
+                <div className="bg-slate-800/60 rounded-lg p-3 border border-white/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-base font-bold text-white">Performance</h2>
+                    <div className="flex gap-1 bg-slate-700/50 p-1 rounded">
+                      <span className="px-3 py-1 bg-indigo-500 text-white text-sm font-bold rounded">6M</span>
+                      <span className="px-3 py-1 text-slate-400 text-sm font-medium">1Y</span>
                     </div>
                   </div>
                   <ResponsiveContainer width="100%" height={80}>
@@ -282,37 +238,37 @@ export default function Login() {
                 </div>
 
                 {/* Allocation & Cashflow row */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-800/60 rounded-lg p-4 border border-white/5">
                     <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-sm font-bold text-white">Allocation</h2>
+                      <h2 className="text-base font-bold text-white">Allocation</h2>
                     </div>
                     <div className="flex items-center gap-3">
-                      <ResponsiveContainer width={70} height={70}>
+                      <ResponsiveContainer width={60} height={60}>
                         <PieChart>
-                          <Pie data={portfolioData} dataKey="value" cx="50%" cy="50%" innerRadius={16} outerRadius={30} paddingAngle={3}>
+                          <Pie data={portfolioData} dataKey="value" cx="50%" cy="50%" innerRadius={14} outerRadius={26} paddingAngle={3}>
                             {portfolioData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
                           </Pie>
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="space-y-1 flex-1">
+                      <div className="space-y-2 flex-1">
                         {portfolioData.map((item, index) => (
                           <div key={index} className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }}></div>
-                            <span className="text-xs text-slate-300">{item.name}</span>
-                            <span className="text-xs font-bold text-white ml-auto">{item.value}%</span>
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                            <span className="text-sm text-slate-300">{item.name}</span>
+                            <span className="text-sm font-bold text-white ml-auto">{item.value}%</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5">
+                  <div className="bg-slate-800/60 rounded-lg p-4 border border-white/5">
                     <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-sm font-bold text-white">Cashflow</h2>
-                      <span className="text-xs text-emerald-400 font-medium">+18%</span>
+                      <h2 className="text-base font-bold text-white">Cashflow</h2>
+                      <span className="text-sm text-emerald-400 font-medium">+18%</span>
                     </div>
-                    <ResponsiveContainer width="100%" height={70}>
+                    <ResponsiveContainer width="100%" height={60}>
                       <BarChart data={cashflowData}>
                         <XAxis dataKey="month" stroke="#475569" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 9 }} />
                         <YAxis hide />
@@ -324,14 +280,14 @@ export default function Login() {
                 </div>
 
                 {/* Holdings & Goals row */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-800/60 rounded-lg p-4 border border-white/5">
                     <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-sm font-bold text-white">Top Holdings</h2>
+                      <h2 className="text-base font-bold text-white">Top Holdings</h2>
                     </div>
                     <div className="space-y-2">
                       {[{ symbol: "AAPL", value: "£48k", change: "+2.4%" }, { symbol: "Vanguard", value: "£42k", change: "+1.8%" }, { symbol: "MSFT", value: "£37k", change: "-0.6%" }].map((h, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs">
+                        <div key={i} className="flex items-center justify-between text-sm">
                           <span className="font-bold text-slate-200">{h.symbol}</span>
                           <span className="text-slate-400">{h.value}</span>
                           <span className={`font-medium ${h.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>{h.change}</span>
@@ -339,18 +295,18 @@ export default function Login() {
                       ))}
                     </div>
                   </div>
-                  <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5">
+                  <div className="bg-slate-800/60 rounded-lg p-4 border border-white/5">
                     <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-sm font-bold text-white">Goals</h2>
+                      <h2 className="text-base font-bold text-white">Goals</h2>
                     </div>
                     <div className="space-y-3">
                       {goalsData.slice(0, 2).map((goal, i) => (
                         <div key={i}>
-                          <div className="flex justify-between text-xs mb-1.5">
+                          <div className="flex justify-between text-sm mb-2">
                             <span className="text-slate-300">{goal.name}</span>
                             <span className="font-bold text-white">{goal.progress}%</span>
                           </div>
-                          <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                          <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
                             <div className={`h-full rounded-full ${i === 0 ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${goal.progress}%` }}></div>
                           </div>
                         </div>
