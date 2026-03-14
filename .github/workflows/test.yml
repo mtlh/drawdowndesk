@@ -12,12 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: vercel/vercel-action@v1
+      - uses: amondnet/vercel-action@v25
         with:
-          vercel_token: ${{ secrets.VERCEL_TOKEN }}
-          vercel_org_id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel_project_id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel_args: '--prod'
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
 
   test:
     needs: deploy
