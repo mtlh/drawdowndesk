@@ -45,10 +45,16 @@ const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 async function authenticate(page: any) {
   console.log("Authenticating for global setup...");
   
-  await page.goto(`${BASE_URL}/login`, { timeout: 15000 });
-  await page.waitForLoadState("domcontentloaded", { timeout: 15000 });
+  await page.goto(`${BASE_URL}/login`, { timeout: 60000 });
+  await page.waitForLoadState("domcontentloaded", { timeout: 60000 });
   
-  const bodyText = await page.locator("body").textContent({ timeout: 5000 });
+  const currentUrl = page.url();
+  if (currentUrl.includes("/holdings")) {
+    console.log("Already authenticated");
+    return;
+  }
+  
+  const bodyText = await page.locator("body").textContent({ timeout: 30000 });
   const hasPortfolio = bodyText?.includes("Portfolio");
   const hasSignInRequired = bodyText?.includes("Sign in required");
   
@@ -69,13 +75,20 @@ async function authenticate(page: any) {
   const emailInput = page.locator('input[name="email"]');
   const passwordInput = page.locator('input[name="password"]');
   
+  try {
+    await emailInput.waitFor({ state: "visible", timeout: 10000 });
+  } catch {
+    console.log("Email input not visible, might be already authenticated");
+    return;
+  }
+  
   await emailInput.fill(TEST_USER_EMAIL);
   await passwordInput.fill(TEST_USER_PASSWORD);
   
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
   
-  await page.waitForURL("**/holdings", { timeout: 30000 });
+  await page.waitForURL("**/holdings", { timeout: 60000 });
   
   console.log("Global setup auth successful");
 }

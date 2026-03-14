@@ -18,7 +18,7 @@ test.describe("Holdings CRUD", () => {
   });
 
   test("should open add portfolio dialog when clicking Add Portfolio button", async ({ authenticatedPage }) => {
-    const addButton = authenticatedPage.getByRole("button", { name: /add portfolio/i });
+    const addButton = authenticatedPage.getByRole("button", { name: /add portfolio/i }).first();
     if (await addButton.isVisible()) {
       await addButton.click();
       await authenticatedPage.waitForTimeout(500);
@@ -88,12 +88,12 @@ test.describe("Holdings CRUD", () => {
   });
 
   test("should display validation error for invalid portfolio name", async ({ authenticatedPage }) => {
-    const addButton = authenticatedPage.getByRole("button", { name: /add portfolio/i });
+    const addButton = authenticatedPage.getByRole("button", { name: /add portfolio/i }).first();
     if (await addButton.isVisible()) {
       await addButton.click();
       await authenticatedPage.waitForTimeout(500);
       
-      const createButton = authenticatedPage.getByRole("button", { name: /create portfolio/i });
+      const createButton = authenticatedPage.getByRole("button", { name: /create portfolio/i }).first();
       await createButton.click();
       
       await authenticatedPage.waitForTimeout(500);
@@ -104,12 +104,12 @@ test.describe("Holdings CRUD", () => {
   });
 
   test("should close dialog when clicking X button", async ({ authenticatedPage }) => {
-    const addButton = authenticatedPage.getByRole("button", { name: /add portfolio/i });
+    const addButton = authenticatedPage.getByRole("button", { name: /add portfolio/i }).first();
     if (await addButton.isVisible()) {
       await addButton.click();
       await authenticatedPage.waitForTimeout(500);
       
-      const closeButton = authenticatedPage.getByRole("button").first();
+      const closeButton = authenticatedPage.getByRole("button", { name: /cancel/i });
       if (await closeButton.isVisible()) {
         await closeButton.click();
         await authenticatedPage.waitForTimeout(500);

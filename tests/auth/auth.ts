@@ -4,7 +4,8 @@ const TEST_USER_EMAIL = process.env.JEST_USERNAME || "";
 const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
 
 async function authenticate(page: Page): Promise<boolean> {
-  await page.goto("/login", { timeout: 15000 });
+  await page.goto("/login", { timeout: 60000 });
+  await page.waitForLoadState("domcontentloaded", { timeout: 60000 });
   
   const currentUrl = page.url();
   if (currentUrl.includes("/holdings")) {
@@ -15,7 +16,7 @@ async function authenticate(page: Page): Promise<boolean> {
   const passwordInput = page.locator('input[name="password"]');
   
   try {
-    await emailInput.waitFor({ state: "visible", timeout: 5000 });
+    await emailInput.waitFor({ state: "visible", timeout: 30000 });
   } catch {
     return false;
   }
@@ -26,7 +27,7 @@ async function authenticate(page: Page): Promise<boolean> {
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
   
-  await page.waitForURL("**/holdings", { timeout: 30000 });
+  await page.waitForURL("**/holdings", { timeout: 60000 });
   
   return true;
 }

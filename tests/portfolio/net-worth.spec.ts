@@ -13,7 +13,7 @@ test.describe("Net Worth CRUD", () => {
   });
 
   test("should create a new account", async ({ authenticatedPage }) => {
-    const addButton = authenticatedPage.getByRole("button", { name: /add account/i });
+    const addButton = authenticatedPage.getByRole("button", { name: /add account/i }).first();
     if (await addButton.isVisible()) {
       await addButton.click();
       await authenticatedPage.waitForTimeout(500);
@@ -104,7 +104,7 @@ test.describe("Net Worth CRUD", () => {
   });
 
   test("should close dialog when clicking cancel", async ({ authenticatedPage }) => {
-    const addButton = authenticatedPage.getByRole("button", { name: /add account/i });
+    const addButton = authenticatedPage.getByRole("button", { name: /add account/i }).first();
     if (await addButton.isVisible()) {
       await addButton.click();
       await authenticatedPage.waitForTimeout(500);

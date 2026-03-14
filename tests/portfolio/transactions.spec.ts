@@ -13,7 +13,7 @@ test.describe("Transactions CRUD", () => {
   });
 
   test("should create a new transaction", async ({ authenticatedPage }) => {
-    const addButton = authenticatedPage.getByRole("button", { name: /add transaction/i });
+    const addButton = authenticatedPage.getByRole("button", { name: /add transaction/i }).first();
     if (await addButton.isVisible()) {
       await addButton.click();
       await authenticatedPage.waitForTimeout(500);
@@ -114,7 +114,7 @@ test.describe("Transactions CRUD", () => {
   });
 
   test("should close dialog when clicking cancel", async ({ authenticatedPage }) => {
-    const addButton = authenticatedPage.getByRole("button", { name: /add transaction/i });
+    const addButton = authenticatedPage.getByRole("button", { name: /add transaction/i }).first();
     if (await addButton.isVisible()) {
       await addButton.click();
       await authenticatedPage.waitForTimeout(500);
