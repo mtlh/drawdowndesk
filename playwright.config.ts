@@ -19,9 +19,7 @@ export default defineConfig({
     ["list"],
   ],
   use: {
-    baseURL: process.env.CI
-      ? "https://drawdowndesk.vercel.app"
-      : "http://localhost:3000",
+    baseURL: process.env.DEPLOYED_URL || "http://localhost:3000",
     trace: "on-first-retry",
   },
   projects: [
