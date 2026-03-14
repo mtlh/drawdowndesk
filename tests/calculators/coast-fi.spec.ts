@@ -13,12 +13,12 @@ test.describe("Coast FI CRUD", () => {
   });
 
   test("should display lifetime accumulation content", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
   });
 
   test("should display input fields", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
     
     const hasInputFields = await authenticatedPage.getByLabel(/current age/i).isVisible().catch(() => false) ||

@@ -13,12 +13,12 @@ test.describe("Bed-and-ISA CRUD", () => {
   });
 
   test("should display bed-and-ISA content", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
   });
 
   test("should display holdings section", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
     
     const hasHoldings = await authenticatedPage.getByText(/holdings/i).first().isVisible().catch(() => false);

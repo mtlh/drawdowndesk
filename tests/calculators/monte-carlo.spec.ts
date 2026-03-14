@@ -13,12 +13,12 @@ test.describe("Monte Carlo Simulator CRUD", () => {
   });
 
   test("should display monte carlo content", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
   });
 
   test("should display input fields", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
     
     const hasInputFields = await authenticatedPage.getByLabel(/current portfolio/i).isVisible().catch(() => false) ||

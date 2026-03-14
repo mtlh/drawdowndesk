@@ -13,7 +13,7 @@ test.describe("What-If Scenarios CRUD", () => {
   });
 
   test("should display what-if scenarios content", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
   });
 

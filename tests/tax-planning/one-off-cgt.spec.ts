@@ -13,12 +13,12 @@ test.describe("One-Off CGT CRUD", () => {
   });
 
   test("should display one-off CGT content", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
   });
 
   test("should display input fields", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
     
     const hasInputFields = await authenticatedPage.getByLabel(/disposal proceeds/i).isVisible().catch(() => false) ||

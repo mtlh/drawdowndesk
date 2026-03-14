@@ -13,7 +13,7 @@ test.describe("Cashflow Forecast CRUD", () => {
   });
 
   test("should display cashflow content", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
   });
 

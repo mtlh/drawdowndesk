@@ -13,12 +13,12 @@ test.describe("Tax-Loss Harvesting CRUD", () => {
   });
 
   test("should display tax-loss harvesting content", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
   });
 
   test("should display portfolio holdings", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
     
     const hasHoldings = await authenticatedPage.getByText(/holdings/i).first().isVisible().catch(() => false);

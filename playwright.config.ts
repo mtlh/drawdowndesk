@@ -9,7 +9,7 @@ export default defineConfig({
   fullyParallel: true,
   workers: process.env.CI ? 1 : undefined,
   forbidOnly: !!process.env.CI,
-  retries: 1,
+  retries: 0,
   timeout: 90000,
   expect: {
     timeout: 10000,
@@ -23,8 +23,6 @@ export default defineConfig({
       ? "https://drawdowndesk.vercel.app"
       : "http://localhost:3000",
     trace: "on-first-retry",
-    screenshot: "only-on-failure",
-    video: "retain-on-failure",
   },
   projects: [
     {

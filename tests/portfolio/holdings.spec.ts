@@ -13,7 +13,7 @@ test.describe("Holdings CRUD", () => {
   });
 
   test("should display holdings page content", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
   });
 

@@ -13,7 +13,7 @@ test.describe("Settings CRUD", () => {
   });
 
   test("should display settings content", async ({ authenticatedPage }) => {
-    const content = authenticatedPage.locator("main");
+    const content = authenticatedPage.locator("main").first();
     await expect(content).toBeVisible();
   });
 
