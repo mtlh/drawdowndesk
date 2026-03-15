@@ -4,6 +4,8 @@ import * as fs from "fs";
 
 const TEST_USER_EMAIL = process.env.JEST_USERNAME || "";
 const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
+
+console.log("Available env vars:", Object.keys(process.env).filter(k => k.includes("USER") || k.includes("PASS") || k.includes("JEST") || k.includes("DEPLOY")));
 const STORAGE_STATE_PATH = path.resolve(__dirname, "..", "playwright", ".auth", "user.json");
 
 const BASE_URL = process.env.DEPLOYED_URL || "http://localhost:3000";
