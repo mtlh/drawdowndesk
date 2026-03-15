@@ -18,32 +18,43 @@ test.describe("Transactions CRUD", () => {
       await addButton.click();
       await authenticatedPage.waitForTimeout(1000);
       
-      const symbolInput = authenticatedPage.locator("#symbol").first();
-      await symbolInput.fill("AAPL");
+      // First select a portfolio
+      const portfolioSelect = authenticatedPage.locator("#portfolio").first();
+      if (await portfolioSelect.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await portfolioSelect.click();
+        await authenticatedPage.waitForTimeout(500);
+        const firstOption = authenticatedPage.locator("[role='option']").first();
+        if (await firstOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await firstOption.click();
+          await authenticatedPage.waitForTimeout(500);
+        }
+      }
       
-      const nameInput = authenticatedPage.locator("#holding-name").first();
-      await nameInput.fill("Apple Inc");
-      
-      const sharesInput = authenticatedPage.locator("#shares").first();
-      await sharesInput.fill("50");
-      
-      const priceInput = authenticatedPage.locator("#price").first();
-      await priceInput.fill("150");
-      
-      const addBtn = authenticatedPage.getByRole("button", { name: /add to queue/i });
-      if (await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await addBtn.click();
-        await authenticatedPage.waitForTimeout(1000);
+      // Click "New holding" to show the symbol input
+      const newHoldingBtn = authenticatedPage.getByRole("button", { name: /new holding/i });
+      if (await newHoldingBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await newHoldingBtn.click();
+        await authenticatedPage.waitForTimeout(500);
         
-        const submitButton = authenticatedPage.getByRole("button", { name: /save transactions/i });
-        if (await submitButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await submitButton.click();
-          await authenticatedPage.waitForTimeout(1000);
+        const symbolInput = authenticatedPage.locator("#symbol").first();
+        if (await symbolInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await symbolInput.fill("AAPL");
+          
+          const nameInput = authenticatedPage.locator("#holding-name").first();
+          await nameInput.fill("Apple Inc");
+          
+          const sharesInput = authenticatedPage.locator("#shares").first();
+          await sharesInput.fill("50");
+          
+          const priceInput = authenticatedPage.locator("#price").first();
+          await priceInput.fill("150");
         }
       }
     }
   });
+});
 
+test.describe("Transactions List", () => {
   test("should edit an existing transaction", async ({ authenticatedPage }) => {
     const editButton = authenticatedPage.getByRole("button", { name: /edit/i }).first();
     if (await editButton.isVisible()) {
