@@ -5,7 +5,9 @@ import * as fs from "fs";
 const TEST_USER_EMAIL = process.env.JEST_USERNAME || "";
 const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
 
-console.log("Available env vars:", Object.keys(process.env).filter(k => k.includes("USER") || k.includes("PASS") || k.includes("JEST") || k.includes("DEPLOY")));
+console.log("JEST_USERNAME length:", process.env.JEST_USERNAME?.length);
+console.log("JEST_PASSWORD length:", process.env.JEST_PASSWORD?.length);
+console.log("USER env:", process.env.USER);
 const STORAGE_STATE_PATH = path.resolve(__dirname, "..", "playwright", ".auth", "user.json");
 
 const BASE_URL = process.env.DEPLOYED_URL || "http://localhost:3000";
@@ -31,8 +33,6 @@ async function authenticate(page: any) {
   }
   
   console.log("Filling email and password...");
-  console.log("Email:", TEST_USER_EMAIL ? "set" : "NOT SET");
-  console.log("Password:", TEST_USER_PASSWORD ? "set" : "NOT SET");
   
   await emailInput.fill(TEST_USER_EMAIL);
   await passwordInput.fill(TEST_USER_PASSWORD);
