@@ -37,11 +37,7 @@ export default function Login() {
   }, []);
 
   if (!mounted) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#030712]">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
+    return <div className="min-h-screen w-full bg-[#030712]" />;
   }
 
   // Sample data for charts
