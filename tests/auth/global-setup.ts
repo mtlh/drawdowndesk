@@ -22,36 +22,16 @@ async function authenticate(page: any) {
     return;
   }
   
-  // Try Google sign-in first (primary method)
-  const googleButton = page.locator('button:has-text("Continue with Google"), button:has(svg)').first();
-  
-  if (await googleButton.isVisible().catch(() => false)) {
-    console.log("Using Google sign-in...");
-    await googleButton.click();
-    try {
-      await page.waitForURL("**/holdings", { timeout: 30000 });
-      return;
-    } catch {
-      // Google auth might redirect elsewhere, check current URL
-      const afterClickUrl = page.url();
-      if (afterClickUrl.includes("holdings")) {
-        return;
-      }
-      console.log("Google redirect URL:", afterClickUrl);
-    }
-  }
-  
-  // Fallback to email/password
   const emailInput = page.locator('input[name="email"]');
   const passwordInput = page.locator('input[name="password"]');
   
   try {
-    await emailInput.waitFor({ state: "visible", timeout: 5000 });
+    await emailInput.waitFor({ state: "visible", timeout: 15000 });
   } catch {
-    throw new Error("Could not find sign-in method");
+    throw new Error("Email input not visible");
   }
   
-  console.log("Using email/password sign-in...");
+  console.log("Filling email and password...");
   await emailInput.fill(TEST_USER_EMAIL);
   await passwordInput.fill(TEST_USER_PASSWORD);
 
@@ -61,6 +41,7 @@ async function authenticate(page: any) {
   await page.waitForLoadState("networkidle", { timeout: 30000 });
   
   const finalUrl = page.url();
+  console.log("URL after submit:", finalUrl);
   
   if (!finalUrl.includes("/holdings")) {
     throw new Error(`Authentication failed. Expected /holdings but got: ${finalUrl}`);
