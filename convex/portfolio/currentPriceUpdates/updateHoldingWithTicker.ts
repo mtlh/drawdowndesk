@@ -1,5 +1,6 @@
 import { mutation, query } from "../../_generated/server";
 import { v } from "convex/values";
+import { Id } from "../../_generated/dataModel";
 
 export const getAllHoldings = query({
   handler: async (ctx) => {
@@ -18,6 +19,28 @@ export const getAllHoldings = query({
       exchange: h.exchange,
       currency: h.currency || "GBP",
     }));
+  },
+});
+
+export const getAllUserIdsWithHoldings = query({
+  handler: async (ctx) => {
+    const holdings = await ctx.db
+      .query("holdings")
+      .collect();
+
+    const simpleHoldings = await ctx.db
+      .query("simpleHoldings")
+      .collect();
+
+    const userIds = new Set<Id<"users">>();
+    for (const h of holdings) {
+      userIds.add(h.userId);
+    }
+    for (const h of simpleHoldings) {
+      userIds.add(h.userId);
+    }
+
+    return Array.from(userIds);
   },
 });
 

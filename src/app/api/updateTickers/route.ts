@@ -121,7 +121,15 @@ interface HoldingPriceInfo {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
+  const userIdParam = searchParams.get("userId");
+  const targetUserId = userIdParam ? userIdParam as Id<"users"> : null;
+
+  // Get all user IDs who have holdings
+  const getAllUserIds = api.portfolio.currentPriceUpdates.updateHoldingWithTicker.getAllUserIdsWithHoldings;
+  const allUserIds: Id<"users">[] = await convex.query(getAllUserIds, {});
+  
+  // Determine which users to process: specific user or all users
+  const userIds = targetUserId ? [targetUserId] : allUserIds;
 
   // @ts-expect-error - Convex API type instantiation is excessively deep
   const getAllHoldings = api.portfolio.currentPriceUpdates.updateHoldingWithTicker.getAllHoldings;
@@ -190,41 +198,47 @@ export async function GET(request: Request) {
     )
   )
 
-  // Save holding price snapshots for historical tracking
-  try {
-    await convex.mutation(
-      api.holdingSnapshots.snapshotCrud.createHoldingSnapshotsBatch,
-      { 
-        snapshots: results.map(q => ({ symbol: q.symbol, price: q.price })),
-        userId: userId ? userId as Id<"users"> : undefined
-      }
-    );
-  } catch (snapshotError) {
-    console.error("Failed to save holding snapshots:", snapshotError);
-  }
-
-  // After updating prices, calculate total portfolio value and save a snapshot
-  try {
-    await convex.mutation(
-      api.portfolio.portfolioSnapshots.calculateAndSaveSnapshot,
-      { userId: userId ? userId as Id<"users"> : undefined }
-    );
-  } catch (snapshotError) {
-    console.error("Failed to save portfolio snapshot:", snapshotError);
-  }
-
-  // Also save a net worth snapshot (includes all accounts)
-  try {
-    const netWorthResult = await convex.mutation(
-      api.netWorth.netWorthSnapshots.calculateAndSaveNetWorthSnapshot,
-      {}
-    );
-
-    if (netWorthResult && !netWorthResult.error) {
-      console.debug(`Net worth snapshot saved: £${netWorthResult.netWorth?.toLocaleString()}`);
+  // Save holding price snapshots for historical tracking for each user
+  for (const uid of userIds) {
+    try {
+      await convex.mutation(
+        api.holdingSnapshots.snapshotCrud.createHoldingSnapshotsBatch,
+        { 
+          snapshots: results.map(q => ({ symbol: q.symbol, price: q.price })),
+          userId: uid
+        }
+      );
+    } catch (snapshotError) {
+      console.error("Failed to save holding snapshots:", snapshotError);
     }
-  } catch (netWorthError) {
-    console.error("Failed to save net worth snapshot:", netWorthError);
+  }
+
+  // After updating prices, calculate total portfolio value and save a snapshot for each user
+  for (const uid of userIds) {
+    try {
+      await convex.mutation(
+        api.portfolio.portfolioSnapshots.calculateAndSaveSnapshot,
+        { userId: uid }
+      );
+    } catch (snapshotError) {
+      console.error("Failed to save portfolio snapshot:", snapshotError);
+    }
+  }
+
+  // Also save net worth snapshots for each user
+  for (const uid of userIds) {
+    try {
+      const netWorthResult = await convex.mutation(
+        api.netWorth.netWorthSnapshots.calculateAndSaveNetWorthSnapshot,
+        { userId: uid }
+      );
+
+      if (netWorthResult && !netWorthResult.error) {
+        console.debug(`Net worth snapshot saved for user ${uid}: £${netWorthResult.netWorth?.toLocaleString()}`);
+      }
+    } catch (netWorthError) {
+      console.error("Failed to save net worth snapshot:", netWorthError);
+    }
   }
 
   return new Response("Success");
