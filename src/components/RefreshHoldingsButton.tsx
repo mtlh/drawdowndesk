@@ -44,7 +44,9 @@ export function RefreshButton({
       }
 
       // Also update net worth snapshot
-      await calculateNetWorthSnapshot();
+      if (userId) {
+        await calculateNetWorthSnapshot({ userId });
+      }
 
       // Sync all goals with autoSyncPortfolio enabled
       await syncAutoSyncGoals();
