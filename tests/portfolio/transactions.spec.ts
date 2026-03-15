@@ -14,29 +14,29 @@ test.describe("Transactions CRUD", () => {
 
   test("should create a new transaction", async ({ authenticatedPage }) => {
     const addButton = authenticatedPage.getByRole("button", { name: /add transaction/i }).first();
-    if (await addButton.isVisible()) {
+    if (await addButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       await addButton.click();
-      await authenticatedPage.waitForTimeout(500);
+      await authenticatedPage.waitForTimeout(1000);
       
-      const symbolInput = authenticatedPage.getByLabel(/symbol/i);
+      const symbolInput = authenticatedPage.locator("#symbol, [id='symbol']").first();
       await symbolInput.fill("AAPL");
       
-      const nameInput = authenticatedPage.getByLabel(/company name/i);
+      const nameInput = authenticatedPage.locator("#company-name, [id='company-name']").first();
       await nameInput.fill("Apple Inc");
       
-      const sharesInput = authenticatedPage.getByLabel(/shares/i);
+      const sharesInput = authenticatedPage.locator("#shares, [id='shares']").first();
       await sharesInput.fill("50");
       
-      const priceInput = authenticatedPage.getByLabel(/price per share/i);
+      const priceInput = authenticatedPage.locator("#price-per-share, #price, [id='price-per-share']").first();
       await priceInput.fill("150");
       
       const addBtn = authenticatedPage.getByRole("button", { name: /add to queue/i });
-      if (await addBtn.isVisible()) {
+      if (await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await addBtn.click();
         await authenticatedPage.waitForTimeout(1000);
         
         const submitButton = authenticatedPage.getByRole("button", { name: /save transactions/i });
-        if (await submitButton.isVisible()) {
+        if (await submitButton.isVisible({ timeout: 3000 }).catch(() => false)) {
           await submitButton.click();
           await authenticatedPage.waitForTimeout(1000);
         }

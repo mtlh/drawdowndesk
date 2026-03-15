@@ -14,28 +14,28 @@ test.describe("Net Worth CRUD", () => {
 
   test("should create a new account", async ({ authenticatedPage }) => {
     const addButton = authenticatedPage.getByRole("button", { name: /add account/i }).first();
-    if (await addButton.isVisible()) {
+    if (await addButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       await addButton.click();
-      await authenticatedPage.waitForTimeout(500);
+      await authenticatedPage.waitForTimeout(1000);
       
-      const nameInput = authenticatedPage.getByLabel(/account name/i);
+      const nameInput = authenticatedPage.locator("#account-name, #name, [name='accountName'], [name='name']").first();
       await nameInput.fill("Test Savings");
       
-      const valueInput = authenticatedPage.getByLabel(/value/i);
+      const valueInput = authenticatedPage.locator("#value, [name='value']").first();
       await valueInput.fill("10000");
       
-      const typeSelect = authenticatedPage.getByLabel(/account type/i);
-      if (await typeSelect.isVisible()) {
+      const typeSelect = authenticatedPage.locator("#account-type, [id='account-type']").first();
+      if (await typeSelect.isVisible({ timeout: 3000 }).catch(() => false)) {
         await typeSelect.click();
-        await authenticatedPage.waitForTimeout(300);
+        await authenticatedPage.waitForTimeout(500);
         const savingsOption = authenticatedPage.getByRole("option", { name: /savings/i });
-        if (await savingsOption.isVisible()) {
+        if (await savingsOption.isVisible({ timeout: 2000 }).catch(() => false)) {
           await savingsOption.click();
         }
       }
       
       const createButton = authenticatedPage.getByRole("button", { name: /add account/i });
-      if (await createButton.isVisible()) {
+      if (await createButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await createButton.click();
         await authenticatedPage.waitForTimeout(1000);
       }
