@@ -41,7 +41,6 @@ async function cleanupPage(page: any, pagePath: string, deleteSelector: string) 
 }
 
 const BASE_URL = process.env.DEPLOYED_URL || "http://localhost:3000";
-console.log(`[Global Setup] Using BASE_URL: ${BASE_URL}`);
 
 async function authenticate(page: any) {
   console.log("Authenticating for global setup...");
