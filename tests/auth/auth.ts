@@ -1,7 +1,10 @@
 import { test as base, Page, Browser, BrowserContext } from "@playwright/test";
+import * as path from "path";
+import * as fs from "fs";
 
 const TEST_USER_EMAIL = process.env.JEST_USERNAME || "";
 const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
+const STORAGE_STATE_PATH = path.resolve(__dirname, "..", "playwright", ".auth", "user.json");
 
 const isCI = process.env.CI === "true";
 
@@ -12,20 +15,18 @@ async function getAuthenticatedContext(browser: Browser): Promise<BrowserContext
     return sharedBrowser;
   }
   
-  const context = await browser.newContext();
+  const hasStoredAuth = fs.existsSync(STORAGE_STATE_PATH);
+  const context = await browser.newContext({ 
+    storageState: hasStoredAuth ? STORAGE_STATE_PATH : undefined 
+  });
   
   if (isCI) {
-    await authenticateInContext(context);
+    const page = await context.newPage();
+    await authenticate(page);
     sharedBrowser = context;
   }
   
   return context;
-}
-
-async function authenticateInContext(context: BrowserContext): Promise<Page> {
-  const page = await context.newPage();
-  await authenticate(page);
-  return page;
 }
 
 async function authenticate(page: Page): Promise<boolean> {
@@ -69,13 +70,17 @@ async function authenticate(page: Page): Promise<boolean> {
 
 export const test = base.extend<{ authenticatedPage: Page }>({
   authenticatedPage: async ({ browser }, use) => {
-    const context = isCI && sharedBrowser 
-      ? sharedBrowser 
+    const isReusingContext = isCI && sharedBrowser;
+    
+    const context = isReusingContext 
+      ? sharedBrowser!
       : await getAuthenticatedContext(browser);
     
     const page = await context.newPage();
     
-    await authenticate(page);
+    if (!isReusingContext) {
+      await authenticate(page);
+    }
     
     await use(page);
     

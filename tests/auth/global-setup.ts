@@ -1,11 +1,15 @@
 import { chromium } from "@playwright/test";
 import * as dotenv from "dotenv";
 import * as path from "path";
+import * as fs from "fs";
 
 dotenv.config({ path: path.resolve(__dirname, ".env.local"), quiet: true });
 
 const TEST_USER_EMAIL = process.env.JEST_USERNAME || "";
 const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
+const STORAGE_STATE_PATH = path.resolve(__dirname, "..", "playwright", ".auth", "user.json");
+
+const BASE_URL = process.env.DEPLOYED_URL || "http://localhost:3000";
 
 async function cleanupPage(page: any, pagePath: string, deleteSelector: string) {
   console.log(`Cleaning up ${pagePath}...`);
@@ -40,57 +44,41 @@ async function cleanupPage(page: any, pagePath: string, deleteSelector: string) 
   }
 }
 
-const BASE_URL = process.env.DEPLOYED_URL || "http://localhost:3000";
-
 async function authenticate(page: any) {
-  console.log("Authenticating for global setup...");
-  
-  await page.goto(`${BASE_URL}/login`, { timeout: 60000 });
-  await page.waitForLoadState("domcontentloaded", { timeout: 60000 });
+  await page.goto("/", { timeout: 30000 });
+  await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
   
   const currentUrl = page.url();
   if (currentUrl.includes("/holdings")) {
-    console.log("Already authenticated");
     return;
-  }
-  
-  const bodyText = await page.locator("body").textContent({ timeout: 30000 });
-  const hasPortfolio = bodyText?.includes("Portfolio");
-  const hasSignInRequired = bodyText?.includes("Sign in required");
-  
-  if (hasPortfolio && !hasSignInRequired) {
-    console.log("Already authenticated");
-    return;
-  }
-  
-  const signUpButton = page.getByText("Don't have an account? Sign up");
-  try {
-    if (await signUpButton.isVisible({ timeout: 3000 })) {
-      await signUpButton.click();
-    }
-  } catch (e) {
-    console.log("No sign up button, might already be on sign in form");
   }
   
   const emailInput = page.locator('input[name="email"]');
   const passwordInput = page.locator('input[name="password"]');
   
   try {
-    await emailInput.waitFor({ state: "visible", timeout: 10000 });
+    await emailInput.waitFor({ state: "visible", timeout: 15000 });
   } catch {
-    console.log("Email input not visible, might be already authenticated");
     return;
   }
   
   await emailInput.fill(TEST_USER_EMAIL);
   await passwordInput.fill(TEST_USER_PASSWORD);
   
+  const flowInput = page.locator('input[name="flow"]');
+  await flowInput.fill("signIn");
+  
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
   
-  await page.waitForURL("**/holdings", { timeout: 60000 });
-  
-  console.log("Global setup auth successful");
+  try {
+    await page.waitForURL("**/holdings", { timeout: 30000 });
+  } catch {
+    const finalUrl = page.url();
+    if (!finalUrl.includes("/holdings")) {
+      throw new Error(`Authentication failed. Expected /holdings but got: ${finalUrl}`);
+    }
+  }
 }
 
 export default async function globalSetup() {
@@ -102,6 +90,13 @@ export default async function globalSetup() {
   
   try {
     await authenticate(page);
+    
+    const authDir = path.dirname(STORAGE_STATE_PATH);
+    if (!fs.existsSync(authDir)) {
+      fs.mkdirSync(authDir, { recursive: true });
+    }
+    await context.storageState({ path: STORAGE_STATE_PATH });
+    console.log("Saved auth state to:", STORAGE_STATE_PATH);
     
     console.log("Running cleanup before tests...");
     await cleanupPage(page, "holdings", 'button[aria-label="Delete"], button:has-text("Delete")');
@@ -121,13 +116,23 @@ export default async function globalSetup() {
 export async function globalTeardown() {
   console.log("=== RUNNING GLOBAL TEARDOWN (POST-TEST CLEANUP) ===");
   
-  const browser = await chromium.launch();
-  const context = await browser.newContext();
-  const page = await context.newPage();
+  let browser;
+  let context;
+  let page;
+  
+  const hasStoredAuth = fs.existsSync(STORAGE_STATE_PATH);
+  if (hasStoredAuth) {
+    browser = await chromium.launch();
+    context = await browser.newContext({ storageState: STORAGE_STATE_PATH });
+    page = await context.newPage();
+  } else {
+    browser = await chromium.launch();
+    context = await browser.newContext();
+    page = await context.newPage();
+    await authenticate(page);
+  }
   
   try {
-    await authenticate(page);
-    
     console.log("Running cleanup after tests...");
     await cleanupPage(page, "holdings", 'button[aria-label="Delete"], button:has-text("Delete")');
     await cleanupPage(page, "goal-tracker", 'button[aria-label="Delete"], button:has-text("Delete")');
