@@ -49,10 +49,7 @@ async function authenticate(page: Page): Promise<boolean> {
   
   await emailInput.fill(TEST_USER_EMAIL);
   await passwordInput.fill(TEST_USER_PASSWORD);
-  
-  const flowInput = page.locator('input[name="flow"]');
-  await flowInput.fill("signIn");
-  
+
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
   

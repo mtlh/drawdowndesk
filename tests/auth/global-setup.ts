@@ -5,20 +5,15 @@ import * as fs from "fs";
 const TEST_USER_EMAIL = process.env.JEST_USERNAME || "";
 const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
 
-console.log("JEST_USERNAME length:", process.env.JEST_USERNAME?.length);
-console.log("JEST_PASSWORD length:", process.env.JEST_PASSWORD?.length);
-console.log("USER env:", process.env.USER);
 const STORAGE_STATE_PATH = path.resolve(__dirname, "..", "playwright", ".auth", "user.json");
 
 const BASE_URL = process.env.DEPLOYED_URL || "http://localhost:3000";
-console.log("Using BASE_URL:", BASE_URL);
 
 async function authenticate(page: any) {
   await page.goto(BASE_URL + "/", { timeout: 30000 });
   await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
   
   const currentUrl = page.url();
-  console.log("Current URL after goto:", currentUrl);
   if (currentUrl.includes("/holdings")) {
     return;
   }
@@ -32,33 +27,13 @@ async function authenticate(page: any) {
     throw new Error("Email input not visible");
   }
   
-  console.log("Filling email and password...");
-  
   await emailInput.fill(TEST_USER_EMAIL);
   await passwordInput.fill(TEST_USER_PASSWORD);
-
-  // Debug: print form HTML
-  const formHtml = await page.locator('form').first().innerHTML().catch(() => "no form");
-  console.log("Form HTML length:", formHtml.length);
 
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
   
-  // Wait longer and check for navigation or errors
-  await page.waitForTimeout(5000);
-  
-  const finalUrl = page.url();
-  console.log("URL after submit:", finalUrl);
-  
-  // Check for any error messages
-  const pageContent = await page.content();
-  if (pageContent.includes("Invalid") || pageContent.includes("error") || pageContent.includes("Error")) {
-    console.log("Page contains error message");
-  }
-  
-  if (!finalUrl.includes("/holdings")) {
-    throw new Error(`Authentication failed. Expected /holdings but got: ${finalUrl}`);
-  }
+  await page.waitForURL("**/holdings", { timeout: 30000 });
 }
 
 async function cleanupPage(page: any, pagePath: string, deleteSelector: string) {
@@ -70,6 +45,7 @@ async function cleanupPage(page: any, pagePath: string, deleteSelector: string) 
     
     const deleteButtons = page.locator(deleteSelector);
     const count = await deleteButtons.count();
+    console.log(`  Found ${count} delete buttons`);
     
     for (let i = 0; i < count; i++) {
       try {
@@ -112,11 +88,12 @@ export default async function globalSetup() {
     console.log("Saved auth state to:", STORAGE_STATE_PATH);
     
     console.log("Running cleanup before tests...");
-    await cleanupPage(page, "holdings", 'button[aria-label="Delete"], button:has-text("Delete")');
-    await cleanupPage(page, "goal-tracker", 'button[aria-label="Delete"], button:has-text("Delete")');
-    await cleanupPage(page, "what-if-scenarios", 'button[aria-label="Delete"], button:has-text("Delete")');
-    await cleanupPage(page, "finance-notes", 'button[aria-label="Delete"], button:has-text("Delete")');
-    await cleanupPage(page, "lifetime-accumulation", 'button[aria-label="Delete"], button:has-text("Delete")');
+    await cleanupPage(page, "holdings", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
+    await cleanupPage(page, "goal-tracker", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
+    await cleanupPage(page, "what-if-scenarios", 'button:has-text("Delete")');
+    await cleanupPage(page, "finance-notes", '[title*="Delete"], button:has-text("Delete")');
+    await cleanupPage(page, "lifetime-accumulation", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
+    await cleanupPage(page, "accumulation-forecast", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
     console.log("=== GLOBAL SETUP COMPLETE ===");
   } catch (error) {
     console.error("Global setup failed:", error);
