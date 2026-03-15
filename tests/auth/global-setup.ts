@@ -17,32 +17,53 @@ async function authenticate(page: any) {
   await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
   
   const currentUrl = page.url();
+  console.log("Current URL after goto:", currentUrl);
   if (currentUrl.includes("/holdings")) {
     return;
   }
   
+  // Try Google sign-in first (primary method)
+  const googleButton = page.locator('button:has-text("Continue with Google"), button:has(svg)').first();
+  
+  if (await googleButton.isVisible().catch(() => false)) {
+    console.log("Using Google sign-in...");
+    await googleButton.click();
+    try {
+      await page.waitForURL("**/holdings", { timeout: 30000 });
+      return;
+    } catch {
+      // Google auth might redirect elsewhere, check current URL
+      const afterClickUrl = page.url();
+      if (afterClickUrl.includes("holdings")) {
+        return;
+      }
+      console.log("Google redirect URL:", afterClickUrl);
+    }
+  }
+  
+  // Fallback to email/password
   const emailInput = page.locator('input[name="email"]');
   const passwordInput = page.locator('input[name="password"]');
   
   try {
-    await emailInput.waitFor({ state: "visible", timeout: 15000 });
+    await emailInput.waitFor({ state: "visible", timeout: 5000 });
   } catch {
-    return;
+    throw new Error("Could not find sign-in method");
   }
   
+  console.log("Using email/password sign-in...");
   await emailInput.fill(TEST_USER_EMAIL);
   await passwordInput.fill(TEST_USER_PASSWORD);
 
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
   
-  try {
-    await page.waitForURL("**/holdings", { timeout: 30000 });
-  } catch {
-    const finalUrl = page.url();
-    if (!finalUrl.includes("/holdings")) {
-      throw new Error(`Authentication failed. Expected /holdings but got: ${finalUrl}`);
-    }
+  await page.waitForLoadState("networkidle", { timeout: 30000 });
+  
+  const finalUrl = page.url();
+  
+  if (!finalUrl.includes("/holdings")) {
+    throw new Error(`Authentication failed. Expected /holdings but got: ${finalUrl}`);
   }
 }
 
