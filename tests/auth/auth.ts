@@ -5,7 +5,8 @@ const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
 
 async function authenticate(page: Page): Promise<boolean> {
   console.log("Starting authentication...");
-  await page.goto("/login", { timeout: 60000 });
+  
+  await page.goto("/", { timeout: 60000 });
   await page.waitForLoadState("domcontentloaded", { timeout: 60000 });
   
   console.log("Page loaded, URL:", page.url());

@@ -94,7 +94,7 @@ function PleaseSignIn() {
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/" || pathname === "/login" || pathname === null;
+  const isLoginPage = pathname === "/login" || pathname === null;
 
   return (
     <ConvexAuthProvider client={convex}>
@@ -102,7 +102,7 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
         // Login page - no sidebar
         <Login />
       ) : (
-        // Other pages - with sidebar
+        // Other pages - with sidebar (includes "/" now that page.tsx exists)
         <AppShell>
           <ErrorBoundary>
             <ToastProvider>
