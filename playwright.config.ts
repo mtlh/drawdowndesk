@@ -4,6 +4,9 @@ import * as path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, ".env.local"), quiet: true });
 
+const deployedUrl = process.env.DEPLOYED_URL || "http://localhost:3000";
+console.log(`[Playwright] Using baseURL: ${deployedUrl}`);
+
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
@@ -19,7 +22,7 @@ export default defineConfig({
     ["list"],
   ],
   use: {
-    baseURL: process.env.DEPLOYED_URL || "http://localhost:3000",
+    baseURL: deployedUrl,
     trace: "on-first-retry",
   },
   projects: [
