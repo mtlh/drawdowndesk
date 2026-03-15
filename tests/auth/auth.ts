@@ -9,7 +9,6 @@ let sharedBrowser: BrowserContext | null = null;
 
 async function getAuthenticatedContext(browser: Browser): Promise<BrowserContext> {
   if (isCI && sharedBrowser) {
-    console.log("Reusing shared authenticated browser context");
     return sharedBrowser;
   }
   
@@ -18,7 +17,6 @@ async function getAuthenticatedContext(browser: Browser): Promise<BrowserContext
   if (isCI) {
     await authenticateInContext(context);
     sharedBrowser = context;
-    console.log("Created and stored shared authenticated browser context");
   }
   
   return context;
@@ -31,16 +29,11 @@ async function authenticateInContext(context: BrowserContext): Promise<Page> {
 }
 
 async function authenticate(page: Page): Promise<boolean> {
-  console.log("Starting authentication...");
-  
   await page.goto("/", { timeout: 30000 });
   await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
   
-  console.log("Page loaded, URL:", page.url());
-  
   const currentUrl = page.url();
   if (currentUrl.includes("/holdings")) {
-    console.log("Already authenticated");
     return true;
   }
   
@@ -59,46 +52,16 @@ async function authenticate(page: Page): Promise<boolean> {
   const flowInput = page.locator('input[name="flow"]');
   await flowInput.fill("signIn");
   
-  console.log("Filling credentials, clicking submit...");
-  
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
-  
-  console.log("Waiting for redirect after login...");
-  
-  try {
-    await page.waitForLoadState("networkidle", { timeout: 10000 });
-  } catch {
-    console.log("Network idle timeout");
-  }
-  
-  const urlAfterLogin = page.url();
-  console.log("URL after login attempt:", urlAfterLogin);
-  
-  if (urlAfterLogin.includes("/holdings")) {
-    return true;
-  }
-  
-  const errorMessage = page.locator('p:has-text("Invalid"), p:has-text("error")').first();
-  const hasError = await errorMessage.isVisible().catch(() => false);
-  if (hasError) {
-    console.log("Login error visible:", await errorMessage.textContent());
-  }
-  
-  const emailError = await page.locator('input[name="email"]:visible').first().isVisible().catch(() => false);
-  if (emailError) {
-    console.log("Email input still visible - login likely failed");
-  }
   
   try {
     await page.waitForURL("**/holdings", { timeout: 30000 });
   } catch {
     const finalUrl = page.url();
-    console.log("Auth redirect failed. Final URL:", finalUrl);
-    if (finalUrl.includes("/holdings")) {
-      return true;
+    if (!finalUrl.includes("/holdings")) {
+      throw new Error(`Authentication failed. Expected /holdings but got: ${finalUrl}`);
     }
-    throw new Error(`Authentication failed. Expected /holdings but got: ${finalUrl}`);
   }
   
   return true;
@@ -112,33 +75,7 @@ export const test = base.extend<{ authenticatedPage: Page }>({
     
     const page = await context.newPage();
     
-    page.on("console", (msg) => {
-      if (msg.type() === "error") {
-        console.log("[Browser Error]:", msg.text());
-        const text = msg.text();
-        if (text.includes("404")) {
-          console.log("[Browser 404 Details]: Resource failed to load");
-        }
-      }
-    });
-    
-    page.on("pageerror", (err) => {
-      console.log("[Page Error]:", err.message);
-    });
-
-    page.on("requestfailed", (request) => {
-      console.log("[Request Failed]:", request.url(), request.failure()?.errorText);
-    });
-
-    page.on("response", (response) => {
-      if (response.status() === 404) {
-        console.log("[404 Response]:", response.url());
-      }
-    });
-    
-    if (!isCI || !sharedBrowser) {
-      await authenticate(page);
-    }
+    await authenticate(page);
     
     await use(page);
     
