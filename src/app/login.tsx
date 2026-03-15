@@ -36,6 +36,14 @@ export default function Login() {
     setMounted(true);
   }, []);
 
+  if (!mounted) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#030712]">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
   // Sample data for charts
   const portfolioData = [
     { name: "Stocks", value: 45, color: "#6366F1" },
