@@ -50,7 +50,9 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run tests
-        run: npm run test
+        run: |
+          echo "DEPLOYED_URL is: $DEPLOYED_URL"
+          npm run test
         env:
           DEPLOYED_URL: https://drawdowndesk.vercel.app
           JEST_USERNAME: ${{ secrets.JEST_USERNAME }}
