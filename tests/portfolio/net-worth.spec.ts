@@ -18,13 +18,13 @@ test.describe("Net Worth CRUD", () => {
       await addButton.click();
       await authenticatedPage.waitForTimeout(1000);
       
-      const nameInput = authenticatedPage.locator("#account-name, #name, [name='accountName'], [name='name']").first();
+      const nameInput = authenticatedPage.locator("#account-name").first();
       await nameInput.fill("Test Savings");
       
-      const valueInput = authenticatedPage.locator("#value, [name='value']").first();
+      const valueInput = authenticatedPage.locator("#account-value").first();
       await valueInput.fill("10000");
       
-      const typeSelect = authenticatedPage.locator("#account-type, [id='account-type']").first();
+      const typeSelect = authenticatedPage.locator("#account-type").first();
       if (await typeSelect.isVisible({ timeout: 3000 }).catch(() => false)) {
         await typeSelect.click();
         await authenticatedPage.waitForTimeout(500);

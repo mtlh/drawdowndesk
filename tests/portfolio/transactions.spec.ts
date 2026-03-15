@@ -18,16 +18,16 @@ test.describe("Transactions CRUD", () => {
       await addButton.click();
       await authenticatedPage.waitForTimeout(1000);
       
-      const symbolInput = authenticatedPage.locator("#symbol, [id='symbol']").first();
+      const symbolInput = authenticatedPage.locator("#symbol").first();
       await symbolInput.fill("AAPL");
       
-      const nameInput = authenticatedPage.locator("#company-name, [id='company-name']").first();
+      const nameInput = authenticatedPage.locator("#holding-name").first();
       await nameInput.fill("Apple Inc");
       
-      const sharesInput = authenticatedPage.locator("#shares, [id='shares']").first();
+      const sharesInput = authenticatedPage.locator("#shares").first();
       await sharesInput.fill("50");
       
-      const priceInput = authenticatedPage.locator("#price-per-share, #price, [id='price-per-share']").first();
+      const priceInput = authenticatedPage.locator("#price").first();
       await priceInput.fill("150");
       
       const addBtn = authenticatedPage.getByRole("button", { name: /add to queue/i });
