@@ -6,8 +6,8 @@ const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
 async function authenticate(page: Page): Promise<boolean> {
   console.log("Starting authentication...");
   
-  await page.goto("/", { timeout: 60000 });
-  await page.waitForLoadState("domcontentloaded", { timeout: 60000 });
+  await page.goto("/", { timeout: 30000 });
+  await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
   
   console.log("Page loaded, URL:", page.url());
   
@@ -21,7 +21,7 @@ async function authenticate(page: Page): Promise<boolean> {
   const passwordInput = page.locator('input[name="password"]');
   
   try {
-    await emailInput.waitFor({ state: "visible", timeout: 30000 });
+    await emailInput.waitFor({ state: "visible", timeout: 15000 });
   } catch {
     return false;
   }
