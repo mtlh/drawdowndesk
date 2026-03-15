@@ -125,13 +125,13 @@ export async function GET(request: Request) {
   const targetUserId = userIdParam ? userIdParam as Id<"users"> : null;
 
   // Get all user IDs who have holdings
+  // @ts-expect-error - Convex API type instantiation is excessively deep
   const getAllUserIds = api.portfolio.currentPriceUpdates.updateHoldingWithTicker.getAllUserIdsWithHoldings;
   const allUserIds: Id<"users">[] = await convex.query(getAllUserIds, {});
   
   // Determine which users to process: specific user or all users
   const userIds = targetUserId ? [targetUserId] : allUserIds;
 
-  // @ts-expect-error - Convex API type instantiation is excessively deep
   const getAllHoldings = api.portfolio.currentPriceUpdates.updateHoldingWithTicker.getAllHoldings;
   const holdings: HoldingPriceInfo[] = await convex.query(getAllHoldings, {});
 
