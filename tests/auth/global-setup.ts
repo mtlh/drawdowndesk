@@ -32,16 +32,30 @@ async function authenticate(page: any) {
   }
   
   console.log("Filling email and password...");
+  console.log("Email:", TEST_USER_EMAIL ? "set" : "NOT SET");
+  console.log("Password:", TEST_USER_PASSWORD ? "set" : "NOT SET");
+  
   await emailInput.fill(TEST_USER_EMAIL);
   await passwordInput.fill(TEST_USER_PASSWORD);
+
+  // Debug: print form HTML
+  const formHtml = await page.locator('form').first().innerHTML().catch(() => "no form");
+  console.log("Form HTML length:", formHtml.length);
 
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
   
-  await page.waitForLoadState("networkidle", { timeout: 30000 });
+  // Wait longer and check for navigation or errors
+  await page.waitForTimeout(5000);
   
   const finalUrl = page.url();
   console.log("URL after submit:", finalUrl);
+  
+  // Check for any error messages
+  const pageContent = await page.content();
+  if (pageContent.includes("Invalid") || pageContent.includes("error") || pageContent.includes("Error")) {
+    console.log("Page contains error message");
+  }
   
   if (!finalUrl.includes("/holdings")) {
     throw new Error(`Authentication failed. Expected /holdings but got: ${finalUrl}`);
