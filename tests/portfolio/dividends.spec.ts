@@ -16,18 +16,18 @@ test.describe("Dividends CRUD", () => {
     const addButton = authenticatedPage.getByRole("button", { name: /add dividend/i });
     if (await addButton.isVisible()) {
       await addButton.click();
-      await authenticatedPage.waitForTimeout(500);
+      await authenticatedPage.waitForTimeout(1000);
       
-      const symbolInput = authenticatedPage.getByLabel(/symbol/i);
+      const symbolInput = authenticatedPage.locator("#symbol, [id='symbol']").first();
       await symbolInput.fill("AAPL");
       
-      const nameInput = authenticatedPage.getByLabel(/name/i);
+      const nameInput = authenticatedPage.locator("#name, [id='name']").first();
       await nameInput.fill("Apple Inc");
       
-      const sharesInput = authenticatedPage.getByLabel(/shares/i);
+      const sharesInput = authenticatedPage.locator("#shares, [id='shares']").first();
       await sharesInput.fill("100");
       
-      const dividendInput = authenticatedPage.getByLabel(/dividend per share/i);
+      const dividendInput = authenticatedPage.locator("#dividendPerShare, [id='dividendPerShare']").first();
       await dividendInput.fill("0.24");
       
       const createButton = authenticatedPage.getByRole("button", { name: /add dividend/i });
@@ -44,7 +44,7 @@ test.describe("Dividends CRUD", () => {
       await editButton.click();
       await authenticatedPage.waitForTimeout(500);
       
-      const sharesInput = authenticatedPage.getByLabel(/shares/i);
+      const sharesInput = authenticatedPage.locator("#shares, [id='shares']").first();
       if (await sharesInput.isVisible()) {
         await sharesInput.fill("200");
         
@@ -72,7 +72,7 @@ test.describe("Dividends CRUD", () => {
   });
 
   test("should filter by tax band", async ({ authenticatedPage }) => {
-    const taxBandFilter = authenticatedPage.getByLabel(/tax band/i);
+    const taxBandFilter = authenticatedPage.locator("#taxBand, [id='taxBand'], [class*='tax']").first();
     if (await taxBandFilter.isVisible()) {
       await taxBandFilter.click();
       await authenticatedPage.waitForTimeout(300);
