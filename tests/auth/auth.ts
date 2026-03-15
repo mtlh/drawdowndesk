@@ -84,11 +84,25 @@ export const test = base.extend<{ authenticatedPage: Page }>({
     page.on("console", (msg) => {
       if (msg.type() === "error") {
         console.log("[Browser Error]:", msg.text());
+        const text = msg.text();
+        if (text.includes("404")) {
+          console.log("[Browser 404 Details]: Resource failed to load");
+        }
       }
     });
     
     page.on("pageerror", (err) => {
       console.log("[Page Error]:", err.message);
+    });
+
+    page.on("requestfailed", (request) => {
+      console.log("[Request Failed]:", request.url(), request.failure()?.errorText);
+    });
+
+    page.on("response", (response) => {
+      if (response.status() === 404) {
+        console.log("[404 Response]:", response.url());
+      }
     });
     
     await authenticate(page);

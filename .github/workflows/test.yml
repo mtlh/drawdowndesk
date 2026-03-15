@@ -32,6 +32,12 @@ jobs:
       - name: Deploy to Vercel
         run: vercel deploy --prebuilt --prod --token=${{ env.VERCEL_TOKEN }}
 
+      - name: Get deployment URL
+        run: echo "DEPLOYMENT_URL=$(vercel --prod --url 2>/dev/null || echo '')" >> $GITHUB_ENV
+
+      - name: Wait for deployment
+        run: sleep 15
+
   test:
     needs: deploy
     runs-on: ubuntu-latest
