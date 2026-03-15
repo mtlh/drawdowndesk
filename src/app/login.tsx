@@ -16,6 +16,7 @@ import {
   AreaChart,
   Area,
 } from "recharts"
+import { useEffect, useState } from "react"
 
 // Deterministic pseudo-random function based on index for consistent SSR/client rendering
 function starPosition(index: number) {
@@ -29,6 +30,12 @@ function starPosition(index: number) {
 }
 
 export default function Login() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Sample data for charts
   const portfolioData = [
     { name: "Stocks", value: 45, color: "#6366F1" },
@@ -53,27 +60,29 @@ export default function Login() {
         {/* Deep space gradient base */}
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/40 via-[#030712] to-emerald-950/30"></div>
 
-        {/* Animated stars - deterministic for SSR consistency */}
-        <div className="absolute inset-0">
-          {[...Array(80)].map((_, i) => {
-            const s = starPosition(i);
-            return (
-              <div
-                key={i}
-                className="absolute rounded-full bg-white animate-pulse"
-                style={{
-                  left: `${s.x}%`,
-                  top: `${s.y}%`,
-                  width: `${s.size}px`,
-                  height: `${s.size}px`,
-                  opacity: s.opacity,
-                  animationDelay: `${s.delay}s`,
-                  animationDuration: `${s.duration}s`,
-                }}
-              />
-            );
-          })}
-        </div>
+        {/* Animated stars - only render on client */}
+        {mounted && (
+          <div className="absolute inset-0">
+            {[...Array(80)].map((_, i) => {
+              const s = starPosition(i);
+              return (
+                <div
+                  key={i}
+                  className="absolute rounded-full bg-white animate-pulse"
+                  style={{
+                    left: `${s.x}%`,
+                    top: `${s.y}%`,
+                    width: `${s.size}px`,
+                    height: `${s.size}px`,
+                    opacity: s.opacity,
+                    animationDelay: `${s.delay}s`,
+                    animationDuration: `${s.duration}s`,
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
 
         {/* Nebula clouds */}
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] animate-[pulse_4s_ease-in-out_infinite]"></div>
@@ -129,7 +138,8 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Right side - Dashboard preview */}
+        {/* Right side - Dashboard preview - client only due to Recharts */}
+        {mounted && (
         <div className="hidden xl:block w-full xl:w-6/12 h-full">
           <div className="relative">
             {/* Glow effect behind card */}
@@ -253,6 +263,7 @@ export default function Login() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   )
