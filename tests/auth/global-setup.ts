@@ -10,42 +10,10 @@ const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
 const STORAGE_STATE_PATH = path.resolve(__dirname, "..", "playwright", ".auth", "user.json");
 
 const BASE_URL = process.env.DEPLOYED_URL || "http://localhost:3000";
-
-async function cleanupPage(page: any, pagePath: string, deleteSelector: string) {
-  console.log(`Cleaning up ${pagePath}...`);
-  try {
-    await page.goto(`${BASE_URL}/${pagePath}`, { timeout: 10000 });
-    await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
-    await page.waitForTimeout(2000);
-    
-    const deleteButtons = page.locator(deleteSelector);
-    const count = await deleteButtons.count();
-    
-    for (let i = 0; i < count; i++) {
-      try {
-        const btn = deleteButtons.nth(0);
-        if (await btn.isVisible({ timeout: 2000 })) {
-          await btn.click();
-          await page.waitForTimeout(500);
-          
-          const confirmBtn = page.locator('button:has-text("Delete"), button:has-text("Confirm"), button:has-text("Yes")').first();
-          if (await confirmBtn.isVisible({ timeout: 2000 })) {
-            await confirmBtn.click();
-            await page.waitForTimeout(1000);
-          }
-        }
-      } catch (e) {
-        console.log(`  Could not delete item ${i}`);
-      }
-    }
-    console.log(`  ${count} items deleted`);
-  } catch (e) {
-    console.log(`  Cleanup skipped: ${e}`);
-  }
-}
+console.log("Using BASE_URL:", BASE_URL);
 
 async function authenticate(page: any) {
-  await page.goto("/", { timeout: 30000 });
+  await page.goto(BASE_URL + "/", { timeout: 30000 });
   await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
   
   const currentUrl = page.url();
@@ -78,6 +46,39 @@ async function authenticate(page: any) {
     if (!finalUrl.includes("/holdings")) {
       throw new Error(`Authentication failed. Expected /holdings but got: ${finalUrl}`);
     }
+  }
+}
+
+async function cleanupPage(page: any, pagePath: string, deleteSelector: string) {
+  console.log(`Cleaning up ${pagePath}...`);
+  try {
+    await page.goto(`${BASE_URL}/${pagePath}`, { timeout: 10000 });
+    await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
+    await page.waitForTimeout(2000);
+    
+    const deleteButtons = page.locator(deleteSelector);
+    const count = await deleteButtons.count();
+    
+    for (let i = 0; i < count; i++) {
+      try {
+        const btn = deleteButtons.nth(0);
+        if (await btn.isVisible({ timeout: 2000 })) {
+          await btn.click();
+          await page.waitForTimeout(500);
+          
+          const confirmBtn = page.locator('button:has-text("Delete"), button:has-text("Confirm"), button:has-text("Yes")').first();
+          if (await confirmBtn.isVisible({ timeout: 2000 })) {
+            await confirmBtn.click();
+            await page.waitForTimeout(1000);
+          }
+        }
+      } catch (e) {
+        console.log(`  Could not delete item ${i}`);
+      }
+    }
+    console.log(`  ${count} items deleted`);
+  } catch (e) {
+    console.log(`  Cleanup skipped: ${e}`);
   }
 }
 
