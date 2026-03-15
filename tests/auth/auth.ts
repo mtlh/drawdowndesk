@@ -1,7 +1,34 @@
-import { test as base, Page, BrowserContext } from "@playwright/test";
+import { test as base, Page, Browser, BrowserContext } from "@playwright/test";
 
 const TEST_USER_EMAIL = process.env.JEST_USERNAME || "";
 const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
+
+const isCI = process.env.CI === "true";
+
+let sharedBrowser: BrowserContext | null = null;
+
+async function getAuthenticatedContext(browser: Browser): Promise<BrowserContext> {
+  if (isCI && sharedBrowser) {
+    console.log("Reusing shared authenticated browser context");
+    return sharedBrowser;
+  }
+  
+  const context = await browser.newContext();
+  
+  if (isCI) {
+    await authenticateInContext(context);
+    sharedBrowser = context;
+    console.log("Created and stored shared authenticated browser context");
+  }
+  
+  return context;
+}
+
+async function authenticateInContext(context: BrowserContext): Promise<Page> {
+  const page = await context.newPage();
+  await authenticate(page);
+  return page;
+}
 
 async function authenticate(page: Page): Promise<boolean> {
   console.log("Starting authentication...");
@@ -79,7 +106,10 @@ async function authenticate(page: Page): Promise<boolean> {
 
 export const test = base.extend<{ authenticatedPage: Page }>({
   authenticatedPage: async ({ browser }, use) => {
-    const context = await browser.newContext();
+    const context = isCI && sharedBrowser 
+      ? sharedBrowser 
+      : await getAuthenticatedContext(browser);
+    
     const page = await context.newPage();
     
     page.on("console", (msg) => {
@@ -106,11 +136,15 @@ export const test = base.extend<{ authenticatedPage: Page }>({
       }
     });
     
-    await authenticate(page);
+    if (!isCI || !sharedBrowser) {
+      await authenticate(page);
+    }
     
     await use(page);
     
-    await context.close();
+    if (!isCI) {
+      await context.close();
+    }
   },
 });
 
