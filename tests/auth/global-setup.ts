@@ -1,9 +1,6 @@
 import { chromium } from "@playwright/test";
-import * as dotenv from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
-
-dotenv.config({ path: path.resolve(__dirname, ".env.local"), quiet: true });
 
 const TEST_USER_EMAIL = process.env.JEST_USERNAME || "";
 const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
