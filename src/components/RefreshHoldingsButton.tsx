@@ -43,10 +43,8 @@ export function RefreshButton({
         await saveSnapshot({ totalValue: summary.totalValue, costBasis: summary.totalCostBasis });
       }
 
-      // Also update net worth snapshot
-      if (userId) {
-        await calculateNetWorthSnapshot({ userId });
-      }
+      // Also update net worth snapshot (falls back to auth user if no userId provided)
+      await calculateNetWorthSnapshot(userId ? { userId } : {});
 
       // Sync all goals with autoSyncPortfolio enabled
       await syncAutoSyncGoals();
