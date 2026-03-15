@@ -27,6 +27,10 @@ async function authenticate(page: Page): Promise<boolean> {
   
   await emailInput.fill(TEST_USER_EMAIL);
   await passwordInput.fill(TEST_USER_PASSWORD);
+  
+  const flowInput = page.locator('input[name="flow"]');
+  await flowInput.fill("signIn");
+  
   console.log("Filling credentials, clicking submit...");
   
   const submitButton = page.locator('button[type="submit"]');
@@ -35,9 +39,9 @@ async function authenticate(page: Page): Promise<boolean> {
   console.log("Waiting for redirect after login...");
   
   try {
-    await page.waitForLoadState("networkidle", { timeout: 60000 });
+    await page.waitForLoadState("networkidle", { timeout: 10000 });
   } catch {
-    console.log("Network idle timeout, checking URL anyway...");
+    console.log("Network idle timeout");
   }
   
   const urlAfterLogin = page.url();
@@ -45,6 +49,17 @@ async function authenticate(page: Page): Promise<boolean> {
   
   if (urlAfterLogin.includes("/holdings")) {
     return true;
+  }
+  
+  const errorMessage = page.locator('p:has-text("Invalid"), p:has-text("error")').first();
+  const hasError = await errorMessage.isVisible().catch(() => false);
+  if (hasError) {
+    console.log("Login error visible:", await errorMessage.textContent());
+  }
+  
+  const emailError = await page.locator('input[name="email"]:visible').first().isVisible().catch(() => false);
+  if (emailError) {
+    console.log("Email input still visible - login likely failed");
   }
   
   try {
