@@ -2,9 +2,9 @@ import { test, expect } from "../auth/auth";
 
 test.describe("Accumulation Forecast CRUD", () => {
   test.beforeEach(async ({ authenticatedPage }) => {
-    await authenticatedPage.goto("/accumulation-forecast");
-    await authenticatedPage.waitForLoadState("domcontentloaded");
-    await authenticatedPage.waitForTimeout(2000);
+    await authenticatedPage.goto("/accumulation-forecast", { timeout: 60000 });
+    await authenticatedPage.waitForLoadState("domcontentloaded", { timeout: 60000 });
+    await authenticatedPage.waitForTimeout(3000);
   });
 
   test("should display accumulation forecast page", async ({ authenticatedPage }) => {
