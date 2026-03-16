@@ -138,8 +138,9 @@ export async function globalTeardown() {
     await cleanupPage(page, "holdings", 'button[aria-label="Delete"], button:has-text("Delete")');
     await cleanupPage(page, "goal-tracker", 'button[aria-label="Delete"], button:has-text("Delete")');
     await cleanupPage(page, "what-if-scenarios", 'button[aria-label="Delete"], button:has-text("Delete")');
-    await cleanupPage(page, "finance-notes", 'button[aria-label="Delete"], button:has-text("Delete")');
+    await cleanupPage(page, "finance-notes", '[title*="Delete"], button:has-text("Delete")');
     await cleanupPage(page, "lifetime-accumulation", 'button[aria-label="Delete"], button:has-text("Delete")');
+    await cleanupPage(page, "accumulation-forecast", 'button[aria-label="Delete"], button:has-text("Delete")');
     console.log("=== GLOBAL TEARDOWN COMPLETE ===");
   } catch (error) {
     console.error("Global teardown failed:", error);

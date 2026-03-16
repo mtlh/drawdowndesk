@@ -362,7 +362,7 @@ function SettingsContent() {
   return (
     <div className="flex h-screen bg-background">
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
-        <div className="p-8 max-w-4xl mx-auto space-y-8">
+        <div className="p-8 max-w-6xl mx-auto space-y-8">
           {/* Header */}
           <div className="space-y-2">
             <h1 className="text-3xl font-bold flex items-center gap-2">
