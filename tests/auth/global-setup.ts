@@ -7,14 +7,23 @@ const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
 
 const STORAGE_STATE_PATH = path.resolve(__dirname, "..", "playwright", ".auth", "user.json");
 
-const BASE_URL = process.env.DEPLOYED_URL || "http://localhost:3000";
+const BASE_URL = "https://drawdowndesk.vercel.app";
+
+console.log("=== GLOBAL SETUP DEBUG ===");
+console.log("BASE_URL:", BASE_URL);
+console.log("JEST_USERNAME:", TEST_USER_EMAIL ? "set" : "NOT SET");
+console.log("JEST_PASSWORD:", TEST_USER_PASSWORD ? "set" : "NOT SET");
 
 async function authenticate(page: any) {
+  console.log("Authenticating with BASE_URL:", BASE_URL);
   await page.goto(BASE_URL + "/", { timeout: 30000 });
   await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
   
   const currentUrl = page.url();
+  console.log("Current URL after goto:", currentUrl);
+  
   if (currentUrl.includes("/holdings")) {
+    console.log("Already authenticated, skipping login");
     return;
   }
   
@@ -23,7 +32,9 @@ async function authenticate(page: any) {
   
   try {
     await emailInput.waitFor({ state: "visible", timeout: 15000 });
+    console.log("Email input found, proceeding with login");
   } catch {
+    console.log("Email input not visible - may already be logged in or on different page");
     throw new Error("Email input not visible");
   }
   

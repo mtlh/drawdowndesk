@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "https://drawdowndesk.vercel.app",
+      "localStorage": [
+        {
+          "name": "__convexAuthRefreshToken_httpswaryskunk798convexcloud",
+          "value": "k17dpmfhexq7rwkphk5870155h830xqw|k5793h9snrhdqzgj3cqammbjhx831xqy"
+        },
+        {
+          "name": "__convexAuthJWT_httpswaryskunk798convexcloud",
+          "value": "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJraDc1bmtiNncwZ3Bwcm0zN2VtcG05OTlweDgyeDZjbXxrNTc5M2g5c25yaGRxemdqM2NxYW1tYmpoeDgzMXhxeSIsImlhdCI6MTc3MzY5OTE2NywiaXNzIjoiaHR0cHM6Ly93YXJ5LXNrdW5rLTc5OC5jb252ZXguc2l0ZSIsImF1ZCI6ImNvbnZleCIsImV4cCI6MTc3MzcwMjc2N30.YL1UdDp0tAwu80I8PaFJ9ixO6gSb4HxeEAo9c_PR-OoJEQxyrTK-bDWCSz8Mtws3ynb8bwKlB3ey5LFVfiNsCRG59UzeRpYRDqLHZLpbS2y_EpfK6pDa7PYgFn6VpypMqmW5bx8rVTe4DnYzZTOqEVYZzdgxXbWGR88ZYEVf1SrMZiGljytd1D80dfu1ggIHU8gTA36XQeGEFSiiY0EfuQSgTryJUHegbe7rfNhHh1jNmzMACPDdesj4pg_EY52yO9Sw4s5OPeil5XHQqvPHmVhBkxwZPwA-0RJqel5MapQOnzg-o8c6l8cwOI4rlNhbHwwWnXq-YqvI2HinwDIGoA"
+        }
+      ]
+    }
+  ]
+}

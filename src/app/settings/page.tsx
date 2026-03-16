@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Settings as SettingsIcon, RotateCcw, Pencil, Check, X, Moon, Sun, Shield, Trash2, LogOut, Smartphone, KeyRound } from "lucide-react"
+import { Settings as SettingsIcon, RotateCcw, Pencil, Check, X, Moon, Sun, Shield, Trash2, LogOut, Smartphone, KeyRound, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import { useQuery, useMutation, Authenticated } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -115,6 +115,8 @@ function SettingsContent() {
   // Session management
   const [isLoggingOutSessions, setIsLoggingOutSessions] = useState(false)
   const [sessionMessage, setSessionMessage] = useState("")
+  const [sessionPage, setSessionPage] = useState(1)
+  const SESSIONS_PER_PAGE = 5
 
   // Delete account
   const [deleteConfirmStep, setDeleteConfirmStep] = useState(0)
@@ -379,14 +381,14 @@ function SettingsContent() {
           )}
 
           <Tabs defaultValue="allowance" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="appearance">Appearance</TabsTrigger>
-              <TabsTrigger value="security">Security</TabsTrigger>
-              <TabsTrigger value="allowance">Personal Allowance</TabsTrigger>
-              <TabsTrigger value="bands">Tax Bands</TabsTrigger>
-              <TabsTrigger value="cgt">Capital Gains Tax</TabsTrigger>
-              <TabsTrigger value="statePension">State Pension</TabsTrigger>
-              <TabsTrigger value="assumptions">Assumptions</TabsTrigger>
+            <TabsList className="flex w-full overflow-x-auto">
+              <TabsTrigger value="appearance" className="shrink-0">Appearance</TabsTrigger>
+              <TabsTrigger value="security" className="shrink-0">Security</TabsTrigger>
+              <TabsTrigger value="allowance" className="shrink-0">Personal Allowance</TabsTrigger>
+              <TabsTrigger value="bands" className="shrink-0">Tax Bands</TabsTrigger>
+              <TabsTrigger value="cgt" className="shrink-0">Capital Gains Tax</TabsTrigger>
+              <TabsTrigger value="statePension" className="shrink-0">State Pension</TabsTrigger>
+              <TabsTrigger value="assumptions" className="shrink-0">Assumptions</TabsTrigger>
             </TabsList>
 
             {/* Appearance Tab */}
@@ -539,7 +541,9 @@ function SettingsContent() {
                       Manage your active sessions across devices.
                     </p>
                     <div className="space-y-2">
-                      {accountInfo?.sessions.map((session) => (
+                      {accountInfo?.sessions
+                        .slice((sessionPage - 1) * SESSIONS_PER_PAGE, sessionPage * SESSIONS_PER_PAGE)
+                        .map((session) => (
                         <div
                           key={session._id}
                           className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
@@ -563,6 +567,32 @@ function SettingsContent() {
                         <p className="text-sm text-muted-foreground">No active sessions</p>
                       )}
                     </div>
+                    {/* Pagination */}
+                    {accountInfo && accountInfo.sessions.length > SESSIONS_PER_PAGE && (
+                      <div className="flex items-center justify-between pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSessionPage(p => Math.max(1, p - 1))}
+                          disabled={sessionPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          Page {sessionPage} of {Math.ceil(accountInfo.sessions.length / SESSIONS_PER_PAGE)}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSessionPage(p => Math.min(Math.ceil(accountInfo.sessions.length / SESSIONS_PER_PAGE), p + 1))}
+                          disabled={sessionPage >= Math.ceil(accountInfo.sessions.length / SESSIONS_PER_PAGE)}
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                     {accountInfo && accountInfo.sessions.length > 1 && (
                       <Button
                         variant="outline"
