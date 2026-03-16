@@ -480,387 +480,395 @@ function SettingsContent() {
                     Manage your account security settings.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Login Methods & Connected Accounts */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium flex items-center gap-2">
-                      <KeyRound className="h-4 w-4" />
-                      Login Methods & Connected Accounts
-                    </h4>
-                    <div className="space-y-2">
-                      {accountInfo?.accounts.map((account) => (
-                        <div
-                          key={account._id}
-                          className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
-                        >
-                          <div className="flex items-center gap-3">
-                            {account.provider === "password" ? (
-                              <KeyRound className="h-4 w-4 text-muted-foreground" />
-                            ) : account.provider === "google" ? (
-                              <div className="h-4 w-4 flex items-center justify-center">
-                                <Image 
-                                  src="https://www.google.com/favicon.ico" 
-                                  alt="Google" 
-                                  width={16} 
-                                  height={16}
-                                  unoptimized
-                                />
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Left Column - Login Methods & Sessions */}
+                    <div className="space-y-6">
+                      {/* Login Methods & Connected Accounts */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-medium flex items-center gap-2">
+                          <KeyRound className="h-4 w-4" />
+                          Login Methods & Connected Accounts
+                        </h4>
+                        <div className="space-y-2">
+                          {accountInfo?.accounts.map((account) => (
+                            <div
+                              key={account._id}
+                              className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+                            >
+                              <div className="flex items-center gap-3">
+                                {account.provider === "password" ? (
+                                  <KeyRound className="h-4 w-4 text-muted-foreground" />
+                                ) : account.provider === "google" ? (
+                                  <div className="h-4 w-4 flex items-center justify-center">
+                                    <Image 
+                                      src="https://www.google.com/favicon.ico" 
+                                      alt="Google" 
+                                      width={16} 
+                                      height={16}
+                                      unoptimized
+                                    />
+                                  </div>
+                                ) : (
+                                  <Smartphone className="h-4 w-4 text-muted-foreground" />
+                                )}
+                                <div>
+                                  <p className="text-sm font-medium capitalize">
+                                    {account.provider === "password" ? "Email & Password" : account.provider}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Connected {new Date(account.createdAt).toLocaleDateString()}
+                                  </p>
+                                </div>
                               </div>
-                            ) : (
-                              <Smartphone className="h-4 w-4 text-muted-foreground" />
-                            )}
-                            <div>
-                              <p className="text-sm font-medium capitalize">
-                                {account.provider === "password" ? "Email & Password" : account.provider}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Connected {new Date(account.createdAt).toLocaleDateString()}
-                              </p>
+                              {account.provider === "password" && (
+                                <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded">
+                                  Active
+                                </span>
+                              )}
                             </div>
-                          </div>
-                          {account.provider === "password" && (
-                            <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded">
-                              Active
-                            </span>
+                          ))}
+                          {(!accountInfo?.accounts || accountInfo.accounts.length === 0) && (
+                            <p className="text-sm text-muted-foreground">No connected accounts</p>
                           )}
                         </div>
-                      ))}
-                      {(!accountInfo?.accounts || accountInfo.accounts.length === 0) && (
-                        <p className="text-sm text-muted-foreground">No connected accounts</p>
-                      )}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Sessions */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium flex items-center gap-2">
-                      <Smartphone className="h-4 w-4" />
-                      Active Sessions
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Manage your active sessions across devices.
-                    </p>
-                    <div className="space-y-2">
-                      {accountInfo?.sessions
-                        .slice((sessionPage - 1) * SESSIONS_PER_PAGE, sessionPage * SESSIONS_PER_PAGE)
-                        .map((session) => (
-                        <div
-                          key={session._id}
-                          className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
-                        >
-                          <div>
-                            <p className="text-sm font-medium">
-                              {session.isCurrentSession ? "This device" : "Other device"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Signed in {new Date(session.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          {session.isCurrentSession && (
-                            <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded">
-                              Current
-                            </span>
+                      {/* Sessions */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-medium flex items-center gap-2">
+                          <Smartphone className="h-4 w-4" />
+                          Active Sessions
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Manage your active sessions across devices.
+                        </p>
+                        <div className="space-y-2">
+                          {accountInfo?.sessions
+                            .slice((sessionPage - 1) * SESSIONS_PER_PAGE, sessionPage * SESSIONS_PER_PAGE)
+                            .map((session) => (
+                            <div
+                              key={session._id}
+                              className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+                            >
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {session.isCurrentSession ? "This device" : "Other device"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Signed in {new Date(session.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              {session.isCurrentSession && (
+                                <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded">
+                                  Current
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                          {(!accountInfo?.sessions || accountInfo.sessions.length === 0) && (
+                            <p className="text-sm text-muted-foreground">No active sessions</p>
                           )}
                         </div>
-                      ))}
-                      {(!accountInfo?.sessions || accountInfo.sessions.length === 0) && (
-                        <p className="text-sm text-muted-foreground">No active sessions</p>
-                      )}
-                    </div>
-                    {/* Pagination */}
-                    {accountInfo && accountInfo.sessions.length > SESSIONS_PER_PAGE && (
-                      <div className="flex items-center justify-between pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSessionPage(p => Math.max(1, p - 1))}
-                          disabled={sessionPage === 1}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                          Previous
-                        </Button>
-                        <span className="text-sm text-muted-foreground">
-                          Page {sessionPage} of {Math.ceil(accountInfo.sessions.length / SESSIONS_PER_PAGE)}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSessionPage(p => Math.min(Math.ceil(accountInfo.sessions.length / SESSIONS_PER_PAGE), p + 1))}
-                          disabled={sessionPage >= Math.ceil(accountInfo.sessions.length / SESSIONS_PER_PAGE)}
-                        >
-                          Next
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                    {accountInfo && accountInfo.sessions.length > 1 && (
-                      <Button
-                        variant="outline"
-                        onClick={async () => {
-                          setIsLoggingOutSessions(true)
-                          setSessionMessage("")
-                          try {
-                            await invalidateOtherSessions()
-                            setSessionMessage("All other sessions have been logged out")
-                          } catch (error) {
-                            setSessionMessage(error instanceof Error ? error.message : "Failed to logout sessions")
-                          } finally {
-                            setIsLoggingOutSessions(false)
-                          }
-                        }}
-                        disabled={isLoggingOutSessions}
-                        className="gap-2"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        {isLoggingOutSessions ? "Logging out..." : "Log Out All Other Devices"}
-                      </Button>
-                    )}
-                    {sessionMessage && (
-                      <p className={`text-sm ${sessionMessage.includes("Failed") ? "text-red-500" : "text-emerald-500"}`}>
-                        {sessionMessage}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Change Password */}
-                  <div className="space-y-4 pt-4 border-t">
-                    <h4 className="text-sm font-medium">Change Password</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Enter your current password and choose a new password.
-                    </p>
-                    
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="current-password">Current Password</Label>
-                        <Input
-                          id="current-password"
-                          type="password"
-                          value={currentPassword}
-                          onChange={(e) => {
-                            setCurrentPassword(e.target.value)
-                            setPasswordError("")
-                            setPasswordSuccess(false)
-                          }}
-                          placeholder="Enter current password"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="new-password">New Password</Label>
-                        <Input
-                          id="new-password"
-                          type="password"
-                          value={newPassword}
-                          onChange={(e) => {
-                            setNewPassword(e.target.value)
-                            setPasswordError("")
-                            setPasswordSuccess(false)
-                          }}
-                          placeholder="Enter new password"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm New Password</Label>
-                        <Input
-                          id="confirm-password"
-                          type="password"
-                          value={confirmPassword}
-                          onChange={(e) => {
-                            setConfirmPassword(e.target.value)
-                            setPasswordError("")
-                            setPasswordSuccess(false)
-                          }}
-                          placeholder="Confirm new password"
-                        />
-                      </div>
-                      
-                      {passwordError && (
-                        <p className="text-sm text-red-500">{passwordError}</p>
-                      )}
-                      
-                      {passwordSuccess && (
-                        <p className="text-sm text-emerald-500">Password changed successfully!</p>
-                      )}
-                      
-                      <Button
-                        onClick={async () => {
-                          setPasswordError("")
-                          setPasswordSuccess(false)
-                          
-                          if (!currentPassword) {
-                            setPasswordError("Please enter your current password")
-                            return
-                          }
-                          
-                          if (!newPassword) {
-                            setPasswordError("Please enter a new password")
-                            return
-                          }
-                          
-                          if (newPassword.length < 8) {
-                            setPasswordError("New password must be at least 8 characters")
-                            return
-                          }
-                          
-                          if (newPassword !== confirmPassword) {
-                            setPasswordError("New passwords do not match")
-                            return
-                          }
-                          
-                          setIsChangingPassword(true)
-                          try {
-                            await changePassword({
-                              currentPassword,
-                              newPassword,
-                            })
-                            setCurrentPassword("")
-                            setNewPassword("")
-                            setConfirmPassword("")
-                            setPasswordSuccess(true)
-                          } catch (error) {
-                            setPasswordError(error instanceof Error ? error.message : "Failed to change password")
-                          } finally {
-                            setIsChangingPassword(false)
-                          }
-                        }}
-                        disabled={isChangingPassword}
-                        className="gap-2"
-                      >
-                        {isChangingPassword ? "Changing..." : "Change Password"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Delete Account */}
-                  <div className="space-y-4 pt-4 border-t">
-                    <h4 className="text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-2">
-                      <Trash2 className="h-4 w-4" />
-                      Delete Account
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Permanently delete your account and all associated data. This action cannot be undone.
-                    </p>
-                    
-                    {deleteConfirmStep === 0 && (
-                      <Button
-                        variant="destructive"
-                        onClick={() => setDeleteConfirmStep(1)}
-                        className="gap-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete Account
-                      </Button>
-                    )}
-                    
-                    {deleteConfirmStep === 1 && (
-                      <div className="space-y-3 p-4 border border-red-300 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-950/30">
-                        <p className="text-sm font-medium text-red-700 dark:text-red-300">
-                          Step 1 of 3: Are you sure you want to delete your account?
-                        </p>
-                        <p className="text-xs text-red-600 dark:text-red-400">
-                          All your data will be permanently deleted and cannot be recovered.
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setDeleteConfirmStep(2)}
-                          >
-                            Yes, continue
-                          </Button>
+                        {/* Pagination */}
+                        {accountInfo && accountInfo.sessions.length > SESSIONS_PER_PAGE && (
+                          <div className="flex items-center justify-between pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSessionPage(p => Math.max(1, p - 1))}
+                              disabled={sessionPage === 1}
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                              Previous
+                            </Button>
+                            <span className="text-sm text-muted-foreground">
+                              Page {sessionPage} of {Math.ceil(accountInfo.sessions.length / SESSIONS_PER_PAGE)}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSessionPage(p => Math.min(Math.ceil(accountInfo.sessions.length / SESSIONS_PER_PAGE), p + 1))}
+                              disabled={sessionPage >= Math.ceil(accountInfo.sessions.length / SESSIONS_PER_PAGE)}
+                            >
+                              Next
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                        {accountInfo && accountInfo.sessions.length > 1 && (
                           <Button
                             variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setDeleteConfirmStep(0)
-                              setDeleteConfirmText("")
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {deleteConfirmStep === 2 && (
-                      <div className="space-y-3 p-4 border border-red-300 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-950/30">
-                        <p className="text-sm font-medium text-red-700 dark:text-red-300">
-                          Step 2 of 3: Type <span className="font-mono bg-red-100 dark:bg-red-900 px-1 rounded">DELETE</span> to confirm
-                        </p>
-                        <Input
-                          value={deleteConfirmText}
-                          onChange={(e) => setDeleteConfirmText(e.target.value)}
-                          placeholder="Type DELETE"
-                          className="max-w-xs"
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            disabled={deleteConfirmText !== "DELETE"}
-                            onClick={() => setDeleteConfirmStep(3)}
-                          >
-                            Continue
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setDeleteConfirmStep(0)
-                              setDeleteConfirmText("")
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {deleteConfirmStep === 3 && (
-                      <div className="space-y-3 p-4 border-2 border-red-500 rounded-lg bg-red-50 dark:bg-red-950/30">
-                        <p className="text-sm font-medium text-red-700 dark:text-red-300">
-                          Step 3 of 3: Enter your password to confirm deletion
-                        </p>
-                        <Input
-                          type="password"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          placeholder="Enter your password"
-                          className="max-w-xs"
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            disabled={!currentPassword || isDeleting}
                             onClick={async () => {
-                              setIsDeleting(true)
+                              setIsLoggingOutSessions(true)
+                              setSessionMessage("")
                               try {
-                                await deleteAccount()
-                                window.location.href = "/"
+                                await invalidateOtherSessions()
+                                setSessionMessage("All other sessions have been logged out")
                               } catch (error) {
-                                alert(error instanceof Error ? error.message : "Failed to delete account")
+                                setSessionMessage(error instanceof Error ? error.message : "Failed to logout sessions")
                               } finally {
-                                setIsDeleting(false)
+                                setIsLoggingOutSessions(false)
                               }
                             }}
+                            disabled={isLoggingOutSessions}
+                            className="gap-2"
                           >
-                            {isDeleting ? "Deleting..." : "Confirm Delete Account"}
+                            <LogOut className="h-4 w-4" />
+                            {isLoggingOutSessions ? "Logging out..." : "Log Out All Other Devices"}
                           </Button>
+                        )}
+                        {sessionMessage && (
+                          <p className={`text-sm ${sessionMessage.includes("Failed") ? "text-red-500" : "text-emerald-500"}`}>
+                            {sessionMessage}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right Column - Password & Delete */}
+                    <div className="space-y-6">
+                      {/* Change Password */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-medium">Change Password</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Enter your current password and choose a new password.
+                        </p>
+                        
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="current-password">Current Password</Label>
+                            <Input
+                              id="current-password"
+                              type="password"
+                              value={currentPassword}
+                              onChange={(e) => {
+                                setCurrentPassword(e.target.value)
+                                setPasswordError("")
+                                setPasswordSuccess(false)
+                              }}
+                              placeholder="Enter current password"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="new-password">New Password</Label>
+                            <Input
+                              id="new-password"
+                              type="password"
+                              value={newPassword}
+                              onChange={(e) => {
+                                setNewPassword(e.target.value)
+                                setPasswordError("")
+                                setPasswordSuccess(false)
+                              }}
+                              placeholder="Enter new password"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="confirm-password">Confirm New Password</Label>
+                            <Input
+                              id="confirm-password"
+                              type="password"
+                              value={confirmPassword}
+                              onChange={(e) => {
+                                setConfirmPassword(e.target.value)
+                                setPasswordError("")
+                                setPasswordSuccess(false)
+                              }}
+                              placeholder="Confirm new password"
+                            />
+                          </div>
+                          
+                          {passwordError && (
+                            <p className="text-sm text-red-500">{passwordError}</p>
+                          )}
+                          
+                          {passwordSuccess && (
+                            <p className="text-sm text-emerald-500">Password changed successfully!</p>
+                          )}
+                          
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setDeleteConfirmStep(0)
-                              setDeleteConfirmText("")
+                            onClick={async () => {
+                              setPasswordError("")
+                              setPasswordSuccess(false)
+                              
+                              if (!currentPassword) {
+                                setPasswordError("Please enter your current password")
+                                return
+                              }
+                              
+                              if (!newPassword) {
+                                setPasswordError("Please enter a new password")
+                                return
+                              }
+                              
+                              if (newPassword.length < 8) {
+                                setPasswordError("New password must be at least 8 characters")
+                                return
+                              }
+                              
+                              if (newPassword !== confirmPassword) {
+                                setPasswordError("New passwords do not match")
+                                return
+                              }
+                              
+                              setIsChangingPassword(true)
+                              try {
+                                await changePassword({
+                                  currentPassword,
+                                  newPassword,
+                                })
+                                setCurrentPassword("")
+                                setNewPassword("")
+                                setConfirmPassword("")
+                                setPasswordSuccess(true)
+                              } catch (error) {
+                                setPasswordError(error instanceof Error ? error.message : "Failed to change password")
+                              } finally {
+                                setIsChangingPassword(false)
+                              }
                             }}
+                            disabled={isChangingPassword}
+                            className="gap-2"
                           >
-                            Cancel
+                            {isChangingPassword ? "Changing..." : "Change Password"}
                           </Button>
                         </div>
                       </div>
-                    )}
+
+                      {/* Delete Account */}
+                      <div className="space-y-4 pt-4 border-t">
+                        <h4 className="text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-2">
+                          <Trash2 className="h-4 w-4" />
+                          Delete Account
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Permanently delete your account and all associated data. This action cannot be undone.
+                        </p>
+                        
+                        {deleteConfirmStep === 0 && (
+                          <Button
+                            variant="destructive"
+                            onClick={() => setDeleteConfirmStep(1)}
+                            className="gap-2"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete Account
+                          </Button>
+                        )}
+                        
+                        {deleteConfirmStep === 1 && (
+                          <div className="space-y-3 p-4 border border-red-300 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-950/30">
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                              Step 1 of 3: Are you sure you want to delete your account?
+                            </p>
+                            <p className="text-xs text-red-600 dark:text-red-400">
+                              All your data will be permanently deleted and cannot be recovered.
+                            </p>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setDeleteConfirmStep(2)}
+                              >
+                                Yes, continue
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setDeleteConfirmStep(0)
+                                  setDeleteConfirmText("")
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {deleteConfirmStep === 2 && (
+                          <div className="space-y-3 p-4 border border-red-300 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-950/30">
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                              Step 2 of 3: Type <span className="font-mono bg-red-100 dark:bg-red-900 px-1 rounded">DELETE</span> to confirm
+                            </p>
+                            <Input
+                              value={deleteConfirmText}
+                              onChange={(e) => setDeleteConfirmText(e.target.value)}
+                              placeholder="Type DELETE"
+                              className="max-w-xs"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={deleteConfirmText !== "DELETE"}
+                                onClick={() => setDeleteConfirmStep(3)}
+                              >
+                                Continue
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setDeleteConfirmStep(0)
+                                  setDeleteConfirmText("")
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {deleteConfirmStep === 3 && (
+                          <div className="space-y-3 p-4 border-2 border-red-500 rounded-lg bg-red-50 dark:bg-red-950/30">
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                              Step 3 of 3: Enter your password to confirm deletion
+                            </p>
+                            <Input
+                              type="password"
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              placeholder="Enter your password"
+                              className="max-w-xs"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={!currentPassword || isDeleting}
+                                onClick={async () => {
+                                  setIsDeleting(true)
+                                  try {
+                                    await deleteAccount()
+                                    window.location.href = "/"
+                                  } catch (error) {
+                                    alert(error instanceof Error ? error.message : "Failed to delete account")
+                                  } finally {
+                                    setIsDeleting(false)
+                                  }
+                                }}
+                              >
+                                {isDeleting ? "Deleting..." : "Confirm Delete Account"}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setDeleteConfirmStep(0)
+                                  setDeleteConfirmText("")
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
