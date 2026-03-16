@@ -177,15 +177,15 @@ test.describe("Finance Notes Page", () => {
       await previewButton.click();
       await authenticatedPage.waitForTimeout(500);
       
-      const mainContent = authenticatedPage.locator("main");
-      await expect(mainContent.locator("h1")).toBeVisible();
-      await expect(mainContent.locator("h2")).toBeVisible();
-      await expect(mainContent.locator("strong")).toBeVisible();
-      await expect(mainContent.locator("em")).toBeVisible();
-      await expect(mainContent.locator("ul")).toBeVisible();
-      await expect(mainContent.locator("ol")).toBeVisible();
-      await expect(mainContent.locator("blockquote")).toBeVisible();
-      await expect(mainContent.locator("code")).toBeVisible();
+      const noteContent = authenticatedPage.locator(".overflow-y-auto.p-6");
+      await expect(noteContent.locator("h1")).toBeVisible();
+      await expect(noteContent.locator("h2")).toBeVisible();
+      await expect(noteContent.locator("strong")).toBeVisible();
+      await expect(noteContent.locator("em")).toBeVisible();
+      await expect(noteContent.locator("ul")).toBeVisible();
+      await expect(noteContent.locator("ol")).toBeVisible();
+      await expect(noteContent.locator("blockquote")).toBeVisible();
+      await expect(noteContent.locator("code")).toBeVisible();
     }
   });
 
