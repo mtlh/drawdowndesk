@@ -84,9 +84,10 @@ test.describe("Finance Notes Page", () => {
     
     if (await newNoteButton.isVisible()) {
       await newNoteButton.click();
-      await authenticatedPage.waitForTimeout(500);
+      await authenticatedPage.waitForTimeout(1000);
       
-      const contentArea = authenticatedPage.getByPlaceholder(/start typing/i);
+      const contentArea = authenticatedPage.locator("#content");
+      await contentArea.waitFor({ state: "visible", timeout: 10000 });
       await contentArea.fill("This is test content for auto-save verification");
       await authenticatedPage.waitForTimeout(300);
       
@@ -108,9 +109,10 @@ test.describe("Finance Notes Page", () => {
     
     if (await newNoteButton.isVisible()) {
       await newNoteButton.click();
-      await authenticatedPage.waitForTimeout(500);
+      await authenticatedPage.waitForTimeout(1000);
       
-      const contentArea = authenticatedPage.getByPlaceholder(/start typing/i);
+      const contentArea = authenticatedPage.locator("#content");
+      await contentArea.waitFor({ state: "visible", timeout: 10000 });
       await contentArea.fill("# Test Header\n\nSome content here");
       await authenticatedPage.waitForTimeout(500);
       
@@ -134,9 +136,10 @@ test.describe("Finance Notes Page", () => {
     
     if (await newNoteButton.isVisible()) {
       await newNoteButton.click();
-      await authenticatedPage.waitForTimeout(500);
+      await authenticatedPage.waitForTimeout(1000);
       
-      const contentArea = authenticatedPage.getByPlaceholder(/start typing/i);
+      const contentArea = authenticatedPage.locator("#content");
+      await contentArea.waitFor({ state: "visible", timeout: 10000 });
       const markdownContent = `# Heading 1
 
 ## Heading 2
