@@ -135,12 +135,12 @@ export async function globalTeardown() {
   
   try {
     console.log("Running cleanup after tests...");
-    await cleanupPage(page, "holdings", 'button[aria-label="Delete"], button:has-text("Delete")');
-    await cleanupPage(page, "goal-tracker", 'button[aria-label="Delete"], button:has-text("Delete")');
-    await cleanupPage(page, "what-if-scenarios", 'button[aria-label="Delete"], button:has-text("Delete")');
+    await cleanupPage(page, "holdings", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
+    await cleanupPage(page, "goal-tracker", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
+    await cleanupPage(page, "what-if-scenarios", 'button:has-text("Delete")');
     await cleanupPage(page, "finance-notes", '[title*="Delete"], button:has-text("Delete")');
-    await cleanupPage(page, "lifetime-accumulation", 'button[aria-label="Delete"], button:has-text("Delete")');
-    await cleanupPage(page, "accumulation-forecast", 'button[aria-label="Delete"], button:has-text("Delete")');
+    await cleanupPage(page, "lifetime-accumulation", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
+    await cleanupPage(page, "accumulation-forecast", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
     console.log("=== GLOBAL TEARDOWN COMPLETE ===");
   } catch (error) {
     console.error("Global teardown failed:", error);
