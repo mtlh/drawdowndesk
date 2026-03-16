@@ -116,7 +116,7 @@ function SettingsContent() {
   const [isLoggingOutSessions, setIsLoggingOutSessions] = useState(false)
   const [sessionMessage, setSessionMessage] = useState("")
   const [sessionPage, setSessionPage] = useState(1)
-  const SESSIONS_PER_PAGE = 5
+  const SESSIONS_PER_PAGE = 3
 
   // Delete account
   const [deleteConfirmStep, setDeleteConfirmStep] = useState(0)
