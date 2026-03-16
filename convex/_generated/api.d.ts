@@ -10,7 +10,9 @@
 
 import type * as accounts_accountCrud from "../accounts/accountCrud.js";
 import type * as auth from "../auth.js";
+import type * as auth_changePassword from "../auth/changePassword.js";
 import type * as auth_getUser from "../auth/getUser.js";
+import type * as auth_security from "../auth/security.js";
 import type * as calculators_getTaxYearInfo from "../calculators/getTaxYearInfo.js";
 import type * as calculators_runMonteCarlo from "../calculators/runMonteCarlo.js";
 import type * as calculators_seedHistoricalReturns from "../calculators/seedHistoricalReturns.js";
@@ -46,7 +48,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   "accounts/accountCrud": typeof accounts_accountCrud;
   auth: typeof auth;
+  "auth/changePassword": typeof auth_changePassword;
   "auth/getUser": typeof auth_getUser;
+  "auth/security": typeof auth_security;
   "calculators/getTaxYearInfo": typeof calculators_getTaxYearInfo;
   "calculators/runMonteCarlo": typeof calculators_runMonteCarlo;
   "calculators/seedHistoricalReturns": typeof calculators_seedHistoricalReturns;
