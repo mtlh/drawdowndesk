@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -83,36 +83,48 @@ export default function LifetimeAccumulation() {
     notes: "",
   });
 
-  // Projection settings - use latest record's age as default
-  const [currentAge, setCurrentAge] = useState(30);
+  // Projection settings - use latest record's age as default (lazy init)
+  const [currentAge, setCurrentAge] = useState(() => latestAccumulation?.userAge ?? 30);
   const [retirementAge, setRetirementAge] = useState(65);
-  const [annualReturn, setAnnualReturn] = useState(5);
-  const [inflation, setInflation] = useState(2);
+  const [annualReturn, setAnnualReturn] = useState(() => userSettings?.defaultGrowthRate ?? 5);
+  const [inflation, setInflation] = useState(() => userSettings?.defaultInflationRate ?? 2);
 
   // Continuous contributions state
   const [contributions, setContributions] = useState<MonthlyContribution[]>([]);
   const [isEditingContributions, setIsEditingContributions] = useState(false);
 
-  // Set default age from latest accumulation and sync with user settings
+  // Refs to track initialization
+  const ageInitialized = useRef(false);
+  const contributionsInitialized = useRef(false);
+
+  // Set default age from latest accumulation when available
   useEffect(() => {
-    if (latestAccumulation) {
+    if (latestAccumulation && !ageInitialized.current) {
+      ageInitialized.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentAge(latestAccumulation.userAge);
     }
+  }, [latestAccumulation]);
+
+  // Sync user settings
+  useEffect(() => {
     if (userSettings) {
-      setAnnualReturn(userSettings.defaultGrowthRate ?? 5)
-      setInflation(userSettings.defaultInflationRate ?? 2)
+      setAnnualReturn(userSettings.defaultGrowthRate ?? 5);
+      setInflation(userSettings.defaultInflationRate ?? 2);
     }
-  }, [latestAccumulation, userSettings]);
+  }, [userSettings]);
 
   // Initialize contributions from database when available
   useEffect(() => {
-    if (continuousContributionsData?.contributions) {
+    if (continuousContributionsData?.contributions && !contributionsInitialized.current) {
+      contributionsInitialized.current = true;
       try {
         const parsed = JSON.parse(continuousContributionsData.contributions);
         const loaded: MonthlyContribution[] = Object.entries(parsed).map(([accountName, monthlyAmount]) => ({
           accountName,
           monthlyAmount: monthlyAmount as number,
         }));
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setContributions(loaded);
       } catch (error) {
         console.warn("Failed to parse continuous contributions JSON:", error);

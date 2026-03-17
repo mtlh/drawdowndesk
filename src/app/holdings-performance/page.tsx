@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, LineChart as LineChartIcon, Check } from "lucide-react";
@@ -115,12 +115,14 @@ export default function BenchmarkComparisonPage() {
   }, [holdingsBySymbol, priceHistoryBySymbol]);
 
   // Initialize enabled holdings on first load
+  const initialized = useRef(false);
   useEffect(() => {
-    if (holdingsWithPerformance.length > 0 && enabledHoldings.size === 0) {
-      const all = new Set(holdingsWithPerformance.map(h => h.symbol));
-      setEnabledHoldings(all);
+    if (holdingsWithPerformance.length > 0 && !initialized.current) {
+      initialized.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEnabledHoldings(new Set(holdingsWithPerformance.map(h => h.symbol)));
     }
-  }, [holdingsWithPerformance, enabledHoldings.size]);
+  }, [holdingsWithPerformance]);
 
   const toggleHolding = (symbol: string) => {
     const newSet = new Set(enabledHoldings);

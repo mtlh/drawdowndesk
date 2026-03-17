@@ -1,29 +1,6 @@
-import { test as base, chromium } from "@playwright/test";
+import { test as base, type Page } from "@playwright/test";
 
-const TEST_USER_EMAIL = process.env.JEST_USERNAME || "";
-const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
-
-interface CleanupData {
-  holdings: string[];
-  portfolios: string[];
-  goals: string[];
-  scenarios: string[];
-  accounts: string[];
-  financeNotes: string[];
-  lifetimeAccumulations: string[];
-}
-
-const createdData: CleanupData = {
-  holdings: [],
-  portfolios: [],
-  goals: [],
-  scenarios: [],
-  accounts: [],
-  financeNotes: [],
-  lifetimeAccumulations: [],
-};
-
-export async function cleanupTestData(page: any) {
+export async function cleanupTestData(page: Page) {
   console.log("Running cleanup of test data...");
   
   try {
@@ -46,17 +23,18 @@ export async function cleanupTestData(page: any) {
             await page.waitForTimeout(500);
           }
         }
-      } catch (e) {
+      } catch {
         console.log("Could not delete item", i);
       }
     }
-  } catch (e) {
-    console.log("Cleanup error:", e);
+  } catch {
+    console.log("Cleanup error");
   }
 }
 
 export const cleanup = base.extend<{ cleanup: () => Promise<void> }>({
   cleanup: async ({}, use) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(async () => {
       console.log("Test cleanup triggered");
     });

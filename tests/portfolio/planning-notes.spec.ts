@@ -28,7 +28,6 @@ test.describe("Finance Notes Page", () => {
   });
 
   test("should display loading skeletons then content", async ({ authenticatedPage }) => {
-    const skeleton = authenticatedPage.locator("[class*='skeleton']").first();
     await authenticatedPage.waitForTimeout(500);
     
     const content = authenticatedPage.locator("main").first();
@@ -239,7 +238,7 @@ test.describe("Finance Notes Page", () => {
     if (hasNote) {
       // Check for keyboard shortcut hint
       const shortcutHint = authenticatedPage.getByText(/ctrl\+s/i);
-      const hintVisible = await shortcutHint.isVisible().catch(() => false);
+      await shortcutHint.isVisible().catch(() => false);
       
       // Check for word count when typing
       const newNoteButton = authenticatedPage.getByRole("button", { name: /new note/i });

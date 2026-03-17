@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
 
 export const updateSimpleHolding = mutation({
   args: {

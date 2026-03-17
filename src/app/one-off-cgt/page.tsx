@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -107,28 +107,8 @@ export default function OneOffCashflow() {
     yearsToSpread: 3,
   })
 
-  const [singleYearCalc, setSingleYearCalc] = useState<TaxCalculation>({
-    totalWithdrawal: 0,
-    taxableAmount: 0,
-    incomeTax: 0,
-    nationalInsurance: 0,
-    capitalGainsTax: 0,
-    totalTax: 0,
-    netAmount: 0,
-  })
-
-  const [multiYearCalc, setMultiYearCalc] = useState<TaxCalculation>({
-    totalWithdrawal: 0,
-    taxableAmount: 0,
-    incomeTax: 0,
-    nationalInsurance: 0,
-    capitalGainsTax: 0,
-    totalTax: 0,
-    netAmount: 0,
-  })
-
-
-  useEffect(() => {
+  // Calculate tax calculations using useMemo to avoid setState in effect
+  const taxCalculations = useMemo(() => {
     // Convert to TaxRates inside effect to use stable TAX_RATES reference
     const rates = TAX_RATES && !('error' in TAX_RATES) ? toTaxRates(TAX_RATES) : null;
 
@@ -188,9 +168,14 @@ export default function OneOffCashflow() {
           };
       };
 
-    setSingleYearCalc(calculateTax(1))
-    setMultiYearCalc(calculateTax(data.yearsToSpread))
-  }, [data, TAX_RATES, isRetired])
+    return {
+      singleYear: calculateTax(1),
+      multiYear: calculateTax(data.yearsToSpread),
+    };
+  }, [data, TAX_RATES, isRetired]);
+
+  const singleYearCalc = taxCalculations.singleYear;
+  const multiYearCalc = taxCalculations.multiYear;
 
   const savings = singleYearCalc.capitalGainsTax - multiYearCalc.capitalGainsTax
 

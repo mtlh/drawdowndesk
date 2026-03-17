@@ -16,7 +16,7 @@ export const getHoldingSnapshots = query({
     cutoffDate.setMonth(cutoffDate.getMonth() - months);
     const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-    let query = ctx.db
+    const query = ctx.db
       .query("holdingSnapshots")
       .withIndex("by_userSymbolDate", (q) => 
         q.eq("userId", userId)

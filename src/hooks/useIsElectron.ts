@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
+
+function subscribe() {
+  return () => {};
+}
 
 export function useIsElectron() {
-  const [isElectron, setIsElectron] = useState(false);
-
-  useEffect(() => {
-    setIsElectron(!!window.electron?.isElectron);
-  }, []);
-
-  return isElectron;
+  return useSyncExternalStore(
+    subscribe,
+    () => !!window.electron?.isElectron,
+    () => false
+  );
 }

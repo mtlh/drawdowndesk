@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+import { chromium, type Page } from "@playwright/test";
 import * as path from "path";
 import * as fs from "fs";
 
@@ -14,7 +14,7 @@ console.log("BASE_URL:", BASE_URL);
 console.log("JEST_USERNAME:", TEST_USER_EMAIL ? "set" : "NOT SET");
 console.log("JEST_PASSWORD:", TEST_USER_PASSWORD ? "set" : "NOT SET");
 
-async function authenticate(page: any) {
+async function authenticate(page: Page) {
   console.log("Authenticating with BASE_URL:", BASE_URL);
   await page.goto(BASE_URL + "/", { timeout: 30000 });
   await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
@@ -47,7 +47,7 @@ async function authenticate(page: any) {
   await page.waitForURL("**/holdings", { timeout: 30000 });
 }
 
-async function cleanupPage(page: any, pagePath: string, deleteSelector: string) {
+async function cleanupPage(page: Page, pagePath: string, deleteSelector: string) {
   console.log(`Cleaning up ${pagePath}...`);
   try {
     await page.goto(`${BASE_URL}/${pagePath}`, { timeout: 10000 });
@@ -71,7 +71,7 @@ async function cleanupPage(page: any, pagePath: string, deleteSelector: string) 
             await page.waitForTimeout(1000);
           }
         }
-      } catch (e) {
+      } catch {
         console.log(`  Could not delete item ${i}`);
       }
     }

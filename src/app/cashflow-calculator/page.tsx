@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -291,12 +291,12 @@ export default function RetirementCashflowCalculator() {
   const [giaValue, setGiaValue] = useState(100000);
 
   // Growth and withdrawal rates (same for all accounts)
-  const [growthRate, setGrowthRate] = useState(5);
+  const [growthRate, setGrowthRate] = useState(() => userSettings?.defaultGrowthRate ?? 5);
   const [withdrawalRate, setWithdrawalRate] = useState(3);
 
   // State pension - use user settings if available, otherwise use defaults
-  const [statePension, setStatePension] = useState(11000);
-  const [statePensionAge, setStatePensionAge] = useState(67);
+  const [statePension] = useState(() => userSettings?.statePensionAmount ?? 11000);
+  const [statePensionAge] = useState(() => userSettings?.statePensionAge ?? 67);
   const [startAge, setStartAge] = useState(55);
 
   // Save current settings as a scenario
@@ -322,15 +322,6 @@ export default function RetirementCashflowCalculator() {
       console.error("Failed to save scenario:", error);
     }
   };
-
-  // Sync values with user settings when they load
-  useEffect(() => {
-    if (userSettings) {
-      setStatePension(userSettings.statePensionAmount);
-      setStatePensionAge(userSettings.statePensionAge);
-      setGrowthRate(userSettings.defaultGrowthRate ?? 5);
-    }
-  }, [userSettings]);
 
   // Build accounts array
   const accounts: Account[] = [

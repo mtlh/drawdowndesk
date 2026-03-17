@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useSyncExternalStore, useEffect } from "react"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import { Id } from "../../convex/_generated/dataModel"
@@ -13,6 +13,25 @@ interface UserSettingsData {
   isRetired: boolean
 }
 
+function getLocalStorageTheme(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('theme');
+    return (stored === 'light' || stored === 'dark') ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function subscribeToLocalStorage(callback: () => void) {
+  window.addEventListener('storage', callback);
+  window.addEventListener('theme-change', callback);
+  return () => {
+    window.removeEventListener('storage', callback);
+    window.removeEventListener('theme-change', callback);
+  };
+}
+
 export function useUserTheme() {
   const user = useCurrentUser()
   const ensureSettings = useMutation(api.tax.userSettings.ensureUserSettings)
@@ -21,32 +40,21 @@ export function useUserTheme() {
     user ? { userId: user._id as Id<"users"> } : "skip"
   ) as UserSettingsData | null | undefined
   const updateTheme = useMutation(api.tax.userSettings.saveUserSettings)
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [localTheme, setLocalTheme] = useState<string | null>(null)
-
-  // Read localStorage after mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('theme')
-      if (stored === 'light' || stored === 'dark') {
-        setLocalTheme(stored)
-      }
-    } catch {
-      // localStorage not available
-    }
-  }, [])
+  
+  const localTheme = useSyncExternalStore(
+    subscribeToLocalStorage,
+    getLocalStorageTheme,
+    () => null
+  )
 
   // Ensure settings exist on first load
   useEffect(() => {
-    if (user && !isInitialized) {
-      ensureSettings({ userId: user._id as Id<"users"> }).then(() => {
-        setIsInitialized(true)
-      })
+    if (user && !userSettings) {
+      ensureSettings({ userId: user._id as Id<"users"> })
     }
-  }, [user, isInitialized, ensureSettings])
+  }, [user, userSettings, ensureSettings])
 
   // Use DB value if loaded, otherwise use localStorage
-  // Don't override - let layout script handle the initial theme
   const theme = userSettings !== undefined
     ? userSettings?.theme
     : (localTheme ?? undefined)
@@ -63,13 +71,11 @@ export function useUserTheme() {
   }, [theme, userSettings])
 
   const setTheme = (newTheme: "light" | "dark") => {
-    // Save to localStorage immediately for flash prevention
     try {
       localStorage.setItem('theme', newTheme)
     } catch {
       // localStorage not available
     }
-    // Apply to DOM immediately for instant toggle
     if (newTheme === "dark") {
       document.documentElement.classList.add("dark")
     } else {

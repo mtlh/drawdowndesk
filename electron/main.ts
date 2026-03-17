@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, Menu, Tray, nativeImage, NativeImage, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, Menu, Tray, nativeImage, NativeImage, ipcMain, screen, Notification } from 'electron';
 import path from 'path';
 import Store from 'electron-store';
 import { APP_VERSION, GITHUB_REPO, DOWNLOAD_FILENAME } from './version';
@@ -30,13 +30,13 @@ const isDev = !app.isPackaged;
 const DEV_URL = process.env.DEV_URL || 'http://localhost:3000';
 const PROD_URL = process.env.PROD_URL || 'https://drawdowndesk.vercel.app';
 
-// Download URL for the app
-const DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/${APP_VERSION}/${DOWNLOAD_FILENAME}`;
+// Download URL for the app (reserved for future auto-update feature)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _DOWNLOAD_URL = `https://github.com/${GITHUB_REPO}/releases/download/${APP_VERSION}/${DOWNLOAD_FILENAME}`;
 
 // Icon path - uses favicon.ico from the app folder
 // Use app.getAppPath() for proper path in both dev and production
 const getIconPath = () => {
-  const { app } = require('electron');
   // In development, app.getAppPath() returns project root
   // In production, it returns the app.asar location
   const appPath = app.isPackaged
@@ -57,7 +57,6 @@ function createWindow() {
   let windowState = store.get('windowState') || defaultState;
 
   // Validate window state - ensure it's on screen
-  const { screen } = require('electron');
   const displays = screen.getAllDisplays();
   const isOnScreen = displays.some((display: Electron.Display) => {
     const bounds = display.bounds;
@@ -358,7 +357,6 @@ function setupIpcHandlers() {
   });
 
   ipcMain.on('show-notification', (event, { title, body }) => {
-    const { Notification } = require('electron');
     if (Notification.isSupported()) {
       new Notification({ title, body }).show();
     }

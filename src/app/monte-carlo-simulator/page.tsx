@@ -62,9 +62,9 @@ export default function MonteCarloSimulator() {
       const isMedian = key === "Median";
       return { key, value, isWorst, isBest, isMedian };
     });
-  }, [monteCarloReturn?.percentitleReturns]);
+  }, [monteCarloReturn]);
 
-  const caseKeys = useMemo(() => monteCarloReturn?.caseKeys ?? [], [monteCarloReturn?.caseKeys]);
+  const caseKeys = useMemo(() => monteCarloReturn?.caseKeys ?? [], [monteCarloReturn]);
 
   if (queryResult === undefined) {
     return (

@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
 
 // Calculate total portfolio value and save net worth snapshot
 export const calculateAndSaveNetWorthSnapshot = mutation({

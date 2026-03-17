@@ -16,7 +16,7 @@ import {
   AreaChart,
   Area,
 } from "recharts"
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 
 // Deterministic pseudo-random function based on index for consistent SSR/client rendering
 function starPosition(index: number) {
@@ -29,16 +29,16 @@ function starPosition(index: number) {
   return { x, y, size, opacity, delay, duration };
 }
 
+function subscribe() {
+  return () => {};
+}
+
 export default function Login() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <div className="min-h-screen w-full bg-[#030712]" />;
-  }
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false
+  );
 
   // Sample data for charts
   const portfolioData = [
