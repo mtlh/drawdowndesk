@@ -132,16 +132,16 @@ export function calculateTakeHomePay(
     personalAllowance = Math.max(0, personalAllowance - taperedAmount);
   }
 
-  // Simple NI calculation (class 1 - main rate for 2023/24)
+  // Simple NI calculation (class 1 - main rate for 2024/25)
   // Note: This is a simplified version; real NI has multiple thresholds
   let nationalInsurance = 0;
   if (includeNationalInsurance) {
-    const niThreshold = 12570; // 2023/24 primary threshold
-    const niUpperLimit = 50270; // 2023/24 upper limit
+    const niThreshold = 12570; // 2024/25 primary threshold
+    const niUpperLimit = 50270; // 2024/25 upper limit
     if (grossIncome > niThreshold) {
       const niTaxableAtMainRate = Math.min(grossIncome, niUpperLimit) - niThreshold;
       const niTaxableAtAdditionalRate = Math.max(0, grossIncome - niUpperLimit);
-      nationalInsurance = niTaxableAtMainRate * 0.12 + niTaxableAtAdditionalRate * 0.02;
+      nationalInsurance = niTaxableAtMainRate * 0.08 + niTaxableAtAdditionalRate * 0.02;
     }
   }
 

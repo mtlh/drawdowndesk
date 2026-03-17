@@ -25,7 +25,13 @@ export const updateUserHolding = mutation({
       return { error: "User not found." };
     }
 
-    // 1. Find existing holding using composite index
+    // 1. Verify portfolio belongs to the user before any operations
+    const portfolio = await ctx.db.get(args.portfolioId);
+    if (!portfolio || portfolio.userId !== userId) {
+      return { error: "Portfolio not found or access denied." };
+    }
+
+    // 2. Find existing holding using composite index
     const existing = await ctx.db
       .query("holdings")
       .withIndex("by_portfolio", q => q.eq("userId", userId).eq("portfolioId", args.portfolioId))
@@ -41,7 +47,7 @@ export const updateUserHolding = mutation({
 
     const now = new Date().toISOString();
 
-    // 2. Insert if missing
+    // 3. Insert if missing
     if (!existingHolding) {
       const holdingId = await ctx.db.insert("holdings", {
         userId,
@@ -76,7 +82,7 @@ export const updateUserHolding = mutation({
       return { created: true };
     }
 
-    // 3. Update if present
+    // 4. Update if present
     if (existingHolding._id) {
       // Calculate the difference in shares to log as transaction
       const shareDifference = args.shares - existingHolding.shares;

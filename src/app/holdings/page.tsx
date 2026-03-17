@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,13 +12,14 @@ import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { RefreshButton } from "@/components/RefreshHoldingsButton"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, CartesianGrid, XAxis, YAxis } from "recharts"
-import { CHART_COLORS, DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
+import { ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, CartesianGrid, XAxis, YAxis } from "recharts"
 import { getPriceInPounds } from "@/lib/utils"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
 import { useToast } from "@/hooks/useToast"
 import { PieChartTooltip, ChartTooltip } from "@/components/chart-tooltip"
 import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
+import { EmptyHoldingsState, NoValueHoldingsState, AllocationChart } from "@/components/holdings"
+import { validateField, commonRules } from "@/lib/validation"
 
 type PortfolioExpanded = {
   portfolio: Portfolio
@@ -104,13 +104,9 @@ export default function HoldingsPage() {
       setPortfolioNameError(null);
       return;
     }
-    if (newPortfolioName.trim().length < 2) {
-      setPortfolioNameError("Portfolio name must be at least 2 characters");
-    } else if (newPortfolioName.trim().length > 50) {
-      setPortfolioNameError("Portfolio name must be 50 characters or less");
-    } else {
-      setPortfolioNameError(null);
-    }
+    const minLengthError = validateField(newPortfolioName.trim(), [commonRules.minLength(2)]);
+    const maxLengthError = validateField(newPortfolioName.trim(), [commonRules.maxLength(50)]);
+    setPortfolioNameError(minLengthError || maxLengthError || null);
   }, [newPortfolioName]);
 
   // Reusable pie chart tooltip
@@ -743,126 +739,18 @@ export default function HoldingsPage() {
                     <CardContent className="flex-1 flex items-center justify-center pt-2 px-4 pb-5">
                       {isManual ? (
                         portfolioSimpleHoldings.length === 0 ? (
-                          <div className="py-8 text-center">
-                            <div className="text-muted-foreground mb-4">No holdings in this portfolio yet.</div>
-                            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                              <Link href={`/holdings/${portfolioExpanded.id}`}>
-                                <Button size="sm" className="gap-1.5">
-                                  <Plus className="h-4 w-4" />
-                                  Add Holding
-                                </Button>
-                              </Link>
-                              <Link href={`/holdings/${portfolioExpanded.id}`}>
-                                <Button variant="outline" size="sm">
-                                  View Portfolio
-                                </Button>
-                              </Link>
-                            </div>
-                          </div>
+                          <EmptyHoldingsState portfolioId={portfolioExpanded.id} />
                         ) : allocationData.length === 0 ? (
-                          <Link
-                            href={`/holdings/${portfolioExpanded.id}`}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                          >
-                            <div className="py-8 text-center text-muted-foreground hover:text-foreground">
-                              No holdings with value in this portfolio.
-                              <div className="mt-4 text-sm font-medium">Click to manage holdings</div>
-                            </div>
-                          </Link>
+                          <NoValueHoldingsState portfolioId={portfolioExpanded.id} message="No holdings with value in this portfolio." />
                         ) : (
-                          <Link
-                            href={`/holdings/${portfolioExpanded.id}`}
-                            className="w-full cursor-pointer hover:opacity-80 transition-opacity"
-                          >
-                            <ResponsiveContainer width="100%" height={200}>
-                              <PieChart>
-                                <Pie
-                                  data={allocationData}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={DONUT_INNER_RADIUS}
-                                  outerRadius={DONUT_OUTER_RADIUS}
-                                  paddingAngle={3}
-                                  cornerRadius={8}
-                                  dataKey="value"
-                                >
-                                  {allocationData.map((item, index) => (
-                                    <Cell key={item.name} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
-                                  ))}
-                                </Pie>
-                                <RechartsTooltip content={PieTooltip} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-1 px-2">
-                              {allocationData.slice(0, 5).map((item, index) => (
-                                <div key={item.name} className="flex items-center gap-1.5 text-xs">
-                                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
-                                  <span className="text-muted-foreground">{item.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </Link>
+                          <AllocationChart allocationData={allocationData} portfolioId={portfolioExpanded.id} PieTooltip={PieTooltip} />
                         )
                       ) : portfolioHoldings.length === 0 ? (
-                        <div className="py-8 text-center">
-                          <div className="text-muted-foreground mb-4">No holdings in this portfolio yet.</div>
-                          <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                            <Link href={`/holdings/${portfolioExpanded.id}`}>
-                              <Button size="sm" className="gap-1.5">
-                                <Plus className="h-4 w-4" />
-                                Add Holding
-                              </Button>
-                            </Link>
-                            <Link href={`/holdings/${portfolioExpanded.id}`}>
-                              <Button variant="outline" size="sm">
-                                View Portfolio
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
+                        <EmptyHoldingsState portfolioId={portfolioExpanded.id} />
                       ) : allocationData.length === 0 ? (
-                        <Link
-                          href={`/holdings/${portfolioExpanded.id}`}
-                          className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                          <div className="py-8 text-center text-muted-foreground hover:text-foreground">
-                            No holdings with market value in this portfolio.
-                            <div className="mt-4 text-sm font-medium">Click to manage holdings</div>
-                          </div>
-                        </Link>
+                        <NoValueHoldingsState portfolioId={portfolioExpanded.id} message="No holdings with market value in this portfolio." />
                       ) : (
-                        <Link
-                          href={`/holdings/${portfolioExpanded.id}`}
-                          className="w-full cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                          <ResponsiveContainer width="100%" height={200}>
-                            <PieChart>
-                              <Pie
-                                data={allocationData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={DONUT_INNER_RADIUS}
-                                outerRadius={DONUT_OUTER_RADIUS}
-                                paddingAngle={3}
-                                cornerRadius={8}
-                                dataKey="value"
-                              >
-                                {allocationData.map((item, index) => (
-                                  <Cell key={item.name} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
-                                ))}
-                              </Pie>
-                              <RechartsTooltip content={PieTooltip} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-1 px-2">
-                            {allocationData.slice(0, 5).map((item, index) => (
-                              <div key={item.name} className="flex items-center gap-1.5 text-xs">
-                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
-                                <span className="text-muted-foreground">{item.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </Link>
+                        <AllocationChart allocationData={allocationData} portfolioId={portfolioExpanded.id} PieTooltip={PieTooltip} />
                       )}
                     </CardContent>
                   </Card>

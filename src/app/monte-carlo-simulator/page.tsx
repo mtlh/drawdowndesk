@@ -34,15 +34,25 @@ const CHART_COLORS = [
   "#14B8A6",
 ];
 
+function isMonteCarloResult(result: unknown): result is monteCarloReturn {
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    'percentitleReturns' in result
+  );
+}
+
 export default function MonteCarloSimulator() {
 
   const [timePeriod, setTimePeriod] = useState(20);
   const [assetName, setAssetName] = useState("FTSE Global All Cap");
 
-  const monteCarloReturn = useQuery(api.calculators.runMonteCarlo.getAssetReturnsforPeriods, {
+  const queryResult = useQuery(api.calculators.runMonteCarlo.getAssetReturnsforPeriods, {
     assetName: assetName,
     yearPeriod: timePeriod
-  }) as unknown as monteCarloReturn;
+  });
+
+  const monteCarloReturn = isMonteCarloResult(queryResult) ? queryResult : null;
 
   const percentileCards = useMemo(() => {
     if (!monteCarloReturn?.percentitleReturns) return null;
@@ -56,7 +66,7 @@ export default function MonteCarloSimulator() {
 
   const caseKeys = useMemo(() => monteCarloReturn?.caseKeys ?? [], [monteCarloReturn?.caseKeys]);
 
-  if (monteCarloReturn === undefined) {
+  if (queryResult === undefined) {
     return (
       <div className="flex min-h-screen bg-background">
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
