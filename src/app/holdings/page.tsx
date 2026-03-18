@@ -87,6 +87,14 @@ export default function HoldingsPage() {
   // Debounce ref for portfolio rename
   const debouncedUpdateRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
+  // Cleanup debounce timeouts on unmount
+  useEffect(() => {
+    const timeouts = debouncedUpdateRef.current;
+    return () => {
+      Object.values(timeouts).forEach(clearTimeout);
+    };
+  }, []);
+
   // Get unique account names from holdings
   const uniqueAccounts = useMemo(() => {
     const accounts = new Set<string>();
