@@ -323,8 +323,8 @@ export default function RetirementCashflowCalculator() {
     }
   };
 
-  // Build accounts array
-  const accounts: Account[] = [
+  // Build accounts array - memoized to prevent recalculations on each render
+  const accounts = useMemo((): Account[] => [
     {
       type: "pension",
       value: pensionValue,
@@ -349,7 +349,7 @@ export default function RetirementCashflowCalculator() {
       color: "var(--chart-4)",
       description: "Taxed on gains within income brackets",
     },
-  ];
+  ], [pensionValue, isaValue, giaValue]);
 
   const totalPortfolio = pensionValue + isaValue + giaValue;
 
