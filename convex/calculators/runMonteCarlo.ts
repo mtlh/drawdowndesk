@@ -26,14 +26,22 @@ export const getAssetReturnsforPeriods = query({
     yearPeriod: v.number(),    // e.g., 5
   },
   handler: async (ctx, args) => {
+    if (args.yearPeriod < 1) {
+      return { error: "yearPeriod must be at least 1" };
+    }
+
     // Get the asset document
     const asset = await ctx.db
       .query("historicalReturns")
       .withIndex("by_asset", (q) => q.eq("assetName", args.assetName))
       .collect();
-    if (!asset) return { 
+    if (!asset || asset.length === 0) return {
         error: "Asset not found."
      };
+
+    if (args.yearPeriod >= asset.length) {
+      return { error: `yearPeriod must be less than the number of historical years (${asset.length})` };
+    }
 
     // remove the last x years from the array
     const trimmedReturns = asset.slice(args.yearPeriod, asset.length);
