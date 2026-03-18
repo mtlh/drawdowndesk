@@ -96,6 +96,7 @@ export default function LifetimeAccumulation() {
   // Refs to track initialization
   const ageInitialized = useRef(false);
   const contributionsInitialized = useRef(false);
+  const settingsInitialized = useRef(false);
 
   // Set default age from latest accumulation when available
   useEffect(() => {
@@ -106,14 +107,16 @@ export default function LifetimeAccumulation() {
     }
   }, [latestAccumulation]);
 
-  // Sync user settings
+  // Sync user settings only on first load (not on every change)
+  // This effect intentionally syncs initial state from async query result
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    if (userSettings) {
+    if (userSettings && !settingsInitialized.current) {
+      settingsInitialized.current = true;
+      /* eslint-disable react-hooks/set-state-in-effect */
       setAnnualReturn(userSettings.defaultGrowthRate ?? 5);
       setInflation(userSettings.defaultInflationRate ?? 2);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [userSettings]);
 
   // Initialize contributions from database when available
