@@ -16,19 +16,25 @@ export const getHoldingSnapshots = query({
     cutoffDate.setMonth(cutoffDate.getMonth() - months);
     const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-    const query = ctx.db
-      .query("holdingSnapshots")
-      .withIndex("by_userSymbolDate", (q) => 
-        q.eq("userId", userId)
-      );
+    let query;
+    if (args.symbol) {
+      query = ctx.db
+        .query("holdingSnapshots")
+        .withIndex("by_userSymbolDate", (q) =>
+          q.eq("userId", userId)
+           .eq("symbol", args.symbol!)
+        );
+    } else {
+      query = ctx.db
+        .query("holdingSnapshots")
+        .withIndex("by_userSymbolDate", (q) =>
+          q.eq("userId", userId)
+        );
+    }
 
     const snapshots = await query.collect();
 
-    // Filter by date and optionally by symbol
-    return snapshots.filter(s => 
-      s.snapshotDate >= cutoffStr &&
-      (!args.symbol || s.symbol === args.symbol)
-    );
+    return snapshots.filter(s => s.snapshotDate >= cutoffStr);
   },
 });
 
