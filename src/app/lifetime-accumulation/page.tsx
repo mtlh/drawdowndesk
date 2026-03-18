@@ -108,10 +108,12 @@ export default function LifetimeAccumulation() {
 
   // Sync user settings
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (userSettings) {
       setAnnualReturn(userSettings.defaultGrowthRate ?? 5);
       setInflation(userSettings.defaultInflationRate ?? 2);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [userSettings]);
 
   // Initialize contributions from database when available
