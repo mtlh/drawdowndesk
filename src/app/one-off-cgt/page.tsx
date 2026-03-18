@@ -23,6 +23,7 @@ import {
 } from "@/lib/taxCalculations"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { type TaxInfo } from "@/lib/createTakeHome"
+import { CURRENT_TAX_YEAR } from "@/lib/constants"
 
 interface WithdrawalData {
   pension: number | undefined
@@ -92,7 +93,7 @@ export default function OneOffCashflow() {
 
   // Get current tax data - passes userId for custom overrides
   const TAX_RATES = useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, {
-    taxYear: 2025,
+    taxYear: CURRENT_TAX_YEAR,
     userId: user?._id as Id<"users"> | undefined,
     incomeType: incomeType,
   }) as TaxInfo | undefined;

@@ -11,6 +11,7 @@ import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { getPriceInPounds } from "@/lib/utils"
+import { CURRENT_TAX_YEAR } from "@/lib/constants"
 import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
 
 interface HoldingWithLoss {
@@ -76,7 +77,7 @@ export default function TaxLossHarvestingPage() {
   const taxInfo = useQuery(
     api.tax.runTaxQuery.getTaxInfoForIncome,
     user ? {
-      taxYear: 2025,
+      taxYear: CURRENT_TAX_YEAR,
       userId: user._id as Id<"users">,
       incomeType: incomeType,
     } : "skip"

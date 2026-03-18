@@ -40,6 +40,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { CreateTakeHome, TaxInfo } from "@/lib/createTakeHome";
+import { CURRENT_TAX_YEAR } from "@/lib/constants";
 import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonChart, SkeletonText, SkeletonList } from "@/components/ui/skeleton";
 
 interface CashflowYear {
@@ -204,7 +205,7 @@ function useCurrentUserQuery(): CurrentUserResult | undefined {
 
 function useTaxInfoQuery(userId: string | undefined): TaxInfo {
   return useQuery(api.tax.runTaxQuery.getTaxInfoForIncome, {
-    taxYear: 2025,
+    taxYear: CURRENT_TAX_YEAR,
     userId: userId as Id<"users"> | undefined
   }) as TaxInfo;
 }
