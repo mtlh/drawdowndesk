@@ -175,7 +175,7 @@ function calculateCashflowScenario(
       pensionTaxFree,
       pensionTaxed,
       grossIncome: pensionWithdrawal + isaWithdrawal + giaWithdrawal + currentStatePension,
-      incomeTax: pensionIncomeTax + giaIncomeTax + ((currentStatePension / (totalTaxableIncome || 1)) * incomeTax || 0) + nationalInsurance,
+      incomeTax: pensionIncomeTax + giaIncomeTax + (totalTaxableIncome > 0 ? (currentStatePension / totalTaxableIncome) * incomeTax : 0) + nationalInsurance,
       nationalInsurance,
       takeHomePay: totalTakeHome,
     });
