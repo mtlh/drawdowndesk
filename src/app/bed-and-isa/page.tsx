@@ -45,23 +45,6 @@ interface HoldingData {
   currency: string
 }
 
-
-
-interface TaxInfo {
-  capitalGainsTax?: Array<{
-    annualExemptAmount: number
-    basicRatePercent: number
-    higherRatePercent: number
-  }>
-  bands?: Array<{
-    bandName: string
-    bandEndAmount: number
-  }>
-  personalAllowance?: {
-    amount: number
-  }
-}
-
 const ISA_ALLOWANCE_2025_26 = 20000
 
 export default function BedAndISAPage() {
@@ -87,7 +70,7 @@ export default function BedAndISAPage() {
       userId: user._id as Id<"users">,
       incomeType: incomeType,
     } : "skip"
-  ) as TaxInfo | undefined
+  )
 
   const [selectedHoldingKey, setSelectedHoldingKey] = useState<string>("")
   const [sharesToTransfer, setSharesToTransfer] = useState<number>(0)

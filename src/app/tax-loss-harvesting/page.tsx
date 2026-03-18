@@ -29,21 +29,6 @@ interface HoldingWithLoss {
   replacementSuggestions: string[]
 }
 
-interface TaxInfo {
-  capitalGainsTax?: Array<{
-    annualExemptAmount: number
-    basicRatePercent: number
-    higherRatePercent: number
-  }>
-  bands?: Array<{
-    bandName: string
-    bandEndAmount: number
-  }>
-  personalAllowance?: {
-    amount: number
-  }
-}
-
 const REPLACEMENT_SUGGESTIONS: Record<string, string[]> = {
   "VWRL": ["IWDA", "SPEM", "SWRD"],
   "VWRD": ["IWD", "SPY", "SCHF"],
@@ -95,7 +80,7 @@ export default function TaxLossHarvestingPage() {
       userId: user._id as Id<"users">,
       incomeType: incomeType,
     } : "skip"
-  ) as TaxInfo | undefined
+  )
 
   const [minLossFilter, setMinLossFilter] = useState<string>("0")
   const [accountFilter, setAccountFilter] = useState<string>("all")
