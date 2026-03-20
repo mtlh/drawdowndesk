@@ -1,5 +1,6 @@
 import { getPriceInPounds } from "./utils"
 import { EXTENDED_PALETTE } from "./constants"
+import { Id } from "../../convex/_generated/dataModel"
 
 // Extended palette for treemap accounts - now imported from constants
 
@@ -26,8 +27,6 @@ export interface PortfolioSummary {
   totalChangePercent: number
   portfolios: CalculatedPortfolio[]
 }
-
-export type Id<T> = string & { __tableName: T }
 
 export interface Holding {
   _id: Id<"holdings"> | undefined

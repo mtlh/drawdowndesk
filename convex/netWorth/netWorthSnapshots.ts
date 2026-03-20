@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import { convertToGBP } from "../currencyUtils";
 
 // Calculate total portfolio value and save net worth snapshot
 export const calculateAndSaveNetWorthSnapshot = mutation({
@@ -26,12 +27,7 @@ export const calculateAndSaveNetWorthSnapshot = mutation({
 
     for (const holding of allHoldings) {
       const shares = holding.shares || 0;
-      let currentPrice = holding.currentPrice || 0;
-
-      // Convert GBp (pence) to GBP (pounds)
-      if (holding.currency === "GBp") {
-        currentPrice = currentPrice / 100;
-      }
+      const currentPrice = convertToGBP(holding.currentPrice || 0, holding.currency);
 
       investmentsValue += shares * currentPrice;
     }

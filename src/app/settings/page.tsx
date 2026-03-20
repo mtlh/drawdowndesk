@@ -15,10 +15,9 @@ import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { useUserTheme } from "@/hooks/useUserTheme"
 import { useIsElectron } from "@/hooks/useIsElectron"
 import { DOWNLOAD_URL } from "@/lib/app-config"
+import { CURRENT_TAX_YEAR } from "@/lib/constants"
 
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-
-const CURRENT_TAX_YEAR = 2025
 
 // Default UK values for 2025/26
 const DEFAULT_ALLOWANCE = {

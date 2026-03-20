@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { getPriceInPounds } from "@/lib/utils"
 import { validateForm, commonRules, ValidationRule } from "@/lib/validation"
-import { PortfolioWithHoldings } from "@/types/portfolios"
+import { PortfolioWithHoldings, isPortfolioArray } from "@/types/portfolios"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -39,6 +39,51 @@ interface Goal {
   lastUpdated?: string
 }
 
+// Pure helper functions moved outside component for performance
+const calculateProgress = (goal: Goal) => {
+  const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)
+  return Math.round(progress)
+}
+
+const calculateDaysRemaining = (targetDate: string) => {
+  const today = new Date()
+  const target = new Date(targetDate)
+  const diffTime = target.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays
+}
+
+const calculateMonthlyNeeded = (goal: Goal) => {
+  const daysRemaining = calculateDaysRemaining(goal.targetDate)
+  if (daysRemaining <= 0) return 0
+  const amountRemaining = goal.targetAmount - goal.currentAmount
+  const monthsRemaining = daysRemaining / 30
+  return amountRemaining > 0 ? amountRemaining / monthsRemaining : 0
+}
+
+// Helper function to calculate portfolio total value in GBP
+const getPortfolioTotalValue = (portfolio: PortfolioWithHoldings | undefined): number => {
+  if (!portfolio) return 0
+  let total = 0
+
+  // Add live holdings value (shares * currentPrice), converted to GBP
+  if (portfolio.holdings) {
+    for (const holding of portfolio.holdings) {
+      const holdingValue = (holding.shares || 0) * (holding.currentPrice || 0)
+      total += getPriceInPounds(holdingValue, holding.currency)
+    }
+  }
+
+  // Add simple holdings value (already in GBP per schema)
+  if (portfolio.simpleHoldings) {
+    for (const holding of portfolio.simpleHoldings) {
+      total += holding.value || 0
+    }
+  }
+
+  return total
+}
+
 export default function GoalTracker() {
   const goals = useQuery(api.goals.goalCrud.getGoalsWithPortfolio)
   const portfolios = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio)
@@ -64,50 +109,33 @@ export default function GoalTracker() {
 
   const isLoading = goals === undefined
 
-  // Calculate progress and time remaining for each goal
-  const calculateProgress = (goal: Goal) => {
-    const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)
-    return Math.round(progress)
-  }
-
-  const calculateDaysRemaining = (targetDate: string) => {
-    const today = new Date()
-    const target = new Date(targetDate)
-    const diffTime = target.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays
-  }
-
-  const calculateMonthlyNeeded = (goal: Goal) => {
-    const daysRemaining = calculateDaysRemaining(goal.targetDate)
-    if (daysRemaining <= 0) return 0
-    const amountRemaining = goal.targetAmount - goal.currentAmount
-    const monthsRemaining = daysRemaining / 30
-    return amountRemaining > 0 ? amountRemaining / monthsRemaining : 0
-  }
-
-  // Helper function to calculate portfolio total value in GBP
-  const getPortfolioTotalValue = (portfolio: PortfolioWithHoldings | undefined): number => {
-    if (!portfolio) return 0
-    let total = 0
-
-    // Add live holdings value (shares * currentPrice), converted to GBP
-    if (portfolio.holdings) {
-      for (const holding of portfolio.holdings) {
-        const holdingValue = (holding.shares || 0) * (holding.currentPrice || 0)
-        total += getPriceInPounds(holdingValue, holding.currency)
+  // Memoize computed goal data to avoid recalculating on each render
+  const goalData = useMemo(() => {
+    if (!goals) return []
+    const portfolioArray = isPortfolioArray(portfolios) ? portfolios : []
+    return goals.map(goal => {
+      const linkedPortfolio = goal.linkedPortfolioId
+        ? portfolioArray.find(p => p._id === goal.linkedPortfolioId)
+        : undefined
+      const portfolioValue = linkedPortfolio ? getPortfolioTotalValue(linkedPortfolio) : 0
+      return {
+        goal,
+        progress: calculateProgress(goal),
+        daysRemaining: calculateDaysRemaining(goal.targetDate),
+        monthlyNeeded: calculateMonthlyNeeded(goal),
+        portfolioValue,
       }
-    }
+    })
+  }, [goals, portfolios])
 
-    // Add simple holdings value (already in GBP per schema)
-    if (portfolio.simpleHoldings) {
-      for (const holding of portfolio.simpleHoldings) {
-        total += holding.value || 0
-      }
-    }
-
-    return total
-  }
+  // Memoize portfolio options for the select dropdown
+  const portfolioOptions = useMemo(() => {
+    if (!isPortfolioArray(portfolios)) return []
+    return portfolios.map(portfolio => ({
+      portfolio,
+      value: getPortfolioTotalValue(portfolio),
+    }))
+  }, [portfolios])
 
   const handleCreateGoal = async () => {
     const validation = validateForm(newGoal, {
@@ -401,9 +429,9 @@ export default function GoalTracker() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="none">None (manual tracking)</SelectItem>
-                                {Array.isArray(portfolios) && portfolios.map((portfolio) => (
+                                {portfolioOptions.map(({ portfolio, value }) => (
                                   <SelectItem key={portfolio._id} value={portfolio._id}>
-                                    {portfolio.name} (£{getPortfolioTotalValue(portfolio).toLocaleString()})
+                                    {portfolio.name} (£{value.toLocaleString()})
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -684,9 +712,9 @@ export default function GoalTracker() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">None (manual tracking)</SelectItem>
-                            {Array.isArray(portfolios) && portfolios.map((portfolio) => (
+                            {portfolioOptions.map(({ portfolio, value }) => (
                               <SelectItem key={portfolio._id} value={portfolio._id}>
-                                {portfolio.name} (£{getPortfolioTotalValue(portfolio).toLocaleString()})
+                                {portfolio.name} (£{value.toLocaleString()})
                               </SelectItem>
                             ))}
                           </SelectContent>

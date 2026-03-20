@@ -162,11 +162,8 @@ export const calculateAndSaveSnapshot = mutation({
       });
     }
 
-    // Fetch all portfolio snapshots for today at once to avoid N+1 queries
-    const allPortfolioSnapshots = await ctx.db
-      .query("portfolioSnapshots")
-      .withIndex("by_userDate", q => q.eq("userId", userId).eq("snapshotDate", today))
-      .collect();
+    // Reuse allTodaySnapshots from above instead of querying again
+    const allPortfolioSnapshots = allTodaySnapshots;
 
     // Group snapshots by portfolioId
     const snapshotsByPortfolioId = new Map<Id<"portfolios">, typeof allPortfolioSnapshots>();

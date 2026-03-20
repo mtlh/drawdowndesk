@@ -12,6 +12,17 @@ import { api } from "../../../convex/_generated/api"
 import ReactMarkdown from "react-markdown"
 import { Id } from "../../../convex/_generated/dataModel"
 
+// Helper function to truncate text at word boundary
+function truncateAtWord(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  const truncated = text.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+  if (lastSpace > 0) {
+    return truncated.slice(0, lastSpace) + "...";
+  }
+  return truncated + "...";
+}
+
 export default function FinanceNotesPage() {
   const allNotes = useQuery(api.financeNotes.financeNotesCrud.getAllFinanceNotes)
   const createNote = useMutation(api.financeNotes.financeNotesCrud.createFinanceNote)
@@ -274,7 +285,7 @@ export default function FinanceNotesPage() {
                         {note.title || "Untitled Note"}
                       </p>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {note.content.slice(0, 60) || "No content"}
+                        {truncateAtWord(note.content, 60) || "No content"}
                       </p>
                       {note.lastUpdated && (
                         <p className="text-xs text-muted-foreground mt-1.5">

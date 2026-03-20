@@ -24,12 +24,20 @@ export const getAllHoldings = query({
 
 export const getAllUserIdsWithHoldings = query({
   handler: async (ctx) => {
+    // Use 6-hour cache cutoff like getAllHoldings for consistency
+    const sixHoursMs = 6 * 60 * 60 * 1000;
+    const cutoff = Date.now() - sixHoursMs;
+
+    // First get all holdings with recent updates (lastUpdated within 6 hours)
     const holdings = await ctx.db
       .query("holdings")
+      .filter(q => q.gt(q.field("lastUpdated"), new Date(cutoff).toISOString()))
       .collect();
 
+    // Get simple holdings with recent updates
     const simpleHoldings = await ctx.db
       .query("simpleHoldings")
+      .filter(q => q.gt(q.field("lastUpdated"), new Date(cutoff).toISOString()))
       .collect();
 
     const userIds = new Set<Id<"users">>();
@@ -60,12 +68,24 @@ export const updateHoldingWithTicker = mutation({
 
     if (existingHoldingsWithSymbol.length > 0) {
       for (const holding of existingHoldingsWithSymbol) {
+        // Handle GBX to GBP conversion: if currency changed from GBX to GBP,
+        // we need to convert avgPrice from pence to pounds for consistency
+        const newCurrency = args.currency || holding.currency;
+        let avgPrice = holding.avgPrice;
+
+        // If currency is changing from GBX to GBP, convert avgPrice from pence to pounds
+        if (holding.currency === "GBX" && newCurrency === "GBP") {
+          avgPrice = holding.avgPrice / 100;
+        }
+
         await ctx.db.replace(holding._id, {
             ...holding,
             currentPrice: args.currentPrice,
-            currency: args.currency || holding.currency,
+            currency: newCurrency,
+            avgPrice: avgPrice,
         });
       }
+      return { success: true };
     }
     return { error: "Holding not found." };
   },

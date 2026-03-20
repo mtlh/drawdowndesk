@@ -1,6 +1,7 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { convertToGBP } from "../currencyUtils";
 
 export const getGoals = query({
   args: {},
@@ -182,10 +183,7 @@ export const getGoalsWithPortfolio = query({
       // Calculate holdings value with currency conversion
       const holdingsValue = holdings.reduce((sum, h) => {
         const rawValue = (h.shares || 0) * (h.currentPrice || 0);
-        if (h.currency === "GBp") {
-          return sum + (rawValue / 100);
-        }
-        return sum + rawValue;
+        return sum + convertToGBP(rawValue, h.currency);
       }, 0);
 
       const simpleHoldingsValue = simpleHoldings.reduce((sum, s) => sum + (s.value || 0), 0);
@@ -260,10 +258,7 @@ export const syncAllAutoSyncGoals = mutation({
 
       const holdingsValue = holdings.reduce((sum, h) => {
         const rawValue = (h.shares || 0) * (h.currentPrice || 0);
-        if (h.currency === "GBp") {
-          return sum + (rawValue / 100);
-        }
-        return sum + rawValue;
+        return sum + convertToGBP(rawValue, h.currency);
       }, 0);
 
       const simpleHoldingsValue = simpleHoldings.reduce((sum, s) => sum + (s.value || 0), 0);
