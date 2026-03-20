@@ -12,6 +12,13 @@ export type PortfolioDataResult =
   | { success: false; error: string; isLoading: boolean };
 
 /**
+ * Generic result type for Convex queries
+ */
+export type QueryResult<T> =
+  | { success: true; data: T; isLoading: boolean }
+  | { success: false; error: string; isLoading: boolean };
+
+/**
  * Hook that abstracts the common pattern of:
  * - Querying user portfolio data
  * - Handling loading state
@@ -19,7 +26,10 @@ export type PortfolioDataResult =
  * - Validating response format
  */
 export function usePortfolioData(): PortfolioDataResult {
-  const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
+  const getPortfolioData = useQuery(
+    api.portfolio.getUserPortfolio.getUserPortfolio,
+    {}
+  );
 
   // Loading state
   if (getPortfolioData === undefined) {

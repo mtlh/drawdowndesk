@@ -6,12 +6,14 @@ export const getHoldingSnapshots = query({
   args: {
     months: v.optional(v.number()),
     symbol: v.optional(v.string()),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
     const months = args.months || 12;
+    const limit = args.limit || 365;
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - months);
     const cutoffStr = cutoffDate.toISOString().split("T")[0];
@@ -32,9 +34,11 @@ export const getHoldingSnapshots = query({
         );
     }
 
-    const snapshots = await query.collect();
+    const allSnapshots = await query.order("asc").collect();
 
-    return snapshots.filter(s => s.snapshotDate >= cutoffStr);
+    // Filter by date and return most recent N
+    const filtered = allSnapshots.filter(s => s.snapshotDate >= cutoffStr);
+    return filtered.slice(-limit);
   },
 });
 

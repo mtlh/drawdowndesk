@@ -209,6 +209,7 @@ export const calculateAndSaveSnapshot = mutation({
 export const getPortfolioSnapshots = query({
   args: {
     months: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
 
   handler: async (ctx, args) => {
@@ -218,18 +219,21 @@ export const getPortfolioSnapshots = query({
     }
 
     const months = args.months || 12;
+    const limit = args.limit || 365; // Default to 1 year, max 365
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - months);
     const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-    const snapshots = await ctx.db
+    let query = ctx.db
       .query("portfolioSnapshots")
       .withIndex("by_userDate", q => q.eq("userId", userId))
-      .filter(q => q.gte(q.field("snapshotDate"), cutoffStr))
-      .order("asc")
-      .collect();
+      .filter(q => q.gte(q.field("snapshotDate"), cutoffStr));
 
-    return snapshots;
+    // Apply limit by taking from the end (most recent)
+    const allSnapshots = await query.order("asc").collect();
+
+    // Return most recent N snapshots
+    return allSnapshots.slice(-limit);
   },
 });
 
@@ -238,6 +242,7 @@ export const getPortfolioPerformanceSnapshots = query({
   args: {
     portfolioId: v.id("portfolios"),
     range: v.optional(v.union(v.literal("1D"), v.literal("1W"), v.literal("1M"), v.literal("YTD"), v.literal("1Y"))),
+    limit: v.optional(v.number()),
   },
 
   handler: async (ctx, args) => {
@@ -247,6 +252,7 @@ export const getPortfolioPerformanceSnapshots = query({
     }
 
     const range = args.range || "1M";
+    const limit = args.limit || 365;
     const today = new Date();
     let cutoffDate: Date;
 
@@ -275,7 +281,7 @@ export const getPortfolioPerformanceSnapshots = query({
 
     const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-    const snapshots = await ctx.db
+    const allSnapshots = await ctx.db
       .query("portfolioSnapshots")
       .withIndex("by_userPortfolioDate", q =>
         q.eq("userId", userId).eq("portfolioId", args.portfolioId)
@@ -284,7 +290,8 @@ export const getPortfolioPerformanceSnapshots = query({
       .order("asc")
       .collect();
 
-    return snapshots;
+    // Return most recent N snapshots
+    return allSnapshots.slice(-limit);
   },
 });
 

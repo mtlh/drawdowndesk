@@ -88,6 +88,7 @@ export const calculateAndSaveNetWorthSnapshot = mutation({
 export const getNetWorthSnapshots = query({
   args: {
     months: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
 
   handler: async (ctx, args) => {
@@ -97,17 +98,19 @@ export const getNetWorthSnapshots = query({
     }
 
     const months = args.months || 12;
+    const limit = args.limit || 365;
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - months);
     const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-    const snapshots = await ctx.db
+    const allSnapshots = await ctx.db
       .query("netWorthSnapshots")
       .withIndex("by_userDate", q => q.eq("userId", userId))
       .filter(q => q.gte(q.field("snapshotDate"), cutoffStr))
       .order("asc")
       .collect();
 
-    return snapshots;
+    // Return most recent N snapshots
+    return allSnapshots.slice(-limit);
   },
 });
