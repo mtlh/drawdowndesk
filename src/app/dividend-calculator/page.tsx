@@ -280,7 +280,7 @@ export default function DividendCalculatorPage() {
       const data = {
         symbol: formData.symbol.toUpperCase(),
         name: formData.name || formData.symbol,
-        portfolioId: formData.portfolioId as Id<"portfolios"> | undefined,
+        portfolioId: formData.portfolioId ? (formData.portfolioId as Id<"portfolios">) : undefined,
         accountName: formData.accountName || undefined,
         currency: formData.currency,
         shares: parseFloat(formData.shares),

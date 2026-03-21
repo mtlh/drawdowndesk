@@ -7,7 +7,7 @@ const TEST_USER_PASSWORD = process.env.JEST_PASSWORD || "";
 
 const STORAGE_STATE_PATH = path.resolve(__dirname, "..", "playwright", ".auth", "user.json");
 
-const BASE_URL = "https://drawdowndesk.vercel.app";
+const BASE_URL = process.env.DEPLOYED_URL || "https://drawdowndesk.vercel.app";
 
 console.log("=== GLOBAL SETUP DEBUG ===");
 console.log("BASE_URL:", BASE_URL);

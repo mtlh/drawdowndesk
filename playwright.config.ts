@@ -1,21 +1,26 @@
 import { defineConfig, devices } from "@playwright/test";
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+const isLocal = !process.env.CI;
+if (isLocal) dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 
 export default defineConfig({
   testDir: "./tests",
-  fullyParallel: true,
-  workers: 1,
+  fullyParallel: !isLocal,
+  workers: isLocal ? 4 : 1,
   forbidOnly: !!process.env.CI,
-  retries: 0,
-  timeout: 180000,
+  retries: isLocal ? 0 : 2,
+  timeout: isLocal ? 30000 : 60000,
   expect: {
-    timeout: 10000,
+    timeout: 5000,
   },
   reporter: [
     ["html", { outputFolder: "playwright-report" }],
     ["list"],
   ],
   use: {
-    baseURL: process.env.DEPLOYED_URL || "http://localhost:3000",
+    baseURL: isLocal ? "http://localhost:3001" : (process.env.DEPLOYED_URL || "https://drawdowndesk.vercel.app"),
     trace: "on-first-retry",
   },
   projects: [
@@ -24,8 +29,10 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  globalSetup: "./tests/auth/global-setup.ts",
-  globalTeardown: "./tests/auth/global-setup.ts",
+  ...(!isLocal ? {
+    globalSetup: "./tests/auth/global-setup.ts",
+    globalTeardown: "./tests/auth/global-setup.ts",
+  } : {}),
 });
 
 /*
