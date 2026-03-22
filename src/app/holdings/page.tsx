@@ -32,7 +32,7 @@ export default function HoldingsPage() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const updatePortfolioMutation = useMutation(api.portfolio.updateUserPortfolio.updateUserPortfolio);
   const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
-  const rebuildSnapshots = useMutation(api.portfolio.portfolioSnapshots.rebuildSnapshots);
+  const migrateSnapshotCurrencyValues = useMutation(api.portfolio.portfolioSnapshots.migrateSnapshotCurrencyValues);
   const { addToast } = useToast()
 
   const [portfolios, setPortfolios] = useState<PortfolioExpanded[]>([]);
@@ -857,13 +857,13 @@ export default function HoldingsPage() {
                       <div className="mb-2">
                         <button
                           onClick={async () => {
-                            if (!confirm("This will delete all existing snapshots and rebuild them now with corrected values. Continue?")) return;
-                            await rebuildSnapshots({});
-                            addToast("Snapshots rebuilt with corrected GBX/GBp conversion.");
+                            if (!confirm("This will scale all historical snapshot values proportionally to match today's correct portfolio values. Your chart shape will be preserved. Continue?")) return;
+                            await migrateSnapshotCurrencyValues({});
+                            addToast("success", "Historical values corrected — chart should now show accurate figures.");
                           }}
                           className="text-xs underline hover:text-foreground text-muted-foreground"
                         >
-                          Rebuild snapshots (fix GBX currency values)
+                          Fix historical values (correct GBX/GBp scaling)
                         </button>
                       </div>
                     )}

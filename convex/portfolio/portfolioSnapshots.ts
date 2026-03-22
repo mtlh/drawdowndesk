@@ -319,6 +319,136 @@ export const rebuildSnapshots = mutation({
   },
 });
 
+// Scales all existing snapshots proportionally so their values match today's correct
+// live portfolio values (computed with GBX/GBp conversion).
+//
+// How it works:
+//   1. Compute correct current live value from holdings (using getPriceInPounds)
+//   2. Find the most recent stored snapshot value for this portfolio
+//   3. Calculate inflationFactor = storedTodayValue / correctLiveValue
+//   4. For each historical snapshot: correctedValue = storedValue / inflationFactor
+//
+// This preserves the relative movement (chart shape) while fixing absolute values.
+export const migrateSnapshotCurrencyValues = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { error: "User not found." };
+    }
+
+    // --- Step 1: Calculate correct live values from current holdings ---
+    const allHoldings = await ctx.db
+      .query("holdings")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    const holdingsByPortfolio = new Map<Id<"portfolios">, typeof allHoldings>();
+    for (const h of allHoldings) {
+      if (h.portfolioId) {
+        const existing = holdingsByPortfolio.get(h.portfolioId) || [];
+        existing.push(h);
+        holdingsByPortfolio.set(h.portfolioId, existing);
+      }
+    }
+
+    const allSimpleHoldings = await ctx.db
+      .query("simpleHoldings")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    const simpleHoldingsByPortfolio = new Map<Id<"portfolios">, typeof allSimpleHoldings>();
+    for (const h of allSimpleHoldings) {
+      if (h.portfolioId) {
+        const existing = simpleHoldingsByPortfolio.get(h.portfolioId) || [];
+        existing.push(h);
+        simpleHoldingsByPortfolio.set(h.portfolioId, existing);
+      }
+    }
+
+    // Calculate correct values per portfolio
+    const correctValues = new Map<Id<"portfolios">, { value: number; costBasis: number }>();
+    let totalCorrect = 0;
+    let totalCorrectCostBasis = 0;
+
+    for (const [portfolioId, holdings] of holdingsByPortfolio) {
+      let value = 0;
+      let costBasis = 0;
+      for (const h of holdings) {
+        value += getPriceInPounds((h.shares || 0) * (h.currentPrice || 0), h.currency);
+        costBasis += getPriceInPounds((h.shares || 0) * (h.avgPrice || 0), h.currency);
+      }
+      const simple = simpleHoldingsByPortfolio.get(portfolioId) || [];
+      for (const s of simple) {
+        value += s.value || 0;
+        costBasis += s.value || 0;
+      }
+      correctValues.set(portfolioId, { value, costBasis });
+      totalCorrect += value;
+      totalCorrectCostBasis += costBasis;
+    }
+
+    // --- Step 2: Get all snapshots and group by portfolio ---
+    const allSnapshots = await ctx.db
+      .query("portfolioSnapshots")
+      .withIndex("by_userDate", q => q.eq("userId", userId))
+      .collect();
+
+    // Group snapshots by portfolioId (use string key; undefined → "__total__")
+    const snapshotsByPortfolio = new Map<string, typeof allSnapshots>();
+    for (const s of allSnapshots) {
+      const key = s.portfolioId ? String(s.portfolioId) : "__total__";
+      if (!snapshotsByPortfolio.has(key)) snapshotsByPortfolio.set(key, []);
+      snapshotsByPortfolio.get(key)!.push(s);
+    }
+
+    // --- Step 3: Calculate inflation factors and update snapshots ---
+    let updated = 0;
+
+    // Total snapshots
+    const totalSnapshots = (snapshotsByPortfolio.get("__total__") || [])
+      .sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate)); // newest first
+    if (totalCorrect > 0 && totalSnapshots.length > 0) {
+      const newestStored = totalSnapshots[0].totalValue;
+      const inflationFactor = newestStored / totalCorrect;
+      for (const s of totalSnapshots) {
+        if (inflationFactor > 0 && s.totalValue > 0) {
+          await ctx.db.replace(s._id, {
+            ...s,
+            totalValue: s.totalValue / inflationFactor,
+            costBasis: s.costBasis ? s.costBasis / inflationFactor : undefined,
+          });
+          updated++;
+        }
+      }
+    }
+
+    // Per-portfolio snapshots
+    for (const [portfolioIdStr, snapshots] of snapshotsByPortfolio) {
+      if (portfolioIdStr === "__total__") continue;
+      const correct = correctValues.get(portfolioIdStr as Id<"portfolios">);
+      if (!correct || correct.value === 0) continue;
+
+      const sorted = [...snapshots].sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate));
+      const newestStored = sorted[0].totalValue;
+      const inflationFactor = newestStored / correct.value;
+
+      if (inflationFactor > 0) {
+        for (const s of sorted) {
+          await ctx.db.replace(s._id, {
+            ...s,
+            totalValue: s.totalValue / inflationFactor,
+            costBasis: s.costBasis ? s.costBasis / inflationFactor : undefined,
+          });
+          updated++;
+        }
+      }
+    }
+
+    return { success: true, updated, totalCorrect };
+  },
+});
+
 // Get portfolio snapshots for the last N months
 export const getPortfolioSnapshots = query({
   args: {
