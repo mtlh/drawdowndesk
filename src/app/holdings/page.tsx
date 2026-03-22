@@ -26,7 +26,7 @@ type PortfolioExpanded = {
   id: string
 }
 
-type TimelineRange = "1D" | "1W" | "1M" | "YTD" | "1Y";
+type TimelineRange = "5D" | "1W" | "1M" | "YTD" | "1Y";
 
 export default function HoldingsPage() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
@@ -785,31 +785,59 @@ export default function HoldingsPage() {
                 const snapshots = (getPortfolioSnapshots && !('error' in getPortfolioSnapshots))
                   ? getPortfolioSnapshots.filter(s => s.portfolioId === performanceModalPortfolioId)
                   : [];
-                const hasData = snapshots.length > 0;
+                // Sort oldest first so [0] is the start and [length-1] is the most recent
+                const sortedSnapshots = [...snapshots].sort((a, b) =>
+                  a.snapshotDate.localeCompare(b.snapshotDate)
+                );
+                const hasData = sortedSnapshots.length > 0;
 
-                // Calculate period return
+                // Get live current value from the portfolio itself (not the oldest snapshot)
+                const currentPortfolio = portfolios.find(p => p.id === performanceModalPortfolioId);
+                const currentValue = currentPortfolio?.portfolio.totalValue ?? 0;
+
+                // Filter snapshots to the selected time period
+                const now = new Date();
+                const cutoff = new Date();
+                switch (selectedTimeline) {
+                  case "5D":
+                    cutoff.setDate(now.getDate() - 5);
+                    break;
+                  case "1W":
+                    cutoff.setDate(now.getDate() - 7);
+                    break;
+                  case "1M":
+                    cutoff.setMonth(now.getMonth() - 1);
+                    break;
+                  case "YTD":
+                    cutoff.setMonth(0);
+                    cutoff.setDate(1);
+                    break;
+                  case "1Y":
+                    cutoff.setFullYear(now.getFullYear() - 1);
+                    break;
+                }
+                const filteredSnapshots = sortedSnapshots.filter(s => new Date(s.snapshotDate) >= cutoff);
+
+                // Calculate period return from filtered range
                 let periodReturn = 0;
                 let periodReturnPercent = 0;
-                let currentValue = 0;
                 let periodHigh = 0;
                 let periodLow = Infinity;
-                if (hasData && snapshots.length >= 2) {
-                  const firstValue = snapshots[0].totalValue;
-                  const lastValue = snapshots[snapshots.length - 1].totalValue;
+                if (filteredSnapshots.length >= 2) {
+                  const firstValue = filteredSnapshots[0].totalValue;
+                  const lastValue = filteredSnapshots[filteredSnapshots.length - 1].totalValue;
                   periodReturn = lastValue - firstValue;
                   periodReturnPercent = firstValue > 0 ? (periodReturn / firstValue) * 100 : 0;
-                  currentValue = lastValue;
-                  snapshots.forEach(s => {
+                  filteredSnapshots.forEach(s => {
                     if (s.totalValue > periodHigh) periodHigh = s.totalValue;
                     if (s.totalValue < periodLow) periodLow = s.totalValue;
                   });
-                } else if (hasData) {
-                  currentValue = snapshots[0].totalValue;
-                  periodHigh = snapshots[0].totalValue;
-                  periodLow = snapshots[0].totalValue;
+                } else if (filteredSnapshots.length === 1) {
+                  periodHigh = filteredSnapshots[0].totalValue;
+                  periodLow = filteredSnapshots[0].totalValue;
                 }
 
-                const chartData = snapshots.map(s => ({
+                const chartData = sortedSnapshots.map(s => ({
                   date: new Date(s.snapshotDate).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
                   value: s.totalValue,
                 }));
@@ -844,7 +872,7 @@ export default function HoldingsPage() {
 
                     {/* Timeline selector */}
                     <div className="flex items-center gap-1 justify-center bg-muted/50 rounded-lg p-1">
-                      {(["1D", "1W", "1M", "YTD", "1Y"] as TimelineRange[]).map((range) => (
+                      {(["5D", "1W", "1M", "YTD", "1Y"] as TimelineRange[]).map((range) => (
                         <Button
                           key={range}
                           variant={selectedTimeline === range ? "default" : "ghost"}
