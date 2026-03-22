@@ -783,7 +783,7 @@ export default function HoldingsPage() {
               </DialogHeader>
               {performanceModalPortfolioId && (() => {
                 const snapshots = (getPortfolioSnapshots && !('error' in getPortfolioSnapshots))
-                  ? getPortfolioSnapshots.filter(s => s.portfolioId === performanceModalPortfolioId)
+                  ? getPortfolioSnapshots.filter(s => String(s.portfolioId ?? "") === performanceModalPortfolioId)
                   : [];
                 // Sort oldest first so [0] is the start and [length-1] is the most recent
                 const sortedSnapshots = [...snapshots].sort((a, b) =>

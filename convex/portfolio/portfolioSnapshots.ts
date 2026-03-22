@@ -238,7 +238,7 @@ export const getPortfolioSnapshots = query({
 export const getPortfolioPerformanceSnapshots = query({
   args: {
     portfolioId: v.id("portfolios"),
-    range: v.optional(v.union(v.literal("1D"), v.literal("1W"), v.literal("1M"), v.literal("YTD"), v.literal("1Y"))),
+    range: v.optional(v.union(v.literal("5D"), v.literal("1W"), v.literal("1M"), v.literal("YTD"), v.literal("1Y"))),
     limit: v.optional(v.number()),
   },
 
@@ -254,9 +254,9 @@ export const getPortfolioPerformanceSnapshots = query({
     let cutoffDate: Date;
 
     switch (range) {
-      case "1D":
+      case "5D":
         cutoffDate = new Date(today);
-        cutoffDate.setDate(cutoffDate.getDate() - 1);
+        cutoffDate.setDate(cutoffDate.getDate() - 5);
         break;
       case "1W":
         cutoffDate = new Date(today);
@@ -292,3 +292,28 @@ export const getPortfolioPerformanceSnapshots = query({
   },
 });
 
+// Get all snapshots for a specific portfolio (no date limit, for client-side timeline filtering)
+export const getPortfolioSnapshotsByPortfolio = query({
+  args: {
+    portfolioId: v.id("portfolios"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { error: "User not found." };
+    }
+
+    const limit = args.limit || 365;
+
+    const allSnapshots = await ctx.db
+      .query("portfolioSnapshots")
+      .withIndex("by_userPortfolioDate", q =>
+        q.eq("userId", userId).eq("portfolioId", args.portfolioId)
+      )
+      .order("asc")
+      .collect();
+
+    return allSnapshots.slice(-limit);
+  },
+});
