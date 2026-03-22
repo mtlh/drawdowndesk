@@ -3,6 +3,16 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 
+// Converts a price to pounds based on currency.
+// GBX (Yahoo) and GBp (manual entry) are in pence and need dividing by 100.
+// Matches client-side getPriceInPounds in src/lib/utils.ts.
+function getPriceInPounds(price: number, currency: string | undefined): number {
+  if (currency === "GBX" || currency === "GBp") {
+    return price / 100;
+  }
+  return price;
+}
+
 // Save a portfolio snapshot with the current total value
 export const savePortfolioSnapshot = mutation({
   args: {
@@ -112,8 +122,9 @@ export const calculateAndSaveSnapshot = mutation({
         const shares = holding.shares || 0;
         const currentPrice = holding.currentPrice || 0;
         const avgPrice = holding.avgPrice || 0;
-        const holdingValue = shares * currentPrice;
-        const holdingCostBasis = shares * avgPrice;
+        const currency = holding.currency;
+        const holdingValue = getPriceInPounds(shares * currentPrice, currency);
+        const holdingCostBasis = getPriceInPounds(shares * avgPrice, currency);
         portfolioValue += holdingValue;
         portfolioCostBasis += holdingCostBasis;
         totalValue += holdingValue;
@@ -199,6 +210,112 @@ export const calculateAndSaveSnapshot = mutation({
     }
 
     return { success: true, totalValue };
+  },
+});
+
+// Deletes all existing snapshots and saves fresh ones with corrected GBX/GBp conversion.
+// Run this once to fix existing snapshot data, then use Refresh (calculateAndSaveSnapshot)
+// for all future snapshots.
+export const rebuildSnapshots = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { error: "User not found." };
+    }
+
+    // Delete all existing snapshots
+    const existingSnapshots = await ctx.db
+      .query("portfolioSnapshots")
+      .withIndex("by_userDate", q => q.eq("userId", userId))
+      .collect();
+    for (const s of existingSnapshots) {
+      await ctx.db.delete(s._id);
+    }
+
+    // Rebuild with corrected GBX/GBp conversion
+    const portfolios = await ctx.db
+      .query("portfolios")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    const allHoldings = await ctx.db
+      .query("holdings")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    const holdingsByPortfolio = new Map<Id<"portfolios">, typeof allHoldings>();
+    for (const holding of allHoldings) {
+      if (holding.portfolioId) {
+        const existing = holdingsByPortfolio.get(holding.portfolioId) || [];
+        existing.push(holding);
+        holdingsByPortfolio.set(holding.portfolioId, existing);
+      }
+    }
+
+    const allSimpleHoldings = await ctx.db
+      .query("simpleHoldings")
+      .withIndex("by_user", q => q.eq("userId", userId))
+      .collect();
+
+    const simpleHoldingsByPortfolio = new Map<Id<"portfolios">, typeof allSimpleHoldings>();
+    for (const holding of allSimpleHoldings) {
+      if (holding.portfolioId) {
+        const existing = simpleHoldingsByPortfolio.get(holding.portfolioId) || [];
+        existing.push(holding);
+        simpleHoldingsByPortfolio.set(holding.portfolioId, existing);
+      }
+    }
+
+    let totalValue = 0;
+    let totalCostBasis = 0;
+    const portfolioValues: { portfolioId: Id<"portfolios">; value: number; costBasis: number }[] = [];
+
+    for (const portfolio of portfolios) {
+      let portfolioValue = 0;
+      let portfolioCostBasis = 0;
+
+      const holdings = holdingsByPortfolio.get(portfolio._id) || [];
+      for (const holding of holdings) {
+        const shares = holding.shares || 0;
+        const currentPrice = holding.currentPrice || 0;
+        const avgPrice = holding.avgPrice || 0;
+        const currency = holding.currency;
+        const holdingValue = getPriceInPounds(shares * currentPrice, currency);
+        const holdingCostBasis = getPriceInPounds(shares * avgPrice, currency);
+        portfolioValue += holdingValue;
+        portfolioCostBasis += holdingCostBasis;
+        totalValue += holdingValue;
+        totalCostBasis += holdingCostBasis;
+      }
+
+      const simpleHoldings = simpleHoldingsByPortfolio.get(portfolio._id) || [];
+      for (const sh of simpleHoldings) {
+        portfolioValue += sh.value || 0;
+        portfolioCostBasis += sh.value || 0;
+        totalValue += sh.value || 0;
+        totalCostBasis += sh.value || 0;
+      }
+
+      portfolioValues.push({ portfolioId: portfolio._id, value: portfolioValue, costBasis: portfolioCostBasis });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    await ctx.db.insert("portfolioSnapshots", {
+      userId, totalValue, costBasis: totalCostBasis, snapshotDate: today,
+      lastUpdated: new Date().toISOString(),
+    });
+
+    for (const pv of portfolioValues) {
+      await ctx.db.insert("portfolioSnapshots", {
+        userId, portfolioId: pv.portfolioId,
+        totalValue: pv.value, costBasis: pv.costBasis, snapshotDate: today,
+        lastUpdated: new Date().toISOString(),
+      });
+    }
+
+    return { success: true, totalValue, deleted: existingSnapshots.length };
   },
 });
 

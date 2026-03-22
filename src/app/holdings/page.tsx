@@ -32,6 +32,7 @@ export default function HoldingsPage() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const updatePortfolioMutation = useMutation(api.portfolio.updateUserPortfolio.updateUserPortfolio);
   const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
+  const rebuildSnapshots = useMutation(api.portfolio.portfolioSnapshots.rebuildSnapshots);
   const { addToast } = useToast()
 
   const [portfolios, setPortfolios] = useState<PortfolioExpanded[]>([]);
@@ -852,6 +853,20 @@ export default function HoldingsPage() {
 
                 return (
                   <div className="space-y-5">
+                    {hasData && (
+                      <div className="mb-2">
+                        <button
+                          onClick={async () => {
+                            if (!confirm("This will delete all existing snapshots and rebuild them now with corrected values. Continue?")) return;
+                            await rebuildSnapshots({});
+                            addToast("Snapshots rebuilt with corrected GBX/GBp conversion.");
+                          }}
+                          className="text-xs underline hover:text-foreground text-muted-foreground"
+                        >
+                          Rebuild snapshots (fix GBX currency values)
+                        </button>
+                      </div>
+                    )}
                     {/* Stats cards */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/20">

@@ -68,13 +68,13 @@ export const updateHoldingWithTicker = mutation({
 
     if (existingHoldingsWithSymbol.length > 0) {
       for (const holding of existingHoldingsWithSymbol) {
-        // Handle GBX to GBP conversion: if currency changed from GBX to GBP,
-        // we need to convert avgPrice from pence to pounds for consistency
+        // Handle GBX/GBp to GBP conversion: if avgPrice is in pence, convert to pounds
         const newCurrency = args.currency || holding.currency;
         let avgPrice = holding.avgPrice;
 
-        // If currency is changing from GBX to GBP, convert avgPrice from pence to pounds
-        if (holding.currency === "GBX" && newCurrency === "GBP") {
+        // If currency was stored in pence (GBX from Yahoo, or GBp from manual entry),
+        // convert avgPrice from pence to pounds when updating to GBP
+        if ((holding.currency === "GBX" || holding.currency === "GBp") && newCurrency === "GBP") {
           avgPrice = holding.avgPrice / 100;
         }
 
