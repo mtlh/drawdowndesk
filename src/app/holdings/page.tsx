@@ -791,9 +791,12 @@ export default function HoldingsPage() {
                 );
                 const hasData = sortedSnapshots.length > 0;
 
-                // Use the most recent snapshot value as current value (consistent with chart data)
-                const currentSnapshot = sortedSnapshots[sortedSnapshots.length - 1];
-                const currentValue = currentSnapshot?.totalValue ?? 0;
+                // Current value from live holdings (same source as holdings cards)
+                const currentPortfolio = portfolios.find(p => p.id === performanceModalPortfolioId);
+                const currentValue = getPortfolioStats(
+                  performanceModalPortfolioId,
+                  currentPortfolio?.portfolio.portfolioType
+                ).totalValue;
 
                 // Filter snapshots to the selected time period
                 const now = new Date();
@@ -818,7 +821,7 @@ export default function HoldingsPage() {
                 }
                 const filteredSnapshots = sortedSnapshots.filter(s => new Date(s.snapshotDate) >= cutoff);
 
-                // Period return: change from period start snapshot to current (most recent) value
+                // Period return: from period start snapshot to current (live) value
                 // Period range: high/low across all available snapshot history
                 let periodReturn = 0;
                 let periodReturnPercent = 0;
@@ -830,15 +833,10 @@ export default function HoldingsPage() {
                     if (s.totalValue < periodLow) periodLow = s.totalValue;
                   });
                 }
-                if (filteredSnapshots.length >= 2) {
-                  const firstValue = filteredSnapshots[0].totalValue;
-                  const lastValue = filteredSnapshots[filteredSnapshots.length - 1].totalValue;
-                  periodReturn = lastValue - firstValue;
-                  periodReturnPercent = firstValue > 0 ? (periodReturn / firstValue) * 100 : 0;
-                } else if (filteredSnapshots.length === 1) {
-                  const firstValue = filteredSnapshots[0].totalValue;
-                  periodReturn = currentValue - firstValue;
-                  periodReturnPercent = firstValue > 0 ? (periodReturn / firstValue) * 100 : 0;
+                if (filteredSnapshots.length >= 1) {
+                  const periodStartValue = filteredSnapshots[0].totalValue;
+                  periodReturn = currentValue - periodStartValue;
+                  periodReturnPercent = periodStartValue > 0 ? (periodReturn / periodStartValue) * 100 : 0;
                 }
 
                 const chartData = sortedSnapshots.map(s => ({
