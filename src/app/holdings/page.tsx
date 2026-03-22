@@ -32,7 +32,6 @@ export default function HoldingsPage() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const updatePortfolioMutation = useMutation(api.portfolio.updateUserPortfolio.updateUserPortfolio);
   const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
-  const migrateSnapshotCurrencyValues = useMutation(api.portfolio.portfolioSnapshots.migrateSnapshotCurrencyValues);
   const { addToast } = useToast()
 
   const [portfolios, setPortfolios] = useState<PortfolioExpanded[]>([]);
@@ -822,26 +821,25 @@ export default function HoldingsPage() {
                 }
                 const filteredSnapshots = sortedSnapshots.filter(s => new Date(s.snapshotDate) >= cutoff);
 
-                // Period return: compare current (live) value to the most recent snapshot in
-                // the selected period. If no snapshots exist for that period, show null.
-                // Period range: high/low across all available snapshot history
+                // Period return and range: use only the filtered snapshots (matching the chart)
                 let periodReturn: number | null = null;
                 let periodReturnPercent: number | null = null;
                 let periodHigh = 0;
                 let periodLow = 0;
-                if (hasData) {
-                  sortedSnapshots.forEach(s => {
+                if (filteredSnapshots.length >= 2) {
+                  // Return = change from period start to period end
+                  const startValue = filteredSnapshots[0].totalValue;
+                  const endValue = filteredSnapshots[filteredSnapshots.length - 1].totalValue;
+                  periodReturn = endValue - startValue;
+                  periodReturnPercent = startValue > 0 ? (periodReturn / startValue) * 100 : 0;
+                  // Range = high/low across the filtered period
+                  filteredSnapshots.forEach(s => {
                     if (s.totalValue > periodHigh) periodHigh = s.totalValue;
                     if (s.totalValue < periodLow) periodLow = s.totalValue;
                   });
-                }
-                // Only show a period return if there's at least one snapshot in the period
-                if (filteredSnapshots.length >= 1) {
-                  // Use the most recent snapshot within the period as the period start
-                  const periodStartSnapshot = filteredSnapshots[filteredSnapshots.length - 1];
-                  const periodStartValue = periodStartSnapshot.totalValue;
-                  periodReturn = currentValue - periodStartValue;
-                  periodReturnPercent = periodStartValue > 0 ? (periodReturn / periodStartValue) * 100 : 0;
+                } else if (filteredSnapshots.length === 1) {
+                  periodHigh = filteredSnapshots[0].totalValue;
+                  periodLow = filteredSnapshots[0].totalValue;
                 }
 
                 const chartData = filteredSnapshots.map(s => ({
@@ -853,20 +851,6 @@ export default function HoldingsPage() {
 
                 return (
                   <div className="space-y-5">
-                    {hasData && (
-                      <div className="mb-2">
-                        <button
-                          onClick={async () => {
-                            if (!confirm("This will scale all historical snapshot values proportionally to match today's correct portfolio values. Your chart shape will be preserved. Continue?")) return;
-                            await migrateSnapshotCurrencyValues({});
-                            addToast("success", "Historical values corrected — chart should now show accurate figures.");
-                          }}
-                          className="text-xs underline hover:text-foreground text-muted-foreground"
-                        >
-                          Fix historical values (correct GBX/GBp scaling)
-                        </button>
-                      </div>
-                    )}
                     {/* Stats cards */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/20">
@@ -892,7 +876,7 @@ export default function HoldingsPage() {
                       </div>
                     </div>
 
-                    {hasData && (
+                    {filteredSnapshots.length >= 1 && (
                       <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl p-5 border border-amber-500/20">
                         <div className="text-sm text-muted-foreground mb-2">Period Range</div>
                         <div className="text-xl font-semibold">£{periodLow.toLocaleString("en-US", { minimumFractionDigits: 0 })} - £{periodHigh.toLocaleString("en-US", { minimumFractionDigits: 0 })}</div>
