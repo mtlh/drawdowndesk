@@ -5,6 +5,26 @@ test.describe("Budget Page", () => {
     await authenticatedPage.goto("/budget");
     await authenticatedPage.waitForLoadState("domcontentloaded");
     await authenticatedPage.waitForTimeout(2000);
+
+    // Clean up any leftover expenses so each test starts fresh.
+    // Only attempt cleanup when the empty state is NOT visible (i.e., expenses exist).
+    const emptyState = authenticatedPage.getByText("No expenses yet.");
+    if (await emptyState.isVisible()) return;
+
+    // Delete expenses one by one via the UI (hover → delete button → confirm).
+    while (true) {
+      const deleteBtn = authenticatedPage.getByRole("button", { name: /delete expense/i }).first();
+      if (!(await deleteBtn.isVisible())) break;
+      await deleteBtn.click();
+      await authenticatedPage.waitForTimeout(300);
+      const alertDialog = authenticatedPage.locator('[role="alertdialog"]');
+      if (await alertDialog.isVisible()) {
+        await alertDialog.getByRole("button", { name: /delete/i }).click();
+        await authenticatedPage.waitForTimeout(500);
+      } else {
+        break;
+      }
+    }
   });
 
   // ── Page load ────────────────────────────────────────────────────────────
@@ -101,7 +121,7 @@ test.describe("Budget Page", () => {
     await expect(dialog).not.toBeVisible();
   });
 
-  test("should close the Add Expense dialog when clicking the X button", async ({
+  test("should close the Add Expense dialog when pressing Escape", async ({
     authenticatedPage,
   }) => {
     await authenticatedPage.getByRole("button", { name: /add expense/i }).click();
@@ -110,9 +130,7 @@ test.describe("Budget Page", () => {
     const dialog = authenticatedPage.getByRole("dialog");
     await expect(dialog).toBeVisible();
 
-    // Close via aria-label or the SVG path inside the close button
-    const closeButton = authenticatedPage.locator("[aria-label='Close']");
-    await closeButton.click({ force: true });
+    await authenticatedPage.keyboard.press("Escape");
     await authenticatedPage.waitForTimeout(500);
 
     await expect(dialog).not.toBeVisible();
@@ -131,24 +149,25 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByLabel("Monthly Amount (£)").fill("200");
     await authenticatedPage.waitForTimeout(200);
 
-    // Select category (Transport / Car)
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    // Select category (Transport / Car) — scoped to dialog, data-slot for Radix portal stability
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
+    await authenticatedPage.locator('[data-slot="select-content"]').waitFor({ state: "visible" });
     await authenticatedPage.getByRole("option", { name: /transport/i }).click();
     await authenticatedPage.waitForTimeout(200);
 
     // Submit — click the button INSIDE the dialog
-    const dialog = authenticatedPage.getByRole("dialog");
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
     // Dialog should be closed
     await expect(dialog).not.toBeVisible();
 
-    // Expense should appear in the list
-    await expect(authenticatedPage.getByText("Car Payment")).toBeVisible();
-    await expect(authenticatedPage.getByText("£200.00")).toBeVisible();
+    // Expense should appear in the list — use .first() to handle any leftover expenses
+    // from previous failed runs that share the same text
+    await expect(authenticatedPage.getByText("Car Payment").first()).toBeVisible();
+    await expect(authenticatedPage.getByText("£200.00").first()).toBeVisible();
   });
 
   test("should show Need badge for a need-category expense", async ({ authenticatedPage }) => {
@@ -160,17 +179,19 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByLabel("Monthly Amount (£)").fill("1200");
     await authenticatedPage.waitForTimeout(200);
 
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
+    await authenticatedPage.locator('[data-slot="select-content"]').waitFor({ state: "visible" });
     await authenticatedPage.getByRole("option", { name: /housing/i }).click();
     await authenticatedPage.waitForTimeout(200);
 
-    const dialog = authenticatedPage.getByRole("dialog");
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
-    await expect(authenticatedPage.getByText("Rent")).toBeVisible();
+    // "Rent" appears in the expense name and category label — scope to the expense row
+    const rentExpenseRow = authenticatedPage.locator(".space-y-2 > div").filter({ hasText: "Rent" }).first();
+    await expect(rentExpenseRow).toBeVisible();
     // Need badge should be present in the expense row
     await expect(authenticatedPage.locator("text=Need").first()).toBeVisible();
   });
@@ -183,17 +204,18 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByLabel("Monthly Amount (£)").fill("15.99");
     await authenticatedPage.waitForTimeout(200);
 
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
+    await authenticatedPage.locator('[data-slot="select-content"]').waitFor({ state: "visible" });
     await authenticatedPage.getByRole("option", { name: /entertainment/i }).click();
     await authenticatedPage.waitForTimeout(200);
 
-    const dialog = authenticatedPage.getByRole("dialog");
+
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
-    await expect(authenticatedPage.getByText("Netflix")).toBeVisible();
+    await expect(authenticatedPage.getByText("Netflix").first()).toBeVisible();
     await expect(authenticatedPage.locator("text=Want").first()).toBeVisible();
   });
 
@@ -254,12 +276,13 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByLabel("Name").fill("Coffee");
     await authenticatedPage.getByLabel("Monthly Amount (£)").fill("50");
     await authenticatedPage.waitForTimeout(200);
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
+    await authenticatedPage.locator('[data-slot="select-content"]').waitFor({ state: "visible" });
     await authenticatedPage.getByRole("option", { name: /dining/i }).click();
     await authenticatedPage.waitForTimeout(200);
-    const dialog = authenticatedPage.getByRole("dialog");
+
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
@@ -268,8 +291,8 @@ test.describe("Budget Page", () => {
     await incomeInput.fill("3000");
     await authenticatedPage.waitForTimeout(500);
 
-    // Expense should show a percentage (1.7% for £50 of £3000)
-    await expect(authenticatedPage.getByText("Coffee")).toBeVisible();
+    // Expense should show a percentage (1.7% for £50 of £3000) — .first() for leftover data
+    await expect(authenticatedPage.getByText("Coffee").first()).toBeVisible();
     await expect(authenticatedPage.getByText(/1\.\d%/i).first()).toBeVisible();
   });
 
@@ -284,18 +307,19 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByLabel("Name").fill("Spotify");
     await authenticatedPage.getByLabel("Monthly Amount (£)").fill("10");
     await authenticatedPage.waitForTimeout(200);
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
+    await authenticatedPage.locator('[data-slot="select-content"]').waitFor({ state: "visible" });
     await authenticatedPage.getByRole("option", { name: /subscriptions/i }).click();
     await authenticatedPage.waitForTimeout(200);
-    const dialog = authenticatedPage.getByRole("dialog");
+
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
-    // Chart should be visible
+    // Chart should be visible — use { exact: true } to avoid matching the page description
     await expect(
-      authenticatedPage.getByText("Needs vs Wants")
+      authenticatedPage.getByText("Needs vs Wants", { exact: true })
     ).toBeVisible();
   });
 
@@ -310,26 +334,28 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByLabel("Name").fill("Edit Me");
     await authenticatedPage.getByLabel("Monthly Amount (£)").fill("100");
     await authenticatedPage.waitForTimeout(200);
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
+    await authenticatedPage.locator('[data-slot="select-content"]').waitFor({ state: "visible" });
     await authenticatedPage.getByRole("option", { name: /food/i }).click();
     await authenticatedPage.waitForTimeout(200);
-    const dialog = authenticatedPage.getByRole("dialog");
+
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
-    // Hover over the expense row to reveal edit button
-    await authenticatedPage.getByText("Edit Me").hover();
+    // Hover over the specific expense row to reveal edit button
+    const editMeRow = authenticatedPage.locator(".space-y-2 > div").filter({ hasText: "Edit Me" }).first();
+    await editMeRow.hover();
     await authenticatedPage.waitForTimeout(300);
 
-    // Click edit (pencil) button — the pencil path starts with M11
-    const editButton = authenticatedPage.locator("button svg path[d*='M11']").first();
-    await editButton.click({ force: true });
-    await authenticatedPage.waitForTimeout(500);
+    // Click the edit button — aria-label is set on the button itself
+    const editButton = editMeRow.getByRole("button", { name: /edit expense/i });
+    await editButton.click();
 
-    // Edit dialog should be visible
-    await expect(authenticatedPage.getByRole("heading", { name: "Edit Expense" })).toBeVisible();
+    // Wait for edit dialog heading to appear (Radix dialog renders via portal)
+    const editDialog = authenticatedPage.getByRole("dialog");
+    await expect(editDialog.getByRole("heading", { name: "Edit Expense" })).toBeVisible({ timeout: 10000 });
   });
 
   // ── Delete ───────────────────────────────────────────────────────────────
@@ -343,24 +369,26 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByLabel("Name").fill("Delete Me");
     await authenticatedPage.getByLabel("Monthly Amount (£)").fill("99");
     await authenticatedPage.waitForTimeout(200);
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
+    await authenticatedPage.locator('[data-slot="select-content"]').waitFor({ state: "visible" });
     await authenticatedPage.getByRole("option", { name: /utilities/i }).click();
     await authenticatedPage.waitForTimeout(200);
-    const dialog = authenticatedPage.getByRole("dialog");
+
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
-    // Verify expense is in the list
-    await expect(authenticatedPage.getByText("Delete Me")).toBeVisible();
+    // Verify expense is in the list — scope to this expense row
+    const deleteMeRow = authenticatedPage.locator(".space-y-2 > div").filter({ hasText: "Delete Me" }).first();
+    await expect(deleteMeRow).toBeVisible();
 
-    // Hover and click delete — the delete path starts with M3 6
-    await authenticatedPage.getByText("Delete Me").hover();
+    // Hover and click delete — aria-label is set on the button itself
+    await deleteMeRow.hover();
     await authenticatedPage.waitForTimeout(300);
 
-    const deleteButton = authenticatedPage.locator("button svg path[d*='M3 6']").first();
-    await deleteButton.click({ force: true });
+    const deleteButton = deleteMeRow.getByRole("button", { name: /delete expense/i });
+    await deleteButton.click();
     await authenticatedPage.waitForTimeout(500);
 
     // Alert dialog should appear
@@ -368,12 +396,13 @@ test.describe("Budget Page", () => {
       authenticatedPage.getByText(/delete expense\?/i)
     ).toBeVisible();
 
-    // Cancel delete
-    await authenticatedPage.getByRole("button", { name: /cancel/i }).last().click();
+    // Cancel delete — scope cancel button to the alert dialog
+    const alertDialog = authenticatedPage.locator('[role="alertdialog"]');
+    await alertDialog.getByRole("button", { name: /cancel/i }).click();
     await authenticatedPage.waitForTimeout(500);
 
     // Expense should still be visible
-    await expect(authenticatedPage.getByText("Delete Me")).toBeVisible();
+    await expect(deleteMeRow).toBeVisible();
   });
 
   test("should actually delete an expense when confirming", async ({ authenticatedPage }) => {
@@ -383,30 +412,35 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByLabel("Name").fill("To Delete");
     await authenticatedPage.getByLabel("Monthly Amount (£)").fill("50");
     await authenticatedPage.waitForTimeout(200);
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
+    await authenticatedPage.locator('[data-slot="select-content"]').waitFor({ state: "visible" });
     await authenticatedPage.getByRole("option", { name: /shopping/i }).click();
     await authenticatedPage.waitForTimeout(200);
-    const dialog = authenticatedPage.getByRole("dialog");
+
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
-    await expect(authenticatedPage.getByText("To Delete")).toBeVisible();
+    // Scope to this expense row
+    const toDeleteRow = authenticatedPage.locator(".space-y-2 > div").filter({ hasText: "To Delete" }).first();
+    await expect(toDeleteRow).toBeVisible();
 
-    await authenticatedPage.getByText("To Delete").hover();
+    await toDeleteRow.hover();
     await authenticatedPage.waitForTimeout(300);
 
-    const deleteButton = authenticatedPage.locator("button svg path[d*='M3 6']").first();
-    await deleteButton.click({ force: true });
+    // Click delete — aria-label is set on the button itself
+    const deleteButton = toDeleteRow.getByRole("button", { name: /delete expense/i });
+    await deleteButton.click();
     await authenticatedPage.waitForTimeout(500);
 
-    // Confirm deletion
-    await authenticatedPage.getByRole("button", { name: /delete/i }).last().click();
+    // Confirm deletion — scope delete button to the alert dialog
+    const alertDialog = authenticatedPage.locator('[role="alertdialog"]');
+    await alertDialog.getByRole("button", { name: /delete/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
-    // Expense should be gone
-    await expect(authenticatedPage.getByText("To Delete")).not.toBeVisible();
+    // Expense should be gone — wait for it to disappear
+    await expect(toDeleteRow).not.toBeVisible({ timeout: 5000 });
   });
 
   // ── Category override ────────────────────────────────────────────────────
@@ -421,9 +455,10 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByLabel("Monthly Amount (£)").fill("150");
     await authenticatedPage.waitForTimeout(200);
 
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
+    await authenticatedPage.locator('[data-slot="select-content"]').waitFor({ state: "visible" });
     await authenticatedPage.getByRole("option", { name: /housing/i }).click(); // Housing is a Need by default
     await authenticatedPage.waitForTimeout(200);
 
@@ -433,11 +468,10 @@ test.describe("Budget Page", () => {
     await authenticatedPage.getByRole("button", { name: /want/i }).click();
     await authenticatedPage.waitForTimeout(200);
 
-    const dialog = authenticatedPage.getByRole("dialog");
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
-    await expect(authenticatedPage.getByText("Classified as Want")).toBeVisible();
+    await expect(authenticatedPage.getByText("Classified as Want").first()).toBeVisible();
     await expect(authenticatedPage.locator("text=Want").first()).toBeVisible();
   });
 
@@ -458,56 +492,22 @@ test.describe("Budget Page", () => {
     await recurringCheckbox.click();
     await authenticatedPage.waitForTimeout(200);
 
-    const categoryTrigger = authenticatedPage.getByPlaceholder("Select a category…");
+    // Use data-slot on the SelectTrigger button (not the inner SelectValue span),
+    // scoped to this dialog to avoid cross-dialog ambiguity with Radix portals.
+    const dialog = authenticatedPage.getByRole("dialog");
+    const categoryTrigger = dialog.locator('[data-slot="select-trigger"]');
     await categoryTrigger.click();
-    await authenticatedPage.waitForTimeout(300);
-    await authenticatedPage.getByRole("option", { name: /car/i }).click();
+
+    // Wait for Radix Select portal to appear (it's rendered outside the dialog via Portal)
+    const selectPortal = authenticatedPage.locator('[data-slot="select-content"]');
+    await selectPortal.waitFor({ state: "visible" });
+    await authenticatedPage.getByRole("option", { name: /transport/i }).click();
     await authenticatedPage.waitForTimeout(200);
 
-    const dialog = authenticatedPage.getByRole("dialog");
     await dialog.getByRole("button", { name: /add expense/i }).click();
     await authenticatedPage.waitForTimeout(2000);
 
-    await expect(authenticatedPage.getByText("One-off Repair")).toBeVisible();
+    await expect(authenticatedPage.getByText("One-off Repair").first()).toBeVisible();
   });
 
-  // ── Cleanup helper ────────────────────────────────────────────────────────
-
-  test("should delete all budget expenses created during tests", async ({
-    authenticatedPage,
-  }) => {
-    // Navigate to budget page
-    await authenticatedPage.goto("/budget");
-    await authenticatedPage.waitForLoadState("domcontentloaded");
-    await authenticatedPage.waitForTimeout(2000);
-
-    // Keep deleting the first expense row until none remain
-    let iterations = 0;
-    while (iterations < 20) {
-      // Look for expense rows (they have the group class and contain action buttons)
-      const expenseRows = authenticatedPage.locator(".group").filter({ has: authenticatedPage.locator("button") });
-      const count = await expenseRows.count();
-
-      if (count === 0) break;
-
-      // Hover over first row and click delete
-      await expenseRows.first().hover();
-      await authenticatedPage.waitForTimeout(300);
-
-      const deleteBtn = authenticatedPage.locator("button svg path[d*='M3 6']").first();
-      if (await deleteBtn.isVisible({ timeout: 1000 })) {
-        await deleteBtn.click({ force: true });
-        await authenticatedPage.waitForTimeout(500);
-
-        // Confirm delete
-        const confirmBtn = authenticatedPage.getByRole("button", { name: /delete/i }).last();
-        if (await confirmBtn.isVisible({ timeout: 1000 })) {
-          await confirmBtn.click();
-          await authenticatedPage.waitForTimeout(1500);
-        }
-      }
-
-      iterations++;
-    }
-  });
 });

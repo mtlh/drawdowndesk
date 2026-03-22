@@ -3,7 +3,7 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 
 const isLocal = !process.env.CI;
-if (isLocal) dotenv.config({ path: path.resolve(__dirname, ".env.local") });
+if (isLocal) dotenv.config({ path: path.resolve(__dirname, ".env.local"), quiet: true });
 
 export default defineConfig({
   testDir: "./tests",
@@ -20,7 +20,7 @@ export default defineConfig({
     ["list"],
   ],
   use: {
-    baseURL: isLocal ? "http://localhost:3001" : (process.env.DEPLOYED_URL || "https://drawdowndesk.vercel.app"),
+    baseURL: isLocal ? "http://localhost:3000" : (process.env.DEPLOYED_URL || "https://drawdowndesk.vercel.app"),
     trace: "on-first-retry",
   },
   projects: [
@@ -46,6 +46,7 @@ tests/portfolio/
   - dividends.spec.ts          # Dividends
   - goals.spec.ts            # Goals + CRUD
   - planning-notes.spec.ts    # Planning Notes, Holdings Performance
+  - budget.spec.ts            # Budget Page
 
 tests/calculators/
   - cashflow.spec.ts         # Cashflow Forecast

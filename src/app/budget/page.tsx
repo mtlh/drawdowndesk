@@ -745,6 +745,7 @@ export default function BudgetPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label="Edit expense"
                               className="w-7 h-7"
                               onClick={() => setEditExpense(expense)}
                             >
@@ -753,6 +754,7 @@ export default function BudgetPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label="Delete expense"
                               className="w-7 h-7 text-destructive hover:text-destructive"
                               onClick={() => setDeleteTarget(expense)}
                             >

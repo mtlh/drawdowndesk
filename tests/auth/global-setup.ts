@@ -105,6 +105,7 @@ export default async function globalSetup() {
     await cleanupPage(page, "finance-notes", '[title*="Delete"], button:has-text("Delete")');
     await cleanupPage(page, "lifetime-accumulation", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
     await cleanupPage(page, "accumulation-forecast", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
+    await cleanupPage(page, "budget", '[class*="group"]:has(button[aria-label="Delete"]) button[aria-label="Delete"]');
     console.log("=== GLOBAL SETUP COMPLETE ===");
   } catch (error) {
     console.error("Global setup failed:", error);
@@ -141,6 +142,7 @@ export async function globalTeardown() {
     await cleanupPage(page, "finance-notes", '[title*="Delete"], button:has-text("Delete")');
     await cleanupPage(page, "lifetime-accumulation", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
     await cleanupPage(page, "accumulation-forecast", '[aria-label*="Delete"]:not([aria-label="Delete note"]), button:has-text("Delete")');
+    await cleanupPage(page, "budget", '[class*="group"]:has(button[aria-label="Delete"]) button[aria-label="Delete"]');
     console.log("=== GLOBAL TEARDOWN COMPLETE ===");
   } catch (error) {
     console.error("Global teardown failed:", error);
