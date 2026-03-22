@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuthActions } from "@convex-dev/auth/react";
 import {
   Home,
   MonitorCheck,
@@ -93,10 +94,10 @@ import Image from "next/image";
 import { SignIn } from "@/components/SignIn";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthActions } from "@convex-dev/auth/react";
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { signOut } = useAuthActions();
   // Accordion: only one extras section open at a time, both default to closed
   const [openExtra, setOpenExtra] = useState<string | null>(null);
 
