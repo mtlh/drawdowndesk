@@ -268,4 +268,17 @@ export default defineSchema({
         statePensionAge: v.number(),                 // State pension age
         lastUpdated: v.optional(v.string()),
     }).index("by_user", ["userId"]),
+
+    // Budget expenses for needs/wants tracking
+    budgetExpenses: defineTable({
+        userId: v.id("users"),
+        name: v.string(),
+        amount: v.float64(),
+        category: v.string(),
+        categoryType: v.union(v.literal("need"), v.literal("want")),
+        isRecurring: v.boolean(),
+        icon: v.string(),                             // Lucide icon name
+        notes: v.optional(v.string()),
+        lastUpdated: v.optional(v.string()),
+    }).index("by_user", ["userId"]),
 });

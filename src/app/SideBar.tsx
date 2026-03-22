@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet, FileText, User, ArrowLeftRight, Briefcase, Calculator, Receipt, Leaf, ArrowRight, GitCompare, TrendingUp, Landmark, BarChart3 } from "lucide-react"
+import { Home, MonitorCheck, DollarSign, FlameKindling, MoveUpRightIcon, LineChartIcon, ChevronRight, FileChartPie, Wallet, FileText, User, ArrowLeftRight, Briefcase, Calculator, Receipt, Leaf, ArrowRight, GitCompare, TrendingUp, Landmark, BarChart3, PieChart } from "lucide-react"
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { usePathname } from "next/navigation";
 
@@ -52,6 +52,11 @@ const menuSections = [
         title: "Goals",
         url: "/goal-tracker",
         icon: MonitorCheck,
+      },
+      {
+        title: "Budget",
+        url: "/budget",
+        icon: PieChart,
       },
       {
         title: "Planning Notes",
