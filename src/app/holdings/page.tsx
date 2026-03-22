@@ -844,7 +844,7 @@ export default function HoldingsPage() {
                   periodReturnPercent = periodStartValue > 0 ? (periodReturn / periodStartValue) * 100 : 0;
                 }
 
-                const chartData = sortedSnapshots.map(s => ({
+                const chartData = filteredSnapshots.map(s => ({
                   date: new Date(s.snapshotDate).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
                   value: s.totalValue,
                 }));
