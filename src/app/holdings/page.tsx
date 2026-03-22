@@ -791,9 +791,12 @@ export default function HoldingsPage() {
                 );
                 const hasData = sortedSnapshots.length > 0;
 
-                // Get live current value from the portfolio itself (not the oldest snapshot)
+                // Get live current value from getPortfolioStats (same calculation as holdings cards)
                 const currentPortfolio = portfolios.find(p => p.id === performanceModalPortfolioId);
-                const currentValue = currentPortfolio?.portfolio.totalValue ?? 0;
+                const currentValue = getPortfolioStats(
+                  performanceModalPortfolioId,
+                  currentPortfolio?.portfolio.portfolioType
+                ).totalValue;
 
                 // Filter snapshots to the selected time period
                 const now = new Date();
