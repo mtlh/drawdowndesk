@@ -821,10 +821,11 @@ export default function HoldingsPage() {
                 }
                 const filteredSnapshots = sortedSnapshots.filter(s => new Date(s.snapshotDate) >= cutoff);
 
-                // Period return: from period start snapshot to current (live) value
+                // Period return: compare current (live) value to the most recent snapshot in
+                // the selected period. If no snapshots exist for that period, show null.
                 // Period range: high/low across all available snapshot history
-                let periodReturn = 0;
-                let periodReturnPercent = 0;
+                let periodReturn: number | null = null;
+                let periodReturnPercent: number | null = null;
                 let periodHigh = 0;
                 let periodLow = 0;
                 if (hasData) {
@@ -833,8 +834,11 @@ export default function HoldingsPage() {
                     if (s.totalValue < periodLow) periodLow = s.totalValue;
                   });
                 }
+                // Only show a period return if there's at least one snapshot in the period
                 if (filteredSnapshots.length >= 1) {
-                  const periodStartValue = filteredSnapshots[0].totalValue;
+                  // Use the most recent snapshot within the period as the period start
+                  const periodStartSnapshot = filteredSnapshots[filteredSnapshots.length - 1];
+                  const periodStartValue = periodStartSnapshot.totalValue;
                   periodReturn = currentValue - periodStartValue;
                   periodReturnPercent = periodStartValue > 0 ? (periodReturn / periodStartValue) * 100 : 0;
                 }
@@ -854,23 +858,31 @@ export default function HoldingsPage() {
                         <div className="text-sm text-muted-foreground mb-2">Current Value</div>
                         <div className="text-2xl font-bold">£{currentValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       </div>
-                      <div className={`rounded-xl p-5 border ${periodReturn >= 0 ? "bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20" : "bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20"}`}>
+                      <div className={`rounded-xl p-5 border ${periodReturn !== null && periodReturn >= 0 ? "bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20" : periodReturn !== null ? "bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20" : "bg-muted/30 border-border"}`}>
                         <div className="text-sm text-muted-foreground mb-2">Period Return</div>
-                        <div className="text-2xl font-bold leading-tight">
-                          <span className={periodReturn >= 0 ? "text-green-600" : "text-red-600"}>
-                            {periodReturn >= 0 ? "+" : ""}£{periodReturn.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                        <div className={`text-base mt-1 ${periodReturn >= 0 ? "text-green-600" : "text-red-600"}`}>
-                          {periodReturnPercent >= 0 ? "+" : ""}{periodReturnPercent.toFixed(2)}%
-                        </div>
+                        {periodReturn !== null ? (
+                          <>
+                            <div className="text-2xl font-bold leading-tight">
+                              <span className={periodReturn >= 0 ? "text-green-600" : "text-red-600"}>
+                                {periodReturn >= 0 ? "+" : ""}£{periodReturn.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className={`text-base mt-1 ${periodReturn >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {periodReturnPercent !== null && (periodReturnPercent >= 0 ? "+" : "")}{periodReturnPercent !== null ? periodReturnPercent.toFixed(2) : "—"}%
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-2xl font-bold text-muted-foreground">—</div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl p-5 border border-amber-500/20">
-                      <div className="text-sm text-muted-foreground mb-2">Period Range</div>
-                      <div className="text-xl font-semibold">£{periodLow.toLocaleString("en-US", { minimumFractionDigits: 0 })} - £{periodHigh.toLocaleString("en-US", { minimumFractionDigits: 0 })}</div>
-                    </div>
+                    {hasData && (
+                      <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl p-5 border border-amber-500/20">
+                        <div className="text-sm text-muted-foreground mb-2">Period Range</div>
+                        <div className="text-xl font-semibold">£{periodLow.toLocaleString("en-US", { minimumFractionDigits: 0 })} - £{periodHigh.toLocaleString("en-US", { minimumFractionDigits: 0 })}</div>
+                      </div>
+                    )}
 
                     {/* Timeline selector */}
                     <div className="flex items-center gap-1 justify-center bg-muted/50 rounded-lg p-1">
