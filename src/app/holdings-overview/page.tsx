@@ -96,7 +96,7 @@ export default function PortfolioOverview() {
     if (!hasSnapshots) return [];
 
     const snapshots = getPortfolioSnapshots as Array<{ portfolioId?: string; totalValue: number; costBasis?: number; snapshotDate: string }>;
-    
+
     // Group by date and portfolio - include all portfolios
     const dateMap = new Map<string, Map<string, { totalValue: number; costBasis: number }>>();
     snapshots.forEach(s => {
@@ -106,7 +106,7 @@ export default function PortfolioOverview() {
       const portfolioMap = dateMap.get(s.snapshotDate)!;
       const key = s.portfolioId || "total";
       const current = portfolioMap.get(key) || { totalValue: 0, costBasis: 0 };
-      portfolioMap.set(key, { 
+      portfolioMap.set(key, {
         totalValue: current.totalValue + s.totalValue,
         costBasis: current.costBasis + (s.costBasis || 0)
       });
@@ -118,22 +118,50 @@ export default function PortfolioOverview() {
     if (sortedDates.length === 0) return [];
 
     // Build data with percentage changes - all use cost basis (market performance only)
-    return sortedDates.map(([date, portfolioMap]) => {
+    const rawData = sortedDates.map(([date, portfolioMap]) => {
       const dataPoint: Record<string, string | number> = {
         date: new Date(date).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
       };
-      
+
+      let totalValue = 0;
+      let totalCostBasis = 0;
+
       portfolioMap.forEach((value, _key) => {
         // Calculate % change from cost basis: (totalValue - costBasis) / costBasis
         // This shows market performance excluding cash flows (deposits/withdrawals)
-        const percentChange = value.costBasis > 0 && value.totalValue > 0 
-          ? ((value.totalValue - value.costBasis) / value.costBasis) * 100 
+        const percentChange = value.costBasis > 0 && value.totalValue > 0
+          ? ((value.totalValue - value.costBasis) / value.costBasis) * 100
           : 0;
         dataPoint[_key] = percentChange;
+
+        // Accumulate totals (skip the "total" entry itself to avoid double-counting)
+        if (_key !== "total") {
+          totalValue += value.totalValue;
+          totalCostBasis += value.costBasis;
+        }
       });
+
+      // Always add "total" as the sum of all individual portfolios for this date
+      const totalPercentChange = totalCostBasis > 0 && totalValue > 0
+        ? ((totalValue - totalCostBasis) / totalCostBasis) * 100
+        : 0;
+      dataPoint["total"] = totalPercentChange;
 
       return dataPoint;
     });
+
+    // Skip leading entries where all portfolio values are 0%
+    let firstRealIndex = rawData.length;
+    for (let i = 0; i < rawData.length; i++) {
+      const d = rawData[i];
+      const hasNonZero = Object.keys(d).some(k => k !== "date" && typeof d[k] === "number" && d[k] !== 0);
+      if (hasNonZero) {
+        firstRealIndex = i;
+        break;
+      }
+    }
+
+    return rawData.slice(firstRealIndex);
   }, [hasSnapshots, getPortfolioSnapshots]);
 
   const allPortfolioKeys = useMemo(() => {
@@ -144,6 +172,8 @@ export default function PortfolioOverview() {
         if (k !== "date" && !keys.includes(k)) keys.push(k);
       });
     });
+    // Ensure "total" is always included (as first) even if no snapshot had portfolioId = undefined
+    if (!keys.includes("total")) keys.unshift("total");
     return keys.sort((a, b) => {
       if (a === "total") return -1;
       if (b === "total") return 1;
@@ -154,6 +184,18 @@ export default function PortfolioOverview() {
   const lineColors = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
 
   const visiblePortfolios = allPortfolioKeys.filter(k => k === "total" || !isPortfolioExcluded(k));
+
+  // Check if ANY key in the data has a real (non-zero) value — independent of visibility/exclusions
+  const hasRealPerformance = useMemo(() => {
+    if (performanceData.length === 0) return false;
+    return performanceData.some(d =>
+      Object.keys(d).some(k => {
+        if (k === "date") return false;
+        const val = d[k];
+        return typeof val === "number" && val !== 0;
+      })
+    );
+  }, [performanceData]);
 
   const percentDomain = (() => {
     if (performanceData.length === 0) return [-10, 10];
@@ -392,7 +434,7 @@ export default function PortfolioOverview() {
                   <TrendingUp className="w-5 h-5 text-blue-600" />
                   Performance
                 </CardTitle>
-                <CardDescription>{hasSnapshots ? "12-month history (% change from start)" : "Track your portfolio over time"}</CardDescription>
+                <CardDescription>{hasSnapshots && hasRealPerformance ? "12-month history (% change from start)" : "Track your portfolio over time"}</CardDescription>
               </div>
               {allPortfolioKeys.length > 0 && (
                 <div className="mt-3 space-y-2">
@@ -447,7 +489,7 @@ export default function PortfolioOverview() {
               )}
             </CardHeader>
             <CardContent>
-              {hasSnapshots && allPortfolioKeys.length > 0 ? (
+              {hasSnapshots && allPortfolioKeys.length > 0 && hasRealPerformance ? (
                 <div className="[&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground">
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={performanceData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
