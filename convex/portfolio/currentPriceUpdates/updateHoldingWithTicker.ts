@@ -4,10 +4,9 @@ import { Id } from "../../_generated/dataModel";
 
 export const getAllHoldings = query({
   handler: async (ctx) => {
-
     const sixHoursMs = 6 * 60 * 60 * 1000;
-    const cutoff = Date.now() - sixHoursMs; 
-    
+    const cutoff = Date.now() - sixHoursMs;
+
     const holdings = await ctx.db
       .query("holdings")
       .filter(q => q.gt(q.field("lastUpdated"), cutoff))
@@ -24,20 +23,12 @@ export const getAllHoldings = query({
 
 export const getAllUserIdsWithHoldings = query({
   handler: async (ctx) => {
-    // Use 6-hour cache cutoff like getAllHoldings for consistency
-    const sixHoursMs = 6 * 60 * 60 * 1000;
-    const cutoff = Date.now() - sixHoursMs;
-
-    // First get all holdings with recent updates (lastUpdated within 6 hours)
     const holdings = await ctx.db
       .query("holdings")
-      .filter(q => q.gt(q.field("lastUpdated"), new Date(cutoff).toISOString()))
       .collect();
 
-    // Get simple holdings with recent updates
     const simpleHoldings = await ctx.db
       .query("simpleHoldings")
-      .filter(q => q.gt(q.field("lastUpdated"), new Date(cutoff).toISOString()))
       .collect();
 
     const userIds = new Set<Id<"users">>();
@@ -83,6 +74,7 @@ export const updateHoldingWithTicker = mutation({
             currentPrice: args.currentPrice,
             currency: newCurrency,
             avgPrice: avgPrice,
+            lastUpdated: new Date().toISOString(),
         });
       }
       return { success: true };
