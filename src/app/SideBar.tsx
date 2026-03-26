@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useFireMetrics } from "@/context/FireMetricsContext";
 import {
   Home,
   MonitorCheck,
@@ -46,6 +47,7 @@ const coreSections = [
     icon: TrendingUp,
     items: [
       { title: "Net Worth", url: "/net-worth", icon: Wallet },
+      { title: "FIRE Metrics", url: "/fire-metrics", icon: FlameKindling },
       { title: "Holdings Overview", url: "/holdings-overview", icon: Home },
       { title: "Holdings", url: "/holdings", icon: FileChartPie },
       { title: "Transactions", url: "/transactions", icon: ArrowLeftRight },
@@ -98,6 +100,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function AppSidebar() {
   const pathname = usePathname();
   const { signOut } = useAuthActions();
+  const { fiPercent } = useFireMetrics();
   // Accordion: only one extras section open at a time, both default to closed
   const [openExtra, setOpenExtra] = useState<string | null>(null);
 
@@ -154,9 +157,20 @@ export function AppSidebar() {
                           isActive={isActive(item.url)}
                           className="px-3 py-2 ml-1 rounded-lg text-sm transition-all duration-150 data-[active=true]:bg-blue-50 dark:data-[active=true]:bg-blue-950/30 data-[active=true]:text-blue-700 dark:data-[active=true]:text-blue-300 data-[active=true]:font-medium hover:bg-accent/50"
                         >
-                          <Link href={item.url} className="flex items-center gap-3">
-                            <item.icon className="w-4 h-4 text-muted-foreground" />
-                            <span>{item.title}</span>
+                            <Link href={item.url} className="flex items-center gap-3">
+                            <div className="relative">
+                              <item.icon className="w-4 h-4 text-muted-foreground" />
+                              {item.title === "FIRE Metrics" && fiPercent !== null && fiPercent >= 1 && (
+                                <span className="absolute -top-1.5 -right-3 min-w-[18px] h-4 px-1 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                                  {fiPercent.toFixed(0)}%
+                                </span>
+                              )}
+                            </div>
+                            <span>
+                              {item.title === "FIRE Metrics" && fiPercent !== null && fiPercent >= 1
+                                ? `FIRE Metrics (${fiPercent.toFixed(1)}%)`
+                                : item.title}
+                            </span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuSubItem>

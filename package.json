@@ -4,7 +4,7 @@
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently \"npx convex dev\" \"next dev --turbopack\"",
+    "dev": "next dev --turbopack",
     "dev:clean": "npx rimraf .next && concurrently \"npx convex dev\" \"next dev --turbopack\"",
     "build": "next build",
     "start": "next start",

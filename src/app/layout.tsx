@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "./ConvexClientProvider";
+import { FireMetricsProvider } from "@/context/FireMetricsContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -63,7 +64,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ConvexClientProvider>
-          {children}
+          <FireMetricsProvider>
+            {children}
+          </FireMetricsProvider>
         </ConvexClientProvider>
       </body>
     </html>
