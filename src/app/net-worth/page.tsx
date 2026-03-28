@@ -847,7 +847,7 @@ export default function NetWorthPage() {
                       tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                       tickFormatter={(value) => {
                         const date = new Date(value);
-                        return date.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
+                        return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
                       }}
                       tickLine={false}
                       axisLine={false}
