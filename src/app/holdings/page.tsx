@@ -59,12 +59,10 @@ export default function HoldingsPage() {
 
   const initialized = useRef(false);
   useEffect(() => {
-    if (
-      getPortfolioData &&
-      isPortfolioArray(getPortfolioData) &&
-      !initialized.current
-    ) {
-      initialized.current = true;
+    if (getPortfolioData && isPortfolioArray(getPortfolioData)) {
+      if (!initialized.current) {
+        initialized.current = true;
+      }
       const initialPortfolios = getPortfolioData.map((p) => ({
         portfolio: p,
         id: p._id,
