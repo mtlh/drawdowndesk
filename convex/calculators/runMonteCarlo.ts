@@ -43,6 +43,9 @@ export const getAssetReturnsforPeriods = query({
       return { error: `yearPeriod must be less than the number of historical years (${asset.length})` };
     }
 
+    // Build a Map for O(1) lookups by returnYear instead of O(n) find() in loop
+    const assetByYear = new Map(asset.map(a => [a.returnYear, a]));
+
     // remove the last x years from the array
     const trimmedReturns = asset.slice(args.yearPeriod, asset.length);
 
@@ -51,7 +54,7 @@ export const getAssetReturnsforPeriods = query({
         let returnAmount = a.returnAmount;
         const yearlyReturns = [];
         for (let i = 1; i <= args.yearPeriod; i++) {
-            const next = asset.find((b) => b.returnYear === a.returnYear + i);
+            const next = assetByYear.get(a.returnYear + i);
             if (next) {
                 returnAmount += next.returnAmount;
                 yearlyReturns.push([i, returnAmount]);
