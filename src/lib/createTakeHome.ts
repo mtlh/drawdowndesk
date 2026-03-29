@@ -1,4 +1,5 @@
 import { Id } from "../../convex/_generated/dataModel";
+import { calculateTaperedPersonalAllowance } from "./taxCalculations";
 
 // return type for the take-home pay calculation
 export type TakeHomePay = {
@@ -59,14 +60,8 @@ export function CreateTakeHome(taxInfo: TaxInfo, income: number): TakeHomePay {
     let nationalInsurance = 0;
     let incomeTax = 0;
 
-    // Take off personal allowance
-    let personalAllowance = taxInfo.personalAllowance.amount;
-    // if over 100k then taper the personal allowance, £1 for every £2 over the threshold
-    if (takeHomePay > taxInfo.personalAllowance.taperThreshold) {
-        const excess = takeHomePay - taxInfo.personalAllowance.taperThreshold;
-        const taperedAmount = excess * (taxInfo.personalAllowance.taperRatePercent / 100);
-        personalAllowance = Math.max(0, personalAllowance - taperedAmount);
-    }
+    // Take off personal allowance (with tapering if over threshold)
+    const personalAllowance = calculateTaperedPersonalAllowance(takeHomePay, taxInfo.personalAllowance);
 
     // Calculate National Insurance & Income Tax
     taxInfo.bands.forEach(band => {

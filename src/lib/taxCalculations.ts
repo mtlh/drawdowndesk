@@ -43,6 +43,22 @@ export interface TaxCalculationResult {
 // Income Tax Calculations
 // ============================================================================
 
+export function calculateTaperedPersonalAllowance(
+  grossIncome: number,
+  personalAllowance: PersonalAllowance
+): number {
+  if (
+    !personalAllowance.taperThreshold ||
+    !personalAllowance.taperRatePercent ||
+    grossIncome <= personalAllowance.taperThreshold
+  ) {
+    return personalAllowance.amount;
+  }
+  const excess = grossIncome - personalAllowance.taperThreshold;
+  const taperedAmount = excess * (personalAllowance.taperRatePercent / 100);
+  return Math.max(0, personalAllowance.amount - taperedAmount);
+}
+
 /**
  * Calculate income tax using UK tax bands.
  * Supports basic, higher, and additional rate bands.
@@ -64,16 +80,7 @@ export function calculateIncomeTax(
   }
 
   // Apply personal allowance tapering if over threshold
-  let effectiveAllowance = personalAllowance.amount;
-  if (
-    personalAllowance.taperThreshold &&
-    personalAllowance.taperRatePercent &&
-    taxableIncome > personalAllowance.taperThreshold
-  ) {
-    const excess = taxableIncome - personalAllowance.taperThreshold;
-    const taperedAmount = excess * (personalAllowance.taperRatePercent / 100);
-    effectiveAllowance = Math.max(0, personalAllowance.amount - taperedAmount);
-  }
+  const effectiveAllowance = calculateTaperedPersonalAllowance(taxableIncome, personalAllowance);
 
   const taxableAmount = taxableIncome - effectiveAllowance;
   if (taxableAmount <= 0) {
@@ -121,16 +128,7 @@ export function calculateTakeHomePay(
   const incomeTax = calculateIncomeTax(grossIncome, taxRates);
 
   // Calculate personal allowance (with tapering)
-  let personalAllowance = taxRates.personalAllowance.amount;
-  if (
-    taxRates.personalAllowance.taperThreshold &&
-    taxRates.personalAllowance.taperRatePercent &&
-    grossIncome > taxRates.personalAllowance.taperThreshold
-  ) {
-    const excess = grossIncome - taxRates.personalAllowance.taperThreshold;
-    const taperedAmount = excess * (taxRates.personalAllowance.taperRatePercent / 100);
-    personalAllowance = Math.max(0, personalAllowance - taperedAmount);
-  }
+  const personalAllowance = calculateTaperedPersonalAllowance(grossIncome, taxRates.personalAllowance);
 
   // Simple NI calculation (class 1 - main rate for 2024/25)
   // Note: This is a simplified version; real NI has multiple thresholds
