@@ -1,3 +1,8 @@
-export { EmptyHoldingsState } from "./EmptyHoldingsState";
-export { NoValueHoldingsState } from "./NoValueHoldingsState";
-export { AllocationChart } from "./AllocationChart";
+export { EmptyHoldingsState } from "./EmptyHoldingsState"
+export { NoValueHoldingsState } from "./NoValueHoldingsState"
+export { AllocationChart } from "./AllocationChart"
+export { PortfolioCard } from "./PortfolioCard"
+export { PortfolioHeader } from "./PortfolioHeader"
+export { FiltersBar } from "./FiltersBar"
+export { NewPortfolioModal } from "./NewPortfolioModal"
+export { PerformanceModal } from "./PerformanceModal"
