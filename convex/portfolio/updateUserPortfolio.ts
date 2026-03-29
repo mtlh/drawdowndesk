@@ -31,13 +31,7 @@ export const updateUserPortfolio = mutation({
     const portfolio = await ctx.db.get(args.id);
 
     if (!portfolio) {
-      const newId = await ctx.db.insert("portfolios", {
-          userId: userId,
-          name: args.name,
-          portfolioType: portfolioType,
-          lastUpdated: new Date().toISOString(),
-        });
-        return { success: true, portfolioId: newId };
+      return { error: "Portfolio not found." };
     }
 
     if (portfolio.userId !== userId) {
