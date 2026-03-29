@@ -1,7 +1,24 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { Holding } from "@/types/portfolios";
+import { Id } from "../_generated/dataModel";
+
+type HoldingRecord = {
+  _id: Id<"holdings">;
+  userId: Id<"users">;
+  portfolioId: Id<"portfolios">;
+  symbol: string;
+  name: string;
+  accountName?: string;
+  dataType?: string;
+  exchange?: string;
+  currency?: string;
+  shares: number;
+  avgPrice: number;
+  currentPrice: number;
+  purchaseDate: string;
+  lastUpdated?: string;
+};
 
 export const updateUserHolding = mutation({
   args: {
@@ -31,18 +48,24 @@ export const updateUserHolding = mutation({
       return { error: "Portfolio not found or access denied." };
     }
 
-    // 2. Find existing holding using composite index
-    const existing = await ctx.db
-      .query("holdings")
-      .withIndex("by_portfolio", q => q.eq("userId", userId).eq("portfolioId", args.portfolioId))
-      .collect();
-
-    let existingHolding: Holding | undefined;
-    for (const holding of existing) {
-      if (holding._id === args._id) {
-        existingHolding = holding;
-        break;
+    // 2. Find existing holding - use direct lookup if _id provided, otherwise query by symbol/account
+    let existingHolding: HoldingRecord | undefined;
+    
+    if (args._id) {
+      const holding = await ctx.db.get(args._id as Id<"holdings">);
+      if (!holding) {
+        return { error: "Holding not found." };
       }
+      if (holding.userId !== userId || holding.portfolioId !== args.portfolioId) {
+        return { error: "Holding not found or access denied." };
+      }
+      existingHolding = holding as HoldingRecord;
+    } else {
+      const existing = await ctx.db
+        .query("holdings")
+        .withIndex("by_portfolio", q => q.eq("userId", userId).eq("portfolioId", args.portfolioId))
+        .collect();
+      existingHolding = existing.find(h => h.symbol === args.symbol && h.accountName === args.accountName) as HoldingRecord | undefined;
     }
 
     const now = new Date().toISOString();
