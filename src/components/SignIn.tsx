@@ -1,17 +1,15 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Button } from "./ui/button";
 
 export function SignIn() {
   const { signIn } = useAuthActions();
   return (
-    <Button
+    <button
       onClick={() => void signIn("google", { redirectTo: "/holdings" })}
-      className="w-full gap-2 h-12 text-base hover:bg-gray-100 active:scale-[0.98] transition-all bg-white text-black border border-gray-300 font-semibold shadow-md hover:shadow-lg"
-      size="lg"
+      className="group w-full flex items-center justify-center gap-3 h-12 px-6 rounded-xl bg-[#FDF8F3] text-[#0B3D2C] font-[family-name:var(--font-body)] font-medium text-sm transition-all duration-300 hover:bg-[#C9A962] hover:shadow-lg hover:shadow-[#C9A962]/20 active:scale-[0.98]"
     >
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+      <svg className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" viewBox="0 0 24 24">
         <path
           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
           fill="#4285F4"
@@ -29,8 +27,8 @@ export function SignIn() {
           fill="#EA4335"
         />
       </svg>
-      Continue with Google
-    </Button>
+      <span>Continue with Google</span>
+    </button>
   );
 }
 
@@ -39,7 +37,7 @@ export function SignOut() {
   return (
     <button
       onClick={() => void signOut().then(() => window.location.href = "/")}
-      className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 transition-colors"
+      className="font-[family-name:var(--font-body)] text-xs text-[#FDF8F3]/50 hover:text-[#C9A962] px-2 py-1 transition-colors duration-300"
     >
       Sign out
     </button>
