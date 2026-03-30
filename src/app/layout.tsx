@@ -72,13 +72,13 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${dmSans.variable} antialiased`}
       >
-        <ThemeProvider>
-          <ConvexClientProvider>
+        <ConvexClientProvider>
+          <ThemeProvider>
             <FireMetricsProvider>
               {children}
             </FireMetricsProvider>
-          </ConvexClientProvider>
-        </ThemeProvider>
+          </ThemeProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );
