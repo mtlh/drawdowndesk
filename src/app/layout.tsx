@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { FireMetricsProvider } from "@/context/FireMetricsContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const playfair = Playfair_Display({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const dmSans = DM_Sans({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -24,20 +27,26 @@ export const metadata: Metadata = {
 const themeScript = `
 (function() {
   try {
-    // Read theme from localStorage - only read, never write here
+    // Read theme from localStorage
     var theme = localStorage.getItem('theme');
-    // Default to dark if not set
-    if (!theme) {
-      document.documentElement.classList.add('dark');
+    
+    // If theme is "system" or not set, use system preference
+    if (!theme || theme === 'system') {
+      var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.classList.add(systemTheme);
       return;
     }
-    // Apply theme
+    
+    // Apply explicit theme
     if (theme === 'light') {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
     } else {
+      document.documentElement.classList.remove('light');
       document.documentElement.classList.add('dark');
     }
   } catch (e) {
+    // Default to dark on error
     document.documentElement.classList.add('dark');
   }
 })();
@@ -61,13 +70,15 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${playfair.variable} ${dmSans.variable} antialiased`}
       >
-        <ConvexClientProvider>
-          <FireMetricsProvider>
-            {children}
-          </FireMetricsProvider>
-        </ConvexClientProvider>
+        <ThemeProvider>
+          <ConvexClientProvider>
+            <FireMetricsProvider>
+              {children}
+            </FireMetricsProvider>
+          </ConvexClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
