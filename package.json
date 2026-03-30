@@ -69,12 +69,8 @@
     "wait-on": "^9.0.4"
   },
   "config": {
-    "forge": "./forge.config.ts"
+    "forge": "./forge.config.js"
   },
   "overrides": {
-    "glob": "^13.0.0",
-    "tar": "^7.0.0",
-    "serialize-javascript": "^7.0.0",
-    "tmp": "^0.2.3"
   }
 }
