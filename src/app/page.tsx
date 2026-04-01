@@ -17,10 +17,8 @@ function addBackForwardListeners() {
   })
   
   window.addEventListener('pageshow', (event: PageTransitionEvent) => {
-    console.log('[Global] Pageshow - persisted:', event.persisted)
-    if (event.persisted) {
-      window.location.reload()
-    }
+    console.log('[Global] Pageshow - reloading (persisted:', event.persisted + ')')
+    window.location.reload()
   })
 }
 
