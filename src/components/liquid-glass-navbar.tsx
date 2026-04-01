@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Menu, X, Github, ArrowRight } from "lucide-react"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
 import { Logo } from "./Logo"
+import { useRouter } from "next/navigation"
 
 interface LiquidGlassNavbarProps {
   onOpenAuth: () => void
@@ -11,6 +13,7 @@ interface LiquidGlassNavbarProps {
 export function LiquidGlassNavbar({ onOpenAuth }: LiquidGlassNavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -89,20 +92,53 @@ export function LiquidGlassNavbar({ onOpenAuth }: LiquidGlassNavbarProps) {
                 >
                   <Github className="w-4 h-4" />
                 </a>
-                <button 
-                  onClick={onOpenAuth} 
-                  className="group relative px-6 py-2.5 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                  style={{
-                    background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
-                    color: '#0B3D2C',
-                    boxShadow: '0 2px 16px rgba(201, 169, 98, 0.25)'
-                  }}
-                >
-                  <span className="flex items-center gap-2">
-                    Get Started
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </span>
-                </button>
+                <AuthLoading>
+                  <button 
+                    disabled
+                    className="group relative px-6 py-2.5 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold transition-all duration-300 opacity-50 cursor-not-allowed"
+                    style={{
+                      background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
+                      color: '#0B3D2C',
+                      boxShadow: '0 2px 16px rgba(201, 169, 98, 0.25)'
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </button>
+                </AuthLoading>
+                <Authenticated>
+                  <button 
+                    onClick={() => router.push("/holdings")}
+                    className="group relative px-6 py-2.5 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                      background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
+                      color: '#0B3D2C',
+                      boxShadow: '0 2px 16px rgba(201, 169, 98, 0.25)'
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      View Holdings
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    </span>
+                  </button>
+                </Authenticated>
+                <Unauthenticated>
+                  <button 
+                    onClick={onOpenAuth} 
+                    className="group relative px-6 py-2.5 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                      background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
+                      color: '#0B3D2C',
+                      boxShadow: '0 2px 16px rgba(201, 169, 98, 0.25)'
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      Get Started
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    </span>
+                  </button>
+                </Unauthenticated>
               </div>
 
               <button 
@@ -125,19 +161,50 @@ export function LiquidGlassNavbar({ onOpenAuth }: LiquidGlassNavbarProps) {
                   <a href="#demo" className="font-[family-name:var(--font-body)] text-sm text-[#FDF8F3]/70 hover:text-[#C9A962] hover:bg-[#C9A962]/10 transition-colors px-4 py-2.5 rounded-lg">
                     Demo
                   </a>
-                  <button 
-                    onClick={onOpenAuth} 
-                    className="mt-3 px-6 py-3 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold"
-                    style={{
-                      background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
-                      color: '#0B3D2C'
-                    }}
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      Get Started
-                      <ArrowRight className="w-4 h-4" />
-                    </span>
-                  </button>
+                  <AuthLoading>
+                    <button 
+                      disabled
+                      className="mt-3 px-6 py-3 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold opacity-50 cursor-not-allowed"
+                      style={{
+                        background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
+                        color: '#0B3D2C'
+                      }}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </button>
+                  </AuthLoading>
+                  <Authenticated>
+                    <button 
+                      onClick={() => router.push("/holdings")}
+                      className="mt-3 px-6 py-3 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold"
+                      style={{
+                        background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
+                        color: '#0B3D2C'
+                      }}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        View Holdings
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </button>
+                  </Authenticated>
+                  <Unauthenticated>
+                    <button 
+                      onClick={onOpenAuth} 
+                      className="mt-3 px-6 py-3 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold"
+                      style={{
+                        background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
+                        color: '#0B3D2C'
+                      }}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        Get Started
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </button>
+                  </Unauthenticated>
                 </div>
               </div>
             )}

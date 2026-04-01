@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useRouter } from "next/navigation"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
 import { 
   TrendingUp, 
   ArrowRight,
@@ -64,6 +66,7 @@ function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
 
 function HeroSection({ onOpenAuth }: { onOpenAuth: () => void }) {
   const [isVisible, setIsVisible] = useState(false)
+  const router = useRouter()
   
   useEffect(() => {
     setIsVisible(true)
@@ -120,20 +123,53 @@ function HeroSection({ onOpenAuth }: { onOpenAuth: () => void }) {
             className={`flex flex-col sm:flex-row items-center justify-center gap-5 mb-16 transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             style={{ transitionDelay: '250ms' }}
           >
-            <button 
-              onClick={onOpenAuth} 
-              className="group relative px-10 py-5 rounded-full font-[family-name:var(--font-body)] font-semibold text-lg transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
-              style={{
-                background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
-                boxShadow: '0 4px 20px rgba(201, 169, 98, 0.3), 0 0 0 1px rgba(232, 208, 137, 0.1)',
-                color: '#0B3D2C'
-              }}
-            >
-              <span className="flex items-center gap-3">
-                Get Started
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
-              </span>
-            </button>
+            <AuthLoading>
+              <button 
+                disabled
+                className="group relative px-10 py-5 rounded-full font-[family-name:var(--font-body)] font-semibold text-lg transition-all duration-300 opacity-50 cursor-not-allowed"
+                style={{
+                  background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
+                  boxShadow: '0 4px 20px rgba(201, 169, 98, 0.3), 0 0 0 1px rgba(232, 208, 137, 0.1)',
+                  color: '#0B3D2C'
+                }}
+              >
+                <span className="flex items-center gap-3">
+                  <ArrowRight className="w-5 h-5" />
+                </span>
+              </button>
+            </AuthLoading>
+            <Authenticated>
+              <button 
+                onClick={() => router.push("/holdings")}
+                className="group relative px-10 py-5 rounded-full font-[family-name:var(--font-body)] font-semibold text-lg transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
+                style={{
+                  background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
+                  boxShadow: '0 4px 20px rgba(201, 169, 98, 0.3), 0 0 0 1px rgba(232, 208, 137, 0.1)',
+                  color: '#0B3D2C'
+                }}
+              >
+                <span className="flex items-center gap-3">
+                  View Holdings
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
+                </span>
+              </button>
+            </Authenticated>
+            <Unauthenticated>
+              <button 
+                onClick={onOpenAuth} 
+                className="group relative px-10 py-5 rounded-full font-[family-name:var(--font-body)] font-semibold text-lg transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
+                style={{
+                  background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
+                  boxShadow: '0 4px 20px rgba(201, 169, 98, 0.3), 0 0 0 1px rgba(232, 208, 137, 0.1)',
+                  color: '#0B3D2C'
+                }}
+              >
+                <span className="flex items-center gap-3">
+                  Get Started
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
+                </span>
+              </button>
+            </Unauthenticated>
             <a 
               href="#demo" 
               className="group flex items-center gap-2 px-6 py-3 text-[#FDF8F3]/70 font-[family-name:var(--font-body)] font-medium text-base transition-all duration-300 hover:text-[#C9A962] hover:bg-[#C9A962]/5 rounded-full"
