@@ -516,7 +516,7 @@ function DemoSection() {
                       step="100"
                       value={monthlyContribution}
                       onChange={(e) => setMonthlyContribution(Number(e.target.value))}
-                      className="flex-1 h-2 bg-[#C9A962]/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [--webkit-slider-thumb]:bg-[#C9A962]"
+                      className="flex-1 h-2 bg-[#C9A962]/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#C9A962]"
                     />
                   </div>
                   <p className="font-[family-name:var(--font-display)] text-2xl text-[#FDF8F3] mt-2">
