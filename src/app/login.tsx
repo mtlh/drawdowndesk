@@ -6,10 +6,18 @@ import { useState, useEffect, useCallback, useRef } from "react"
 
 if (typeof window !== 'undefined') {
   window.addEventListener('pageshow', (e: Event) => {
-    console.log('[GLOBAL] pageshow event at window level, persisted:', (e as PageTransitionEvent).persisted)
-  })
-  document.addEventListener('pageshow', (e: Event) => {
-    console.log('[GLOBAL] pageshow event at document level, persisted:', (e as PageTransitionEvent).persisted)
+    const persisted = (e as PageTransitionEvent).persisted
+    console.log('[GLOBAL] pageshow event, persisted:', persisted)
+    
+    // Use performance API to detect back/forward
+    const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
+    if (navEntries.length > 0) {
+      console.log('[GLOBAL] navigation type:', navEntries[0].type)
+      if (navEntries[0].type === 'back_forward') {
+        console.log('[GLOBAL] Back/forward detected - reloading')
+        window.location.reload()
+      }
+    }
   })
 }
 import { useRouter } from "next/navigation"
