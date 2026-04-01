@@ -70,16 +70,6 @@ function HeroSection({ onOpenAuth }: { onOpenAuth: () => void }) {
   
   useEffect(() => {
     setIsVisible(true)
-    
-    const handlepageshow = () => {
-      setIsVisible(false)
-      requestAnimationFrame(() => {
-        setIsVisible(true)
-      })
-    }
-    
-    window.addEventListener('pageshow', handlepageshow)
-    return () => window.removeEventListener('pageshow', handlepageshow)
   }, [])
 
   return (
@@ -730,6 +720,17 @@ function Footer() {
 
 export default function Login() {
   const [isAuthOpen, setIsAuthOpen] = useState(false)
+  
+  useEffect(() => {
+    const handlepageshow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        window.location.reload()
+      }
+    }
+    
+    window.addEventListener('pageshow', handlepageshow)
+    return () => window.removeEventListener('pageshow', handlepageshow)
+  }, [])
 
   return (
     <div className="relative min-h-screen">

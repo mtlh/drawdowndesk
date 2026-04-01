@@ -12,11 +12,10 @@ export default function NotFound() {
   useEffect(() => {
     setIsVisible(true)
     
-    const handlepageshow = () => {
-      setIsVisible(false)
-      requestAnimationFrame(() => {
-        setIsVisible(true)
-      })
+    const handlepageshow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        window.location.reload()
+      }
     }
     
     window.addEventListener('pageshow', handlepageshow)
