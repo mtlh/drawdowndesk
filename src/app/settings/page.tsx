@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Settings as SettingsIcon, RotateCcw, Pencil, Check, X, Moon, Sun, Shield, Trash2, LogOut, Smartphone, KeyRound, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
-import { useQuery, useMutation, Authenticated } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
+import { AuthRequired } from "@/hooks/useRequireAuth"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -1346,8 +1347,8 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Authenticated>
+    <AuthRequired>
       <SettingsContent />
-    </Authenticated>
+    </AuthRequired>
   )
 }
