@@ -12,6 +12,33 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
+const publicPaths = ["/", "/login"];
+const protectedRoutePrefixes = [
+  "/holdings",
+  "/holdings-overview",
+  "/holdings-performance",
+  "/net-worth",
+  "/fire-metrics",
+  "/budget",
+  "/goal-tracker",
+  "/cashflow-calculator",
+  "/monte-carlo-simulator",
+  "/dividend-calculator",
+  "/finance-notes",
+  "/lifetime-accumulation",
+  "/what-if-scenarios",
+  "/bed-and-isa",
+  "/tax-loss-harvesting",
+  "/one-off-cgt",
+  "/accumulation-forecast",
+  "/transactions",
+  "/settings",
+];
+
+function isProtectedRoute(pathname: string): boolean {
+  return protectedRoutePrefixes.some((prefix) => pathname.startsWith(prefix));
+}
+
 function AppShell({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
@@ -30,11 +57,12 @@ function AppShell({ children }: { children: ReactNode }) {
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isPublicPage = pathname === "/" || pathname === "/login" || pathname === "/not-found";
+  const isPublicPage = publicPaths.includes(pathname);
+  const isKnownProtectedRoute = isProtectedRoute(pathname);
 
   return (
     <ConvexAuthProvider client={convex}>
-      {isPublicPage ? (
+      {isPublicPage || !isKnownProtectedRoute ? (
         <ErrorBoundary>
           <ToastProvider>
             {children}

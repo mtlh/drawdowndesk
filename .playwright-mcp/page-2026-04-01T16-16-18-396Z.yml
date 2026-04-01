@@ -1,0 +1,134 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e8]:
+      - link "Drawdown Desk Portfolio Tracker" [ref=e10] [cursor=pointer]:
+        - /url: /
+        - img [ref=e13]
+        - generic [ref=e21]:
+          - generic [ref=e22]: Drawdown Desk
+          - generic [ref=e23]: Portfolio Tracker
+      - generic [ref=e24]:
+        - list [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - img [ref=e29]
+              - generic [ref=e32]: Investments
+            - list [ref=e33]:
+              - listitem [ref=e34]:
+                - link "Net Worth" [ref=e35] [cursor=pointer]:
+                  - /url: /net-worth
+                  - img [ref=e37]
+                  - generic [ref=e40]: Net Worth
+              - listitem [ref=e41]:
+                - link "FIRE Metrics" [ref=e42] [cursor=pointer]:
+                  - /url: /fire-metrics
+                  - img [ref=e44]
+                  - generic [ref=e48]: FIRE Metrics
+              - listitem [ref=e49]:
+                - link "Holdings Overview" [ref=e50] [cursor=pointer]:
+                  - /url: /holdings-overview
+                  - img [ref=e52]
+                  - generic [ref=e55]: Holdings Overview
+              - listitem [ref=e56]:
+                - link "Holdings" [ref=e57] [cursor=pointer]:
+                  - /url: /holdings
+                  - img [ref=e59]
+                  - generic [ref=e64]: Holdings
+              - listitem [ref=e65]:
+                - link "Transactions" [ref=e66] [cursor=pointer]:
+                  - /url: /transactions
+                  - img [ref=e68]
+                  - generic [ref=e71]: Transactions
+              - listitem [ref=e72]:
+                - link "Dividends" [ref=e73] [cursor=pointer]:
+                  - /url: /dividend-calculator
+                  - img [ref=e75]
+                  - generic [ref=e77]: Dividends
+              - listitem [ref=e78]:
+                - link "Holdings Performance" [ref=e79] [cursor=pointer]:
+                  - /url: /holdings-performance
+                  - img [ref=e81]
+                  - generic [ref=e84]: Holdings Performance
+          - generic [ref=e85]:
+            - generic [ref=e86]:
+              - img [ref=e87]
+              - generic [ref=e90]: Planning
+            - list [ref=e91]:
+              - listitem [ref=e92]:
+                - link "Goals" [ref=e93] [cursor=pointer]:
+                  - /url: /goal-tracker
+                  - img [ref=e95]
+                  - generic [ref=e98]: Goals
+              - listitem [ref=e99]:
+                - link "Budget" [ref=e100] [cursor=pointer]:
+                  - /url: /budget
+                  - img [ref=e102]
+                  - generic [ref=e105]: Budget
+              - listitem [ref=e106]:
+                - link "Planning Notes" [ref=e107] [cursor=pointer]:
+                  - /url: /finance-notes
+                  - img [ref=e109]
+                  - generic [ref=e112]: Planning Notes
+        - generic [ref=e114]: Extras
+        - list [ref=e116]:
+          - listitem [ref=e118]:
+            - button "Calculators" [ref=e119]:
+              - img [ref=e120]
+              - generic [ref=e124]: Calculators
+              - img [ref=e125]
+          - listitem [ref=e128]:
+            - button "Tax Planning" [ref=e129]:
+              - img [ref=e130]
+              - generic [ref=e133]: Tax Planning
+              - img [ref=e134]
+    - generic [ref=e138]:
+      - banner [ref=e139]:
+        - button "Toggle sidebar" [ref=e140] [cursor=pointer]:
+          - img
+          - generic [ref=e141]: Toggle sidebar
+        - heading "Dashboard" [level=1] [ref=e143]
+        - button "Toggle theme" [ref=e144] [cursor=pointer]:
+          - img
+          - generic [ref=e145]: Toggle theme
+      - main [ref=e146]:
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - heading "404" [level=1] [ref=e150]
+            - heading "Page Not Found" [level=2] [ref=e151]
+            - paragraph [ref=e152]: The page you're looking for doesn't exist or has been moved.
+          - generic [ref=e153]:
+            - button "Go Back" [ref=e154] [cursor=pointer]:
+              - img
+              - text: Go Back
+            - link "Home" [ref=e155] [cursor=pointer]:
+              - /url: /
+              - button "Home" [ref=e156]:
+                - img
+                - text: Home
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - button "Select element":
+                      - img
+                - generic:
+                  - generic:
+                    - button "Open comments":
+                      - generic:
+                        - img
+                - generic:
+                  - generic:
+                    - button "Copy all comments":
+                      - img
+              - generic:
+                - button "Disable React Grab" [pressed]
+          - button "Collapse toolbar":
+            - img
+  - button "Open Next.js Dev Tools" [ref=e162] [cursor=pointer]:
+    - img [ref=e163]
+  - alert [ref=e166]
