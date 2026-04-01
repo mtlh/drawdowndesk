@@ -1,10 +1,19 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { useEffect } from "react"
 import Login from "./login"
 
 export default function Page() {
-  const pathname = usePathname()
+  useEffect(() => {
+    const handlepageshow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        window.location.reload()
+      }
+    }
+    
+    window.addEventListener('pageshow', handlepageshow)
+    return () => window.removeEventListener('pageshow', handlepageshow)
+  }, [])
   
-  return <Login key={pathname} />;
+  return <Login />
 }
