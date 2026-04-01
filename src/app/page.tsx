@@ -3,6 +3,7 @@
 import Login from "./login"
 
 let listenersAdded = false
+let lastReloadTime = 0
 
 function addBackForwardListeners() {
   if (typeof window === 'undefined' || listenersAdded) return
@@ -10,14 +11,14 @@ function addBackForwardListeners() {
   
   console.log('[Global] Adding back/forward listeners')
   
-  window.addEventListener('popstate', () => {
-    console.log('[Global] PopState - navigating')
-    window.location.href = window.location.href
-  })
-  
   window.addEventListener('pageshow', (event: PageTransitionEvent) => {
-    console.log('[Global] Pageshow - navigating (persisted:', event.persisted + ')')
-    window.location.href = window.location.href
+    console.log('[Global] Pageshow - persisted:', event.persisted)
+    const now = Date.now()
+    if (now - lastReloadTime > 1000) {
+      console.log('[Global] Reloading due to pageshow')
+      lastReloadTime = now
+      window.location.reload()
+    }
   })
 }
 
