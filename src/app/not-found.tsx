@@ -6,20 +6,21 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import { PageBackground } from "@/components/page-background"
 import { Logo } from "@/components/Logo"
 
+if (typeof window !== 'undefined') {
+  window.addEventListener('pageshow', (e: Event) => {
+    const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
+    if (navEntries.length > 0 && navEntries[0].type === 'back_forward') {
+      console.log('[404] Back/forward detected - reloading')
+      window.location.reload()
+    }
+  })
+}
+
 export default function NotFound() {
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
     setIsVisible(true)
-    
-    const handlepageshow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        window.location.reload()
-      }
-    }
-    
-    window.addEventListener('pageshow', handlepageshow)
-    return () => window.removeEventListener('pageshow', handlepageshow)
   }, [])
 
   return (
