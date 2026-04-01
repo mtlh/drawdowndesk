@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Plus, Wallet } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
+import { AuthRequired } from "@/hooks/useRequireAuth"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { useToast } from "@/hooks/useToast"
@@ -19,7 +20,49 @@ type PortfolioExpanded = {
   id: string
 }
 
-export default function HoldingsPage() {
+function LoadingState() {
+  return (
+    <div className="flex min-h-screen bg-background">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+        <div className="p-4 lg:p-8 space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+            <div className="flex gap-3">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonCard key={i} className="h-[180px] p-6" />
+            ))}
+          </div>
+
+          <SkeletonCard className="h-[500px] p-6">
+            <SkeletonCardHeader className="pb-2">
+              <SkeletonText lines={2} />
+            </SkeletonCardHeader>
+            <SkeletonCardContent>
+              <SkeletonList count={6} />
+            </SkeletonCardContent>
+          </SkeletonCard>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function HoldingsContent() {
   const getPortfolioData = useQuery(api.portfolio.getUserPortfolio.getUserPortfolio, {});
   const updatePortfolioMutation = useMutation(api.portfolio.updateUserPortfolio.updateUserPortfolio);
   const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 });
@@ -224,45 +267,7 @@ export default function HoldingsPage() {
   }, [portfolios, typeFilter, accountFilter, searchTerm, sortBy, getPortfolioStats, holdings]);
 
   if (!getPortfolioData) {
-    return (
-      <div className="flex min-h-screen bg-background">
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
-          <div className="p-4 lg:p-8 space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-4 w-96" />
-              </div>
-              <div className="flex gap-3">
-                <Skeleton className="h-10 w-32" />
-                <Skeleton className="h-10 w-32" />
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Skeleton className="h-10 flex-1" />
-              <Skeleton className="h-10 w-32" />
-              <Skeleton className="h-10 w-32" />
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <SkeletonCard key={i} className="h-[180px] p-6" />
-              ))}
-            </div>
-
-            <SkeletonCard className="h-[500px] p-6">
-              <SkeletonCardHeader className="pb-2">
-                <SkeletonText lines={2} />
-              </SkeletonCardHeader>
-              <SkeletonCardContent>
-                <SkeletonList count={6} />
-              </SkeletonCardContent>
-            </SkeletonCard>
-          </div>
-        </main>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (isError(getPortfolioData)) {
@@ -465,4 +470,12 @@ export default function HoldingsPage() {
       </main>
     </div>
   )
+}
+
+export default function HoldingsPage() {
+  return (
+    <AuthRequired>
+      <HoldingsContent />
+    </AuthRequired>
+  );
 }

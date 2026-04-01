@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { AuthRequired } from "@/hooks/useRequireAuth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -41,7 +42,7 @@ type PortfolioSnapshot = {
   lastUpdated?: string;
 };
 
-export default function PortfolioOverview() {
+function PortfolioOverviewContent() {
   const portfolioData: PortfolioDataResult = usePortfolioData();
   const getPortfolioSnapshots = useQuery(api.portfolio.portfolioSnapshots.getPortfolioSnapshots, { months: 12 }) as PortfolioSnapshot[] | undefined | { error: string };
 
@@ -356,11 +357,11 @@ export default function PortfolioOverview() {
   })
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
-        <div className="p-4 lg:p-8 space-y-6">
-          {/* Header Section */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
+          <div className="p-4 lg:p-8 space-y-6">
+            {/* Header Section */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             {/* Total Value Display */}
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20">
@@ -682,4 +683,12 @@ export default function PortfolioOverview() {
       </main>
     </div>
   )
+}
+
+export default function PortfolioOverview() {
+  return (
+    <AuthRequired>
+      <PortfolioOverviewContent />
+    </AuthRequired>
+  );
 }
