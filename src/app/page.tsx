@@ -5,14 +5,9 @@ import Login from "./login"
 
 export default function Page() {
   useEffect(() => {
-    const handlepageshow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        window.location.reload()
-      }
-    }
-    
-    window.addEventListener('pageshow', handlepageshow)
-    return () => window.removeEventListener('pageshow', handlepageshow)
+    window.addEventListener('pageshow', () => {
+      window.location.reload()
+    })
   }, [])
   
   return <Login />
