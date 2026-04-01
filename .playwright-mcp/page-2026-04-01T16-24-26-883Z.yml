@@ -1,0 +1,42 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e8]:
+    - img [ref=e10]
+    - heading "404" [level=1] [ref=e18]
+    - heading "Page Not Found" [level=2] [ref=e19]
+    - paragraph [ref=e20]: The page you're looking for doesn't exist or has been moved.
+    - generic [ref=e21]:
+      - button "Go Back" [ref=e22]:
+        - generic [ref=e23]:
+          - img [ref=e24]
+          - text: Go Back
+      - link "Home" [ref=e26] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e27]:
+          - text: Home
+          - img [ref=e28]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - button "Select element":
+                      - img
+                - generic:
+                  - generic:
+                    - button "Open comments":
+                      - generic:
+                        - img
+                - generic:
+                  - generic:
+                    - button "Copy all comments":
+                      - img
+              - generic:
+                - button "Disable React Grab" [pressed]
+          - button "Collapse toolbar":
+            - img
+  - button "Open Next.js Dev Tools" [ref=e35] [cursor=pointer]:
+    - img [ref=e36]
