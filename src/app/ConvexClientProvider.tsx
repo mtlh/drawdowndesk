@@ -30,7 +30,7 @@ function AppShell({ children }: { children: ReactNode }) {
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isPublicPage = pathname === "/" || pathname === "/login";
+  const isPublicPage = pathname === "/" || pathname === "/login" || pathname === "/not-found";
 
   return (
     <ConvexAuthProvider client={convex}>
