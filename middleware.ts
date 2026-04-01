@@ -29,7 +29,9 @@ const isProtectedRoute = createRouteMatcher([
 
 export default convexAuthNextjsMiddleware(
   async (request, { convexAuth }) => {
+    console.log("[DEBUG] Middleware running for:", request.url);
     const isAuthenticated = await convexAuth.isAuthenticated();
+    console.log("[DEBUG] isAuthenticated:", isAuthenticated);
     
     if (isPublicPage(request) && isAuthenticated) {
       return nextjsMiddlewareRedirect(request, "/holdings");
@@ -39,7 +41,7 @@ export default convexAuthNextjsMiddleware(
       return nextjsMiddlewareRedirect(request, "/");
     }
   },
-  { cookieConfig: { maxAge: 60 * 60 * 24 * 30 } }
+  { cookieConfig: { maxAge: 60 * 60 * 24 * 30 }, verbose: true }
 );
 
 export const config = {
