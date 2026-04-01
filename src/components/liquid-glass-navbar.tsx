@@ -107,9 +107,9 @@ export function LiquidGlassNavbar({ onOpenAuth }: LiquidGlassNavbarProps) {
                     </span>
                   </button>
                 </AuthLoading>
-                <Authenticated>
-                  <button 
-                    onClick={() => window.location.href = "/holdings"}
+                  <Authenticated>
+                    <button 
+                    onClick={() => router.push("/holdings")}
                     className="group relative px-6 py-2.5 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                     style={{
                       background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
@@ -177,7 +177,7 @@ export function LiquidGlassNavbar({ onOpenAuth }: LiquidGlassNavbarProps) {
                   </AuthLoading>
                   <Authenticated>
                     <button 
-                      onClick={() => window.location.href = "/holdings"}
+                      onClick={() => router.push("/holdings")}
                       className="mt-3 px-6 py-3 rounded-full font-[family-name:var(--font-body)] text-sm font-semibold"
                       style={{
                         background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
