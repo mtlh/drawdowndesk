@@ -3,7 +3,7 @@
 import { ConvexReactClient } from "convex/react";
 import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ToastProvider } from "@/hooks/useToast";
 import { AppSidebar } from "./SideBar";
@@ -61,7 +61,7 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
   const isKnownProtectedRoute = isProtectedRoute(pathname);
 
   return (
-    <ConvexAuthProvider client={convex}>
+    <ConvexAuthNextjsProvider client={convex}>
       {isPublicPage || !isKnownProtectedRoute ? (
         <ErrorBoundary>
           <ToastProvider>
@@ -77,6 +77,6 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
           </ErrorBoundary>
         </AppShell>
       )}
-    </ConvexAuthProvider>
+    </ConvexAuthNextjsProvider>
   );
 }
