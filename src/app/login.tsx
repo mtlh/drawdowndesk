@@ -720,12 +720,12 @@ function Footer() {
 
 export default function Login() {
   const [isAuthOpen, setIsAuthOpen] = useState(false)
-  
+  const [renderKey, setRenderKey] = useState(0)
+
   useEffect(() => {
-    const handlepageshow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        window.location.reload()
-      }
+    const handlepageshow = () => {
+      console.log('[Login] Pageshow - resetting key')
+      setRenderKey(k => k + 1)
     }
     
     window.addEventListener('pageshow', handlepageshow)
@@ -733,7 +733,7 @@ export default function Login() {
   }, [])
 
   return (
-    <div className="relative min-h-screen">
+    <div key={renderKey} className="relative min-h-screen">
       <LiquidGlassNavbar onOpenAuth={() => setIsAuthOpen(true)} />
       <main className="relative">
         <HeroSection onOpenAuth={() => setIsAuthOpen(true)} />
