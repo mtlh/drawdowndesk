@@ -30,12 +30,18 @@ async function authenticate(page: Page) {
   const emailInput = page.locator('input[name="email"]');
   const passwordInput = page.locator('input[name="password"]');
   
-  try {
+  // Check if email input is visible, if not click "Get Started" button first
+  const emailVisible = await emailInput.isVisible({ timeout: 500 }).catch(() => false);
+  
+  if (!emailVisible) {
+    console.log("Email input not visible, clicking Get Started button");
+    const getStartedButton = page.locator('button:has-text("Get Started"), button:has-text("Sign in with Google")').first();
+    await getStartedButton.click();
+    await page.waitForTimeout(1000);
+    
+    // Wait for email input to appear
     await emailInput.waitFor({ state: "visible", timeout: 15000 });
-    console.log("Email input found, proceeding with login");
-  } catch {
-    console.log("Email input not visible - may already be logged in or on different page");
-    throw new Error("Email input not visible");
+    console.log("Email input now visible after clicking Get Started");
   }
   
   await emailInput.fill(TEST_USER_EMAIL);
