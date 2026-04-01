@@ -140,7 +140,7 @@ function HeroSection({ onOpenAuth }: { onOpenAuth: () => void }) {
             </AuthLoading>
             <Authenticated>
               <button 
-                onClick={() => router.push("/holdings")}
+                onClick={() => window.location.href = "/holdings"}
                 className="group relative px-10 py-5 rounded-full font-[family-name:var(--font-body)] font-semibold text-lg transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
                 style={{
                   background: 'linear-gradient(135deg, #C9A962 0%, #D4B76A 50%, #E8D089 100%)',
