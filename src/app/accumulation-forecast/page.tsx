@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Trash2, Plus, TrendingUp, CalendarDays, PiggyBank, Target, Calculator } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "convex/react";
+import { AuthRequired } from "@/hooks/useRequireAuth";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -198,15 +199,15 @@ export default function AccumulationForecast() {
   } satisfies ChartConfig;
 
   return (
+    <AuthRequired>
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
         <div className="p-4 lg:p-8 space-y-6">
-          {/* Header Section */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            {/* Forecast Display */}
+          {/* Page title */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-600/20">
-                <Target className="w-7 h-7 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground mb-1">Forecasted Net Worth</div>
@@ -545,5 +546,6 @@ export default function AccumulationForecast() {
         </div>
       </main>
     </div>
+    </AuthRequired>
   );
 }

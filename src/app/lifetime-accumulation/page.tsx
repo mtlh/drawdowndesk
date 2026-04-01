@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus, TrendingUp, CalendarDays, PiggyBank, Target, Calculator, Save, Edit2, X, Pencil, Check } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
+import { AuthRequired } from "@/hooks/useRequireAuth";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -462,6 +463,7 @@ export default function LifetimeAccumulation() {
   const accountColors = ["#10b981", "#f59e0b", "#ef4444", "#3b82f6", "#ec4899", "#8b5cf6"];
 
   return (
+    <AuthRequired>
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
         <div className="p-4 lg:p-8 space-y-6">
@@ -1088,5 +1090,6 @@ export default function LifetimeAccumulation() {
         </div>
       </main>
     </div>
+    </AuthRequired>
   );
 }

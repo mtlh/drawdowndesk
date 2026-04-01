@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/chart"
 
 import { useQuery } from "convex/react";
+import { AuthRequired } from "@/hooks/useRequireAuth";
 import { api } from "../../../convex/_generated/api";
 import React, { useState, useMemo } from "react";
 import { monteCarloReturn } from "../../../convex/calculators/runMonteCarlo"
@@ -117,6 +118,7 @@ export default function MonteCarloSimulator() {
   } satisfies ChartConfig;
 
   return (
+    <AuthRequired>
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
         <div className="p-4 lg:p-8 space-y-6">
@@ -293,5 +295,6 @@ export default function MonteCarloSimulator() {
         </div>
       </main>
     </div>
+    </AuthRequired>
   );
 };

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FileText, Keyboard, Check, AlertCircle, Plus, Trash2, Eye, Edit3, Loader2, StickyNote } from "lucide-react"
 import { useQuery, useMutation } from "convex/react"
+import { AuthRequired } from "@/hooks/useRequireAuth"
 import { api } from "../../../convex/_generated/api"
 import ReactMarkdown from "react-markdown"
 import { Id } from "../../../convex/_generated/dataModel"
@@ -227,6 +228,7 @@ export default function FinanceNotesPage() {
   }
 
   return (
+    <AuthRequired>
     <div className="flex min-h-screen bg-background">
       {/* Sidebar - Note List */}
       <aside className="w-64 md:w-72 border-r bg-card flex flex-col shrink-0">
@@ -503,5 +505,6 @@ export default function FinanceNotesPage() {
         </div>
       </main>
     </div>
+    </AuthRequired>
   )
 }

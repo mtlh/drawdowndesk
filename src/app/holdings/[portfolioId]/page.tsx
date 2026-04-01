@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ArrowLeft, Save, Trash2, Plus, TrendingUp, TrendingDown, Briefcase, PieChart as PieChartIcon, Wallet, BarChart3, Search, X } from "lucide-react"
 import { Holding, SimpleHolding, isError, isPortfolioArray } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
+import { AuthRequired } from "@/hooks/useRequireAuth"
 import { api } from "../../../../convex/_generated/api"
 import { Id } from "../../../../convex/_generated/dataModel"
 import { getPriceInPounds } from "@/lib/utils"
@@ -412,6 +413,7 @@ export default function PortfolioHoldingsPage() {
   };
 
   return (
+    <AuthRequired>
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4" role="main" aria-label="Portfolio holdings">
         <div className="p-4 lg:p-8 space-y-6">
@@ -720,6 +722,7 @@ export default function PortfolioHoldingsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </AuthRequired>
   );
 }
 

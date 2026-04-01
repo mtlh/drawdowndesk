@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Plus, Trash2, Edit2, DollarSign, AlertCircle } from "lucide-react"
 import { useQuery, useMutation } from "convex/react"
+import { AuthRequired } from "@/hooks/useRequireAuth"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { Skeleton, SkeletonCard, SkeletonCardHeader, SkeletonCardContent, SkeletonChart, SkeletonText, SkeletonList } from "@/components/ui/skeleton"
@@ -367,6 +368,7 @@ export default function DividendCalculatorPage() {
   }
 
   return (
+    <AuthRequired>
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
         <div className="p-4 lg:p-8">
@@ -734,5 +736,6 @@ export default function DividendCalculatorPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </AuthRequired>
   )
 }

@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { PieChartTooltip } from "@/components/chart-tooltip"
 import { useQuery, useMutation } from "convex/react"
+import { AuthRequired } from "@/hooks/useRequireAuth"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/lib/constants"
@@ -570,6 +571,7 @@ export default function BudgetPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
+    <AuthRequired>
     <div className="p-6 space-y-4">
       {/* Title */}
       <div>
@@ -971,5 +973,6 @@ export default function BudgetPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </AuthRequired>
   )
 }

@@ -12,6 +12,7 @@ import { Plus, Trash2, X, Link as LinkIcon } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Account, AccountType, Portfolio } from "@/types/portfolios"
 import { useQuery, useMutation } from "convex/react"
+import { AuthRequired } from "@/hooks/useRequireAuth"
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock"
 import { useToast } from "@/hooks/useToast"
 import { validateForm, commonRules, ValidationRule } from "@/lib/validation"
@@ -496,6 +497,7 @@ export default function NetWorthPage() {
   }
 
   return (
+    <AuthRequired>
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
         <div className="p-4 lg:p-8 space-y-6">
@@ -1090,5 +1092,6 @@ export default function NetWorthPage() {
         </AlertDialog>
       </main>
     </div>
+    </AuthRequired>
   )
 }

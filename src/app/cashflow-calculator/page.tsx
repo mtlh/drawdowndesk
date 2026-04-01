@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { useQuery, useMutation } from "convex/react"
+import { AuthRequired } from "@/hooks/useRequireAuth"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { CreateTakeHome, TaxInfo } from "@/lib/createTakeHome"
@@ -336,6 +337,7 @@ export default function RetirementCashflowCalculator() {
   }
 
   return (
+    <AuthRequired>
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pr-4">
         <div className="p-4 lg:p-8 space-y-6">
@@ -387,5 +389,6 @@ export default function RetirementCashflowCalculator() {
         </div>
       </main>
     </div>
+    </AuthRequired>
   )
 }
