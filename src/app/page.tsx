@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
 import Login from "./login"
 
 let listenersAdded = false
@@ -12,13 +11,13 @@ function addBackForwardListeners() {
   console.log('[Global] Adding back/forward listeners')
   
   window.addEventListener('popstate', () => {
-    console.log('[Global] PopState - reloading')
-    window.location.reload()
+    console.log('[Global] PopState - navigating')
+    window.location.href = window.location.href
   })
   
   window.addEventListener('pageshow', (event: PageTransitionEvent) => {
-    console.log('[Global] Pageshow - reloading (persisted:', event.persisted + ')')
-    window.location.reload()
+    console.log('[Global] Pageshow - navigating (persisted:', event.persisted + ')')
+    window.location.href = window.location.href
   })
 }
 
