@@ -1,6 +1,17 @@
 "use client"
 
+console.log('[Login Module] Script loaded')
+
 import { useState, useEffect, useCallback, useRef } from "react"
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pageshow', (e: Event) => {
+    console.log('[GLOBAL] pageshow event at window level, persisted:', (e as PageTransitionEvent).persisted)
+  })
+  document.addEventListener('pageshow', (e: Event) => {
+    console.log('[GLOBAL] pageshow event at document level, persisted:', (e as PageTransitionEvent).persisted)
+  })
+}
 import { useRouter } from "next/navigation"
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
 import { 
@@ -75,6 +86,13 @@ function HeroSection({ onOpenAuth }: { onOpenAuth: () => void }) {
     console.log('[HeroSection] useEffect running - setting isVisible to true')
     setIsVisible(true)
     return () => console.log('[HeroSection] useEffect cleanup')
+  }, [])
+  
+  // Add document-level listener for pageshow
+  useEffect(() => {
+    const handler = () => console.log('[HeroSection] Document pageshow fired')
+    document.addEventListener('pageshow', handler)
+    return () => document.removeEventListener('pageshow', handler)
   }, [])
 
   return (
