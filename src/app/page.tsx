@@ -1,5 +1,10 @@
-import Login from "./login";
+"use client"
+
+import { usePathname } from "next/navigation"
+import Login from "./login"
 
 export default function Page() {
-  return <Login />;
+  const pathname = usePathname()
+  
+  return <Login key={pathname} />;
 }

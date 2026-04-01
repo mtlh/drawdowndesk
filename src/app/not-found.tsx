@@ -11,6 +11,16 @@ export default function NotFound() {
 
   useEffect(() => {
     setIsVisible(true)
+    
+    const handlepageshow = () => {
+      setIsVisible(false)
+      requestAnimationFrame(() => {
+        setIsVisible(true)
+      })
+    }
+    
+    window.addEventListener('pageshow', handlepageshow)
+    return () => window.removeEventListener('pageshow', handlepageshow)
   }, [])
 
   return (

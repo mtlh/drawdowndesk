@@ -70,6 +70,16 @@ function HeroSection({ onOpenAuth }: { onOpenAuth: () => void }) {
   
   useEffect(() => {
     setIsVisible(true)
+    
+    const handlepageshow = () => {
+      setIsVisible(false)
+      requestAnimationFrame(() => {
+        setIsVisible(true)
+      })
+    }
+    
+    window.addEventListener('pageshow', handlepageshow)
+    return () => window.removeEventListener('pageshow', handlepageshow)
   }, [])
 
   return (
