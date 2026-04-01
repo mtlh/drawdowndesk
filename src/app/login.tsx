@@ -65,11 +65,16 @@ function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
 }
 
 function HeroSection({ onOpenAuth }: { onOpenAuth: () => void }) {
+  console.log('[HeroSection] Render - isVisible:', false)
   const [isVisible, setIsVisible] = useState(false)
   const router = useRouter()
   
+  console.log('[HeroSection] After useState - isVisible:', false)
+  
   useEffect(() => {
+    console.log('[HeroSection] useEffect running - setting isVisible to true')
     setIsVisible(true)
+    return () => console.log('[HeroSection] useEffect cleanup')
   }, [])
 
   return (
@@ -719,18 +724,30 @@ function Footer() {
 }
 
 export default function Login() {
+  console.log('[Login] Render - isAuthOpen:', false, 'renderKey:', 0)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [renderKey, setRenderKey] = useState(0)
 
+  console.log('[Login] After useState - isAuthOpen:', false, 'renderKey:', renderKey)
+
   useEffect(() => {
-    const handlepageshow = () => {
-      console.log('[Login] Pageshow - resetting key')
+    console.log('[Login] useEffect mounted')
+    
+    const handlepageshow = (event: PageTransitionEvent) => {
+      console.log('[Login] Pageshow event - persisted:', event.persisted)
+      console.log('[Login] Pageshow - setting renderKey to', renderKey + 1)
       setRenderKey(k => k + 1)
     }
     
     window.addEventListener('pageshow', handlepageshow)
-    return () => window.removeEventListener('pageshow', handlepageshow)
+    console.log('[Login] Added pageshow listener')
+    return () => {
+      console.log('[Login] useEffect cleanup')
+      window.removeEventListener('pageshow', handlepageshow)
+    }
   }, [])
+
+  console.log('[Login] Before render, renderKey:', renderKey)
 
   return (
     <div key={renderKey} className="relative min-h-screen">
