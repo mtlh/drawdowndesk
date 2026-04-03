@@ -5,23 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { PageBackground } from "@/components/page-background";
 import { Logo } from "@/components/Logo";
-import { useAuthToken } from "@convex-dev/auth/react";
-
-export function AuthLoadingPage() {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <PageBackground variant="hero" />
-      <div className="relative z-10">
-        <div className="flex items-center justify-center mb-6">
-          <Logo size="lg" />
-        </div>
-        <div className="animate-pulse rounded-2xl bg-[#0F4D38] border border-[#C9A962]/20 shadow-2xl p-12">
-          <p className="font-[family-name:var(--font-body)] text-[#FDF8F3]/60 text-center">Loading...</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { Authenticated, Unauthenticated } from "convex/react";
 
 export function AuthNotFoundPage() {
   return (
@@ -75,22 +59,20 @@ export function AuthNotFoundPage() {
 }
 
 export function AuthRequired({ children }: { children: ReactNode }) {
-  const token = useAuthToken();
-
-  if (token === undefined) {
-    return <AuthLoadingPage />;
-  }
-
-  if (token === null) {
-    return <AuthNotFoundPage />;
-  }
-
-  return <>{children}</>;
+  return (
+    <>
+      <Authenticated>
+        {children}
+      </Authenticated>
+      <Unauthenticated>
+        <AuthNotFoundPage />
+      </Unauthenticated>
+    </>
+  );
 }
 
 export function useRequireAuth() {
   return {
-    LoadingPage: AuthLoadingPage,
     NotFoundPage: AuthNotFoundPage,
   };
 }

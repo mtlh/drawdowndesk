@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
-import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { FireMetricsProvider } from "@/context/FireMetricsContext";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -73,15 +72,13 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${dmSans.variable} antialiased`}
       >
-        <ConvexAuthNextjsServerProvider>
-          <ConvexClientProvider>
-            <ThemeProvider>
-              <FireMetricsProvider>
-                {children}
-              </FireMetricsProvider>
-            </ThemeProvider>
-          </ConvexClientProvider>
-        </ConvexAuthNextjsServerProvider>
+        <ConvexClientProvider>
+          <ThemeProvider>
+            <FireMetricsProvider>
+              {children}
+            </FireMetricsProvider>
+          </ThemeProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );
